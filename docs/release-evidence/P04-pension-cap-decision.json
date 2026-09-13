@@ -1,0 +1,45 @@
+{
+  "decision_version": "ai.pension.general.cap.2025-2026.v1",
+  "author_kind": "ai",
+  "human_attestation": null,
+  "activation_allowed": false,
+  "research_decision": "section2_benefits_for_general_mandatory_pension_cap",
+  "sources": [
+    {
+      "url": "https://www.btl.gov.il/Laws1/00_0001_000001.pdf",
+      "sha256": "d95df0592c4621b1cc32c5dda59d51ac576c3e825a683d28b38d62e1ffe3aeb1",
+      "bytes": 167849,
+      "retrieved_at": "2026-09-07",
+      "member": "docs/release-evidence/legal-source-pages/IL_NATIONAL_INSURANCE_LAW_CHAPTER_A_20260907.pdf"
+    },
+    {
+      "url": "https://www.gov.il/BlobFolder/guide/labor-wage/he/workers-rights_working-conditions_pension_H096.pdf",
+      "member": "docs/release-evidence/legal-source-pages/IL_GENERAL_PENSION_EXTENSION_ORDER_2011.pdf",
+      "sha256": "2f1c4942e0130c55714801cc4a72aba40f77a2391ba72f6bd2d5b2d7094244d9",
+      "fresh_download_verified": false,
+      "visually_read_pdf_pages": [
+        2,
+        4
+      ]
+    },
+    {
+      "url": "https://www.btl.gov.il/Mediniyut/GeneralData/Pages/שכר%20ממוצע.aspx",
+      "read_on": "2026-09-07",
+      "section2_2025_benefits_minor": 1331600,
+      "section2_2025_collection_minor": 1253600,
+      "section2_2026_benefits_minor": 1376900
+    }
+  ],
+  "law_visually_read_pdf_pages": [
+    7
+  ],
+  "cma_final_conclusion_verified": false,
+  "inference": "Chapter XV collection freeze does not replace the section-2 pension extension-order wage base",
+  "tests": {
+    "files": 3,
+    "passed": 77,
+    "typecheck": "PASS",
+    "targeted_lint": "PASS"
+  },
+  "productionChanged": false
+}

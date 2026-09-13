@@ -17,6 +17,7 @@ class FakeClient implements NodePostgresPoolClient {
   rows: readonly Readonly<Record<string, unknown>>[] = [{ accepted: true }];
   queryError: unknown = null;
   releases = 0;
+  destroyed: boolean[] = [];
 
   async query(config: Readonly<{ name: string; text: string; values: readonly unknown[] }>) {
     (this.queries as { name: string; text: string; values: readonly unknown[] }[]).push(config);
@@ -24,8 +25,9 @@ class FakeClient implements NodePostgresPoolClient {
     return { rows: this.rows, rowCount: null };
   }
 
-  release(): void {
+  release(destroy?:boolean): void {
     this.releases += 1;
+    this.destroyed.push(destroy===true);
   }
 }
 
@@ -52,6 +54,20 @@ function factory(pool: FakePool): NodePostgresConnectionFactory {
 }
 
 describe("node-postgres canonical driver", () => {
+  it.each(['transaction_begin','transaction_commit','transaction_rollback'])('discards a pooled connection after failed %s',async name=>{
+    const pool=new FakePool(),driver=factory(pool),client=await driver.acquire();
+    pool.client.queryError=Object.assign(new Error('private transport detail'),{code:'08006'});
+    await expect(client.query(statement(name,name.slice('transaction_'.length),[]))).rejects.toThrow('POSTGRES_STATEMENT_FAILED');
+    client.release();expect(pool.client.destroyed).toEqual([true]);expect(driver.metrics().active_clients).toBe(0);await driver.close();
+  });
+  it('accepts a dated release replay only at its exactly declared remote target',()=>{
+    const target={host:'db.example',port:5432,database:'tivdoc_release_replay_20260907',project_ref:'synthetic-dev'};
+    const url='postgresql://worker:secret@db.example:5432/'+target.database;
+    expect(validateNodePostgresConnection({connection_url:url,remote_dev_target:target}).target.database).toBe(target.database);
+    for(const database of ['postgres','production','tivdoc_release_replay_production','tivdoc_release_replay_20260907_copy'])expect(()=>validateNodePostgresConnection({connection_url:'postgresql://worker:secret@db.example:5432/'+database,remote_dev_target:{...target,database}})).toThrow('POSTGRES_TARGET_NOT_DISPOSABLE');
+    expect(()=>validateNodePostgresConnection({connection_url:url,remote_dev_target:{...target,host:'other.example'}})).toThrow('POSTGRES_TARGET_NOT_LOOPBACK');
+    expect(()=>validateNodePostgresConnection({connection_url:url})).toThrow('POSTGRES_TARGET_NOT_LOOPBACK');
+  });
   it("derives one safe loopback disposable target and rejects ambiguous targets", () => {
     expect(deriveNodePostgresTargetDescriptor(CONNECTION_URL)).toEqual({
       target_id: "tivdoc-v09-dynamic-001",

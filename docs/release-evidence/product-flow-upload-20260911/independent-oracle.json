@@ -1,0 +1,11 @@
+{
+  "period": {
+    "from": "2026-06-01",
+    "to": "2026-06-30"
+  },
+  "grossMinor": 330000,
+  "deductionsMinor": 19800,
+  "netMinor": 310200,
+  "differenceMinor": 0,
+  "meaning": "Printed synthetic source arithmetic 3300.00 - 198.00 = 3102.00; no entitlement or actual fund transfer."
+}

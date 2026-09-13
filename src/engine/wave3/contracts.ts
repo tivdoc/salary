@@ -1,8 +1,9 @@
-import type { CalculationTrace } from "../calculations/contracts.ts";
+import type { PersistedCalculationTrace as CalculationTrace } from "../calculations/source-trace.ts";
 import type { Money } from "../domain/primitives.ts";
 import type { CanonicalFact } from "../facts/contracts.ts";
 import type { LegalReadinessDecision } from "../legal-knowledge/canonical-readiness/evaluate-legal-readiness.ts";
 import type { RuleInputSnapshot } from "../wave2/contracts.ts";
+import type {June2026RegularSourceAdmission} from '../minimum-wage-june2026/regular-service/source-admission.ts';
 
 /**
  * Wave 3 freezes application ports around the existing canonical domain types.
@@ -122,6 +123,7 @@ export type RuleSpecExecutionResult = Readonly<{
   rule_spec_version: string;
   amount: Money | null;
   trace: CalculationTrace;
+  source_admission?: June2026RegularSourceAdmission;
   result_sha256: string;
 }>;
 
@@ -136,10 +138,14 @@ export type TopicAnalysisResult = Readonly<{
   rule_input_sha256: string | null;
   amount: Money | null;
   trace: CalculationTrace | null;
+  source_admission?: June2026RegularSourceAdmission;
   legal_readiness: LegalReadinessDecision | null;
 }>;
 
 export type AnalysisResultBundle = Readonly<{
+  ai_release?: import("../case-analysis/contracts.ts").CaseAnalysisAiRelease;
+  owner_engineering?: import("../case-analysis/contracts.ts").CaseAnalysisOwnerEngineering;
+  document_review?: import("../document-review/contracts.ts").DocumentReviewResult;
   schema_version: "tivdoc-analysis-result-bundle-v0.6.0";
   analysis_run_id: string;
   case_id: string;
@@ -160,6 +166,7 @@ export type AnalysisResultBundle = Readonly<{
 }>;
 
 export type CaseAnalysisCommand = Readonly<{
+  document_review_sha256?: string;
   case_id: string;
   case_revision: number;
   document_snapshot_id: string;

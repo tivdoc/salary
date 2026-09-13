@@ -1,5 +1,5 @@
 {
-  "schema_version": "tivdoc-product-offer-v1",
+  "schema_version": "tivdoc-product-offer-v2",
   "note": "UX Run 1 / U9 (D-4.3, D-7.3): price, delivery estimate and access limits are configuration, read by every screen and every analytics event; nothing in a component carries a figure of its own. Values marked default in the design authority v1.1 are marked default here too.",
   "currency": "ILS",
   "initial_check": {
@@ -21,10 +21,14 @@
     }
   },
   "full_report": {
-    "price": {
-      "amount": "149.00",
-      "currency": "ILS",
-      "default": true
+    "pricing": {
+      "version": "tivdoc-launch-pricing-v1.1",
+      "quote_valid_days": 7,
+      "tiers": [
+        { "minimum_basis_minor": 50000, "total_minor": 9900 },
+        { "minimum_basis_minor": 500000, "total_minor": 19900 },
+        { "minimum_basis_minor": 2000000, "total_minor": 34900 }
+      ]
     },
     "delivery": {
       "value": 3,
@@ -32,7 +36,7 @@
       "default": true
     }
   },
-  "second_product_sentence": "בדיקה ראשונית 9.99 ₪. אם יימצאו נקודות לבדיקה, קיים דוח מורחב בתשלום נפרד. המחיר מוצג לפני כל תשלום.",
+  "second_product_sentence": "הבדיקה הראשונית נמסרת בתשלום הראשוני. דוח מורחב מוצע במחיר קבוע לפי מדרגות פומביות ורק על סמך פער שניתן לבסס; התשלום הראשוני המאומת מתקזז פעם אחת. אין דמי הצלחה או הבטחת גבייה מהמעסיק.",
   "access": {
     "link_token_ttl_hours": 6,
     "challenge_cookie_minutes": 15,

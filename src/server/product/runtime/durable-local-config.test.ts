@@ -134,7 +134,7 @@ describe("durable local product runtime configuration", () => {
 
   it("maps every product dispatcher to an enforced allow or intentional local block", () => {
     const runtime = createStableEntrypointRuntime({ projection: buildDurableLocalProductCapabilityProjection() });
-    expect(STABLE_PRODUCT_DISPATCHER_ROOTS).toHaveLength(40);
+    expect(STABLE_PRODUCT_DISPATCHER_ROOTS).toHaveLength(48);
     const decisions = STABLE_PRODUCT_DISPATCHER_ROOTS.map((entrypoint) => runtime.evaluate(entrypoint.entrypoint_id));
     expect(decisions.every((decision) => decision.outcome === "ALLOW" || decision.reason_codes.length > 0)).toBe(true);
     // UX Run 1 / U0: the six customer-access dispatchers need only postgresql locally, so they are allowed here.
@@ -143,7 +143,14 @@ describe("durable local product runtime configuration", () => {
     // S4 added the reminder opt-out. Its API route needs only postgresql and is
     // allowed; its PAGE is a customer screen and the local runtime blocks
     // customer processing, exactly as it blocks the rest of /check.
-    expect(decisions.filter((decision) => decision.outcome === "ALLOW")).toHaveLength(26);
+    expect(decisions.filter((decision) => decision.outcome === "ALLOW")).toHaveLength(34);
     expect(decisions.filter((decision) => decision.outcome === "BLOCK")).toHaveLength(14);
+    // P11 adds only the public accessibility page; the fourteen engine/customer gates stay blocked.
+    expect(runtime.evaluate("CEP-114").outcome).toBe("ALLOW");
+    // DEV operations routes retain their local operations capability and their
+    // own session/owner/CSRF checks; closed deployment refusal is tested apart.
+    for(const id of ["CEP-115","CEP-116"]) expect(runtime.evaluate(id).outcome).toBe("ALLOW");
+    // P07–P10 added five PostgreSQL-only product roots, without opening engine capabilities.
+    for(const id of ["CEP-109","CEP-110","CEP-111","CEP-112","CEP-113"]) expect(runtime.evaluate(id).outcome).toBe("ALLOW");
   });
 });

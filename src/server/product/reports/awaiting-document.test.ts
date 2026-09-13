@@ -2,7 +2,9 @@
 // case open with nothing to work on, so what these tests hold is the shape of
 // that wait: a request the customer can see, a state that names it, a clock
 // that is stopped while it stands, and a way out that closes it exactly once.
-import { describe, expect, it } from "vitest";
+import { describe, expect, it , vi } from "vitest";
+// Server adapter marker is mocked only in this hermetic test module.
+vi.mock('server-only',()=>({}));
 import { fakeCaseAccessDb, type FakeCase } from "../case-access/fake-db.ts";
 import { caseSlaPaused, listCaseRequests } from "./case-requests.ts";
 import {

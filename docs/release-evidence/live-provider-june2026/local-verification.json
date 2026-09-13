@@ -1,0 +1,56 @@
+{
+  "schemaVersion": "tivdoc-live-corpus-local-verification-v1",
+  "baseCommit": "2ebddb75ab8e0a6ee8beb9e50895c2929b5c1339",
+  "checkedAt": "2026-09-09T17:47:48.2114468Z",
+  "verificationType": "local synthetic mapping and corpus/budget contracts only",
+  "providerCalled": false,
+  "liveOcrProved": false,
+  "dbChanged": false,
+  "productionChanged": false,
+  "humanSignoff": false,
+  "beforeFix": {
+    "passed": 3,
+    "tests": 9,
+    "path": "output/release-completion/live-provider-june2026/mapper-before-fix.json",
+    "failed": 6
+  },
+  "afterFix": {
+    "passed": 31,
+    "tests": 31,
+    "path": "output/release-completion/live-provider-june2026/mapper-after-fix.json",
+    "failed": 0
+  },
+  "corpusBudget": {
+    "passed": 21,
+    "tests": 21,
+    "path": "output/release-completion/live-provider-june2026/corpus-budget-unit.json",
+    "failed": 0
+  },
+  "initialTestCorrections": [
+    "Expected existing issue code hourly_salary_mismatch rather than invented hourly_base_mismatch.",
+    "Two fixture source labels were shortened; aligned fixture labels with authored source while preserving strict checker.",
+    "Parent TypeScript identified readonly fields assignment in a unit fixture; repaired with a new object, preserving readonly contract."
+  ],
+  "liveStatus": "BLOCKED_ACCOUNT_ACCESS",
+  "notes": [
+    "No no-key rerun or credential search repeated in this package.",
+    "Typecheck, lint, integration commit and Preview are owned and reported by root; this receipt does not claim them.",
+    "Receipt contract unit inputs are fabricated unit objects, not recorded provider calls.",
+    "Explicit deduction rows remain saved but are excluded from gross earnings; unknown/other rows are not inferred from labels. Existing gross-deductions=net check remains active. The generic duplicate-category warning remains."
+  ],
+  "finalFocused": {
+    "failed": 0,
+    "allElevenInputsAndActualCropsPreflighted": true,
+    "corpusAndBudget": 23,
+    "path": "output/release-completion/live-provider-june2026/corpus-mapper-budget-final.json",
+    "tests": 60,
+    "mapperAndValidation": 37,
+    "passed": 60
+  },
+  "deductionsBeforeFix": {
+    "tests": 15,
+    "failed": 2,
+    "passed": 13,
+    "path": "output/release-completion/live-provider-june2026/deductions-before-fix.json"
+  }
+}

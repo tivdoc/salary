@@ -1,0 +1,95 @@
+{
+  "gitSha": "f85916eec1047cca447da133b4703f3e5cf731ae",
+  "schemaAppliedChainCount": 148,
+  "preview": {
+    "id": "dpl_AGQStZvDyfVM6WJSuRkb1y7E7ntH",
+    "url": "salary-6r8o5y251-tivdoccom-5042s-projects.vercel.app",
+    "target": "preview",
+    "readyState": "READY",
+    "sha": "f85916eec1047cca447da133b4703f3e5cf731ae"
+  },
+  "browser": "Chrome through CUA plugin",
+  "identity": "owner-approved Tivdoc Gmail",
+  "login": "OTP read from actual owner Gmail body and entered through UI, no session injection",
+  "otpMailbox": "Spam; actual receipt observed at 18:39 UTC",
+  "otpDeliveryWebhook": "not observed; DB sent with delivered_at null",
+  "casePublicId": "TV-DEA924CB",
+  "runId": "dd2e9300-c761-458e-8ac8-a8b4b642919a",
+  "reportId": "cde99ff4-a52b-4d92-ac3f-911b2e033ee9",
+  "html": "PASS title, isolated test disclaimer, exact run/source hashes, expected 3540.58, documented 3300.00, difference 240.58, identified declared hours; refresh PASS",
+  "pdfBrowser": "ERR_BLOCKED_BY_CLIENT; HTTP200 observed, successful browser download NOT claimed",
+  "sourceBrowser": "ERR_BLOCKED_BY_CLIENT; HTTP200 observed",
+  "historicalReport": "HTTP410; no old amount returned",
+  "foreignSourceVersion": "HTTP503 generic report_unavailable; no source returned. Incorrect availability status is an unresolved error-classification issue, not an authorization bypass. Actual foreign identity denial separately proven by DB tests.",
+  "storedPdf": "exact-byte DB comparison PASS; one-page PNG rendered by Poppler and visually inspected by root; same run and amounts",
+  "requests": [
+    {
+      "id": "bzkrx-1789065652095-b1b6d3d66c9d",
+      "requestPath": "/api/cases/TV-DEA924CB/reports",
+      "requestMethod": "GET",
+      "responseStatusCode": 200,
+      "timestamp": 1789065652095,
+      "deploymentId": "dpl_AGQStZvDyfVM6WJSuRkb1y7E7ntH",
+      "observedBrowserAction": "current_html",
+      "association": "Root observed action order/time; platform logs omit URL query",
+      "at": "2026-09-10T18:40:52.095000+00:00"
+    },
+    {
+      "id": "dqnr8-1789065673228-351cc6c72d77",
+      "requestPath": "/api/cases/TV-DEA924CB/reports",
+      "requestMethod": "GET",
+      "responseStatusCode": 200,
+      "timestamp": 1789065673228,
+      "deploymentId": "dpl_AGQStZvDyfVM6WJSuRkb1y7E7ntH",
+      "observedBrowserAction": "html_refresh",
+      "association": "Root observed action order/time; platform logs omit URL query",
+      "at": "2026-09-10T18:41:13.228000+00:00"
+    },
+    {
+      "id": "f5tht-1789065675324-02e2560d3f70",
+      "requestPath": "/api/cases/TV-DEA924CB/reports",
+      "requestMethod": "GET",
+      "responseStatusCode": 200,
+      "timestamp": 1789065675324,
+      "deploymentId": "dpl_AGQStZvDyfVM6WJSuRkb1y7E7ntH",
+      "observedBrowserAction": "current_pdf_download",
+      "association": "Root observed action order/time; platform logs omit URL query",
+      "at": "2026-09-10T18:41:15.324000+00:00"
+    },
+    {
+      "id": "x9v9k-1789065683299-26b8dd4735a3",
+      "requestPath": "/api/cases/TV-DEA924CB/reports",
+      "requestMethod": "GET",
+      "responseStatusCode": 200,
+      "timestamp": 1789065683299,
+      "deploymentId": "dpl_AGQStZvDyfVM6WJSuRkb1y7E7ntH",
+      "observedBrowserAction": "current_source_download",
+      "association": "Root observed action order/time; platform logs omit URL query",
+      "at": "2026-09-10T18:41:23.299000+00:00"
+    },
+    {
+      "id": "8bqxh-1789065722021-2e1eafef54a9",
+      "requestPath": "/api/cases/TV-DEA924CB/reports",
+      "requestMethod": "GET",
+      "responseStatusCode": 410,
+      "timestamp": 1789065722021,
+      "deploymentId": "dpl_AGQStZvDyfVM6WJSuRkb1y7E7ntH",
+      "observedBrowserAction": "superseded_report",
+      "association": "Root observed action order/time; platform logs omit URL query",
+      "at": "2026-09-10T18:42:02.021000+00:00"
+    },
+    {
+      "id": "x6lwv-1789065748012-99b6311c2491",
+      "requestPath": "/api/cases/TV-DEA924CB/reports",
+      "requestMethod": "GET",
+      "responseStatusCode": 503,
+      "timestamp": 1789065748012,
+      "deploymentId": "dpl_AGQStZvDyfVM6WJSuRkb1y7E7ntH",
+      "observedBrowserAction": "foreign_document_version",
+      "association": "Root observed action order/time; platform logs omit URL query",
+      "at": "2026-09-10T18:42:28.012000+00:00"
+    }
+  ],
+  "productionChanged": false,
+  "secretsOrOtpCodesIncluded": false
+}

@@ -1,0 +1,9 @@
+{
+  "month": "2026-06",
+  "regularHours": "100",
+  "baseMinor": 330000,
+  "expectedMinor": 354000,
+  "gapMinor": 24000,
+  "independentCalculation": "100 * 3540 minor units - 330000 minor units = 24000 minor units",
+  "humanLegalApproval": false
+}

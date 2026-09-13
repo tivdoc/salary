@@ -1,0 +1,65 @@
+{
+  "base": "2a7215b",
+  "scope": "Synthetic DOM using actual repository CSS; no DB or customer data",
+  "before": [
+    {
+      "width": 360,
+      "headerBottom": 63,
+      "childrenBottom": 79.59375,
+      "mainTop": 63,
+      "contained": false
+    },
+    {
+      "width": 390,
+      "headerBottom": 63,
+      "childrenBottom": 79.59375,
+      "mainTop": 63,
+      "contained": false
+    },
+    {
+      "width": 768,
+      "headerBottom": 63,
+      "childrenBottom": 79.59375,
+      "mainTop": 63,
+      "contained": false
+    },
+    {
+      "width": 1440,
+      "headerBottom": 71,
+      "childrenBottom": 57,
+      "mainTop": 71,
+      "contained": true
+    }
+  ],
+  "after": [
+    {
+      "width": 360,
+      "headerBottom": 96.59375,
+      "childrenBottom": 87.59375,
+      "mainTop": 96.59375,
+      "contained": true
+    },
+    {
+      "width": 390,
+      "headerBottom": 96.59375,
+      "childrenBottom": 87.59375,
+      "mainTop": 96.59375,
+      "contained": true
+    },
+    {
+      "width": 768,
+      "headerBottom": 96.59375,
+      "childrenBottom": 87.59375,
+      "mainTop": 96.59375,
+      "contained": true
+    },
+    {
+      "width": 1440,
+      "headerBottom": 71,
+      "childrenBottom": 57,
+      "mainTop": 71,
+      "contained": true
+    }
+  ],
+  "hostedProof": "Pending; current 5a7b69e Preview still has the fixed-height header"
+}

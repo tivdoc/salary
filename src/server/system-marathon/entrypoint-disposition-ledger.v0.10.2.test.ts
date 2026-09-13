@@ -13,10 +13,10 @@ import {
 const repositoryRoot = fileURLToPath(new URL("../../../", import.meta.url));
 
 describe("V0.10.2 entrypoint before/after disposition ledger", () => {
-  it("preserves all 101 rows, every identity and the starting denominator", () => {
+  it("preserves every prior identity and includes both closed DEV operations roots", () => {
     expect(validateEntrypointDispositionLedger()).toEqual([]);
-    expect(ENTRYPOINT_DISPOSITION_LEDGER.rows).toHaveLength(108);
-    expect(ENTRYPOINT_DISPOSITION_LEDGER.product_stable_denominator).toBe(97);
+    expect(ENTRYPOINT_DISPOSITION_LEDGER.rows).toHaveLength(116);
+    expect(ENTRYPOINT_DISPOSITION_LEDGER.product_stable_denominator).toBe(105);
     expect(ENTRYPOINT_DISPOSITION_LEDGER.before_counts).toEqual({
       partial: 31,
       implemented_not_wired: 21,
@@ -30,8 +30,8 @@ describe("V0.10.2 entrypoint before/after disposition ledger", () => {
   it("recomputes the exact source roots without deleting or changing any kind", () => {
     expect(ENTRYPOINT_DISPOSITION_LEDGER.source_disposition_counts).toEqual({
       product_stable_partial_or_unwired: 0,
-      app_routes: 19,
-      api_routes: 20,
+      app_routes: 23,
+      api_routes: 24,
       durable_workers: 5,
       application_services: 19,
       clis: 45,

@@ -1,0 +1,18 @@
+{
+  "checks": [
+    "actual operations role reads saved preview and review fingerprint",
+    "an approved report requires the same case paid active order entitlement",
+    "direct publication without approval is refused",
+    "wording changes invalidate the previously viewed fingerprint",
+    "worker cannot impersonate a human review; customer role cannot read QA",
+    "publication retry preserves the first publication and receipt",
+    "publication and one delivery intention commit together across retries",
+    "approved/published source envelope cannot be overwritten",
+    "input change preserves published history, scoped to its owner",
+    "stale saved input cannot receive a new approval"
+  ],
+  "database": "tivdoc_release_replay_20260907",
+  "fixtures": "synthetic; role behavior only, no human attestation",
+  "provider_delivery": false,
+  "production": "untouched"
+}

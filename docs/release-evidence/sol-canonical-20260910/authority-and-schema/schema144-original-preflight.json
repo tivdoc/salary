@@ -1,0 +1,15 @@
+{
+  "at": "2026-09-10T17:26:22.896Z",
+  "productionChanged": false,
+  "migrations": [
+    {
+      "path": "supabase/migrations/20260910172700_june2026_regular_current_authority.sql",
+      "sha256": "8aaabcc07a67273d55d4ead9b0128a2d9c242706328e2e364b3cc8739a49db6d"
+    }
+  ],
+  "target": {
+    "db": "tivdoc_release_replay_20260907",
+    "principal": "tivdoc_dev_migrator"
+  },
+  "rollbackPreflight": "PASS"
+}

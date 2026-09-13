@@ -1,0 +1,292 @@
+{
+  "at": "2026-09-11T02:00:19.673Z",
+  "head": [
+    {
+      "revision": 31,
+      "input_sha256": "f8d1c2eec348b35d31267c01ed23e03155c47bdefbced28be2df528c19703174"
+    }
+  ],
+  "documents": [
+    {
+      "id": "16406450-9a67-4bc0-99cf-9dca2c0dc4d0",
+      "version_id": "3281dc36-3c28-47f9-a3eb-1923ff7e2c64",
+      "content_sha256": "9685e7123013cbfa83cb777b1bf9217c236ef9114faa8ee316a925878633ad00"
+    }
+  ],
+  "answers": [
+    {
+      "id": "309c42f1-b240-4b5f-8997-e9e6736fc295",
+      "code": "document_field:4cc2b9c76fd492729cc5975f2edcb45fa1892c31550a7cba976540fa06e6eb8b",
+      "question": "בעמוד 1 במסמך לחודש יוני 2026 קראנו תקופת השכר: מ־2026-06-01 עד 2026-06-30. האם זה הערך שמופיע במסמך?",
+      "answer_text": "כן, בדקתי במסמך והערך נכון",
+      "answer_kind": "choice",
+      "answered_at": "2026-09-11T01:56:09.661Z",
+      "revision": 1,
+      "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+      "version_answer": "כן, בדקתי במסמך והערך נכון",
+      "created_at": "2026-09-11T01:56:09.563Z"
+    },
+    {
+      "id": "71985997-e456-47f6-a242-66df6217e407",
+      "code": "minimum_wage_june2026:16aad5da3dba8463c9fb0f68919bb1987b39a110a2ada4ae062af931d68dc8db",
+      "question": "לאחר בדיקת כל שורות התשלום בתלוש יוני 2026 ובקשות בירור רכיבי השכר, האם כל רכיב תשלום בתלוש מופיע בבקשות הבירור? אין לכלול ניכויים כשורות תשלום.",
+      "answer_text": "כן, לפי המידע שברשותי",
+      "answer_kind": "choice",
+      "answered_at": "2026-09-11T01:58:24.744Z",
+      "revision": 1,
+      "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+      "version_answer": "כן, לפי המידע שברשותי",
+      "created_at": "2026-09-11T01:58:24.743Z"
+    },
+    {
+      "id": "8792bfb3-ccb8-41db-bdf4-9351a9c51311",
+      "code": "minimum_wage_june2026:fee739117d27526e0234b834221d0dccacb40fe4bb5286e87c7d666563e05d0e",
+      "question": "האם השעות הרגילות בתלוש יוני 2026 כוללות רק עבודה רגילה, ללא היעדרות, שעות נוספות או עבודה במנוחה השבועית?",
+      "answer_text": "כן, לפי המידע שברשותי",
+      "answer_kind": "choice",
+      "answered_at": "2026-09-11T01:58:21.436Z",
+      "revision": 1,
+      "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+      "version_answer": "כן, לפי המידע שברשותי",
+      "created_at": "2026-09-11T01:58:21.435Z"
+    },
+    {
+      "id": "75a1688d-599f-4b0c-8146-d19bf3e5ff13",
+      "code": "minimum_wage_june2026:2081cde5e22daa716fbf0419b4b8e765955016c209b7ba708db2cdba983f3e77",
+      "question": "האם נקבע עבורך שכר מינימום מותאם בהחלטה מוסמכת שחלה ביוני 2026?",
+      "answer_text": "לא, לפי המידע שברשותי",
+      "answer_kind": "choice",
+      "answered_at": "2026-09-11T01:58:18.188Z",
+      "revision": 1,
+      "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+      "version_answer": "לא, לפי המידע שברשותי",
+      "created_at": "2026-09-11T01:58:18.186Z"
+    },
+    {
+      "id": "ef89e5d6-e717-4d46-aa02-59720b289f9d",
+      "code": "minimum_wage_june2026:5260c7c7d46ec85b7bbbddedf11278f6c48d23a4b33ba61bc1e759581a8f17f6",
+      "question": "האם ידוע לך על חוזה, הסכם או הסדר אחר שקובע עבורך שכר מינימום גבוה מהשכר הכללי ביוני 2026?",
+      "answer_text": "לא, לפי המידע שברשותי",
+      "answer_kind": "choice",
+      "answered_at": "2026-09-11T01:58:15.218Z",
+      "revision": 1,
+      "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+      "version_answer": "לא, לפי המידע שברשותי",
+      "created_at": "2026-09-11T01:58:15.197Z"
+    },
+    {
+      "id": "f6365ba8-acb0-4f6a-af66-9f9905ce16d5",
+      "code": "document_hours_conflict:84ac9d618cf4d3368640e8902338734d91e387348bd3b857806a864f0921566f",
+      "question": "בתלוש יוני 2026: נמצאו קריאות שעות שונות במקור. יש לבדוק את המסמך ואת רישומי העבודה, לציין את מספר השעות הרגילות ואת הבסיס לתשובה, או לבחור שלא ניתן לקבוע. התשובה היא הצהרה לבירור ואינה מתקנת את המקור או מאשרת זכאות.",
+      "answer_text": "{\"schema_version\":\"document-hours-conflict-answer-v1\",\"state\":\"unknown\",\"basis\":\"\"}",
+      "answer_kind": "text",
+      "answered_at": "2026-09-11T01:52:56.132Z",
+      "revision": 1,
+      "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+      "version_answer": "{\"schema_version\":\"document-hours-conflict-answer-v1\",\"state\":\"unknown\",\"basis\":\"\"}",
+      "created_at": "2026-09-11T01:52:56.051Z"
+    },
+    {
+      "id": "df47e18b-4523-4f55-86b3-86d27a9c8aaf",
+      "code": "minimum_wage_june2026:92497fafd55bee781a3ced4fc63988aaf03917061eb3be5358e507a16b13dc1c",
+      "question": "מה מהות הרכיב ״שכר יסוד שעתי״ בעמוד 1 בתלוש יוני 2026, לפי המידע שברשותך? התיאור יישמר כהצהרתך לצורך בירור הרכיב.",
+      "answer_text": "שכר יסוד או שכר משולב",
+      "answer_kind": "choice",
+      "answered_at": "2026-09-11T01:58:28.136Z",
+      "revision": 1,
+      "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+      "version_answer": "שכר יסוד או שכר משולב",
+      "created_at": "2026-09-11T01:58:28.135Z"
+    },
+    {
+      "id": "0e91f825-f4c3-4659-b74f-b483712a6e80",
+      "code": "minimum_wage_june2026:a208be25ca5ae6e84916f38af6abac2deedf0881f5e31a8db3e03783ef55c357",
+      "question": "נא לתאר את התפקיד בפועל ביוני 2026, אופן הפיקוח על שעות העבודה והסמכויות בעבודה. המידע דרוש לבירור התחולה; אין צורך לקבוע בעצמך מסקנה משפטית. אפשר גם לכתוב ״איני יודע/ת״ או ״יש מידע סותר״.",
+      "answer_text": "תרחיש סינתטי: עובד ייצור שעתי, רישום נוכחות ופיקוח שעות, ללא תפקיד הנהלה או סמכויות עצמאיות.",
+      "answer_kind": "text",
+      "answered_at": "2026-09-11T01:58:12.369Z",
+      "revision": 1,
+      "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+      "version_answer": "תרחיש סינתטי: עובד ייצור שעתי, רישום נוכחות ופיקוח שעות, ללא תפקיד הנהלה או סמכויות עצמאיות.",
+      "created_at": "2026-09-11T01:58:12.367Z"
+    },
+    {
+      "id": "35d8276a-ee53-4870-beda-f712cf5ad847",
+      "code": "minimum_wage_june2026:cb6861a374b5659e62dd26b21bf6b3e308cb11a8279a5d2849d58fffffe668aa",
+      "question": "מה תחום הפעילות של המעסיק ביוני 2026, והאם ידוע לך על הסכם ענפי או קיבוצי שחל בעבודה? נא לתאר את המידע שברשותך. אפשר גם לכתוב ״איני יודע/ת״ או ״יש מידע סותר״.",
+      "answer_text": "תרחיש סינתטי: מפעל פרטי כללי, ללא הסכם ענפי או קיבוצי הידוע במסגרת הבדיקה.",
+      "answer_kind": "text",
+      "answered_at": "2026-09-11T01:58:09.175Z",
+      "revision": 1,
+      "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+      "version_answer": "תרחיש סינתטי: מפעל פרטי כללי, ללא הסכם ענפי או קיבוצי הידוע במסגרת הבדיקה.",
+      "created_at": "2026-09-11T01:58:09.174Z"
+    },
+    {
+      "id": "091206ea-5540-41ad-969b-73f10664bfe1",
+      "code": "minimum_wage_june2026:72016a850d415589d5c19a8d6269c26f70fefcd6ae8915ba7ef93336824ea9c0",
+      "question": "האם ביום 1 ביוני 2026 כבר מלאו לך 18?",
+      "answer_text": "כן, לפי המידע שברשותי",
+      "answer_kind": "choice",
+      "answered_at": "2026-09-11T01:58:04.890Z",
+      "revision": 1,
+      "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+      "version_answer": "כן, לפי המידע שברשותי",
+      "created_at": "2026-09-11T01:58:04.806Z"
+    },
+    {
+      "id": "a53ed5da-ab41-4fc2-ba6d-e2cb9ff50e14",
+      "code": "document_field:65412cd899c6a53cfc66ba77d38a87e8a2e43c1f3e728710e25b54122bf27dd5",
+      "question": "בעמוד 1 במסמך לחודש יוני 2026 קראנו שכר נטו: 3300.00 ILS. האם זה הערך שמופיע במסמך?",
+      "answer_text": "כן, בדקתי במסמך והערך נכון",
+      "answer_kind": "choice",
+      "answered_at": "2026-09-11T01:56:47.657Z",
+      "revision": 1,
+      "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+      "version_answer": "כן, בדקתי במסמך והערך נכון",
+      "created_at": "2026-09-11T01:56:47.618Z"
+    },
+    {
+      "id": "2a8e7e52-beb1-47ac-8cfc-579acaec08ce",
+      "code": "document_field:82e8905052e5de3b962d7e7f3665a87b9c17bb3445286dcc9531823b0606ac69",
+      "question": "בעמוד 1 במסמך לחודש יוני 2026 קראנו שכר ברוטו: 3300.00 ILS. האם זה הערך שמופיע במסמך?",
+      "answer_text": "כן, בדקתי במסמך והערך נכון",
+      "answer_kind": "choice",
+      "answered_at": "2026-09-11T01:56:38.198Z",
+      "revision": 1,
+      "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+      "version_answer": "כן, בדקתי במסמך והערך נכון",
+      "created_at": "2026-09-11T01:56:38.197Z"
+    },
+    {
+      "id": "581e36cd-d44b-4914-8d5d-6de8f1010186",
+      "code": "document_field:802918221a2a81e99d762f5c483d4264c3da761cd19acb9725b69971fe7d5eb9",
+      "question": "בעמוד 1 במסמך לחודש יוני 2026 קראנו שכר הבסיס החודשי: 3300.00 ILS. האם זה הערך שמופיע במסמך?",
+      "answer_text": "כן, בדקתי במסמך והערך נכון",
+      "answer_kind": "choice",
+      "answered_at": "2026-09-11T01:56:28.784Z",
+      "revision": 1,
+      "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+      "version_answer": "כן, בדקתי במסמך והערך נכון",
+      "created_at": "2026-09-11T01:56:28.783Z"
+    },
+    {
+      "id": "993a490f-313f-43fd-898b-f6c108af0736",
+      "code": "document_field:07c550b4af6a3944717eefd2c59d51e27ca1e2772c617db4752341545dd5d555",
+      "question": "בעמוד 1 במסמך לחודש יוני 2026 קראנו סוג השכר: שעתי. האם זה הערך שמופיע במסמך?",
+      "answer_text": "כן, בדקתי במסמך והערך נכון",
+      "answer_kind": "choice",
+      "answered_at": "2026-09-11T01:56:19.329Z",
+      "revision": 1,
+      "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+      "version_answer": "כן, בדקתי במסמך והערך נכון",
+      "created_at": "2026-09-11T01:56:19.328Z"
+    },
+    {
+      "id": "f6365ba8-acb0-4f6a-af66-9f9905ce16d5",
+      "code": "document_hours_conflict:84ac9d618cf4d3368640e8902338734d91e387348bd3b857806a864f0921566f",
+      "question": "בתלוש יוני 2026: נמצאו קריאות שעות שונות במקור. יש לבדוק את המסמך ואת רישומי העבודה, לציין את מספר השעות הרגילות ואת הבסיס לתשובה, או לבחור שלא ניתן לקבוע. התשובה היא הצהרה לבירור ואינה מתקנת את המקור או מאשרת זכאות.",
+      "answer_text": "{\"schema_version\":\"document-hours-conflict-answer-v1\",\"state\":\"unknown\",\"basis\":\"\"}",
+      "answer_kind": "text",
+      "answered_at": "2026-09-11T01:52:56.132Z",
+      "revision": 2,
+      "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+      "version_answer": "{\"schema_version\":\"document-hours-conflict-answer-v1\",\"state\":\"declared\",\"hours\":\"100\",\"basis\":\"תרחיש בדיקה סינתטי: נבחר רישום הנוכחות המציג 100 שעות רגילות לצורך הצהרת הבדיקה. הרישום הנוסף של 120 נשמר כסתירה במקור; אין כאן אישור משפטי.\"}",
+      "created_at": "2026-09-11T01:54:57.377Z"
+    }
+  ],
+  "jobs": [
+    {
+      "job_id": "saved_4f508ff1a034271e41d5e87e1acbef949cdb1e7360db80f949c5eb4ec2f55efa",
+      "state": "succeeded",
+      "attempt_count": 2,
+      "available_at": "2026-09-11T01:41:01.765Z",
+      "lease_expires_at": null
+    },
+    {
+      "job_id": "saved_7415883c166d6cb533ae3e58997721b1ed13972cd7f81c62d9abb0785a5fc9b3",
+      "state": "succeeded",
+      "attempt_count": 1,
+      "available_at": "2026-09-11T01:52:59.927Z",
+      "lease_expires_at": null
+    },
+    {
+      "job_id": "saved_3a82dbbb3b25e3ad88bde8d0ceda46fd378ce51daa807c3535b7f7f91d6fa8b8",
+      "state": "succeeded",
+      "attempt_count": 1,
+      "available_at": "2026-09-11T01:55:00.235Z",
+      "lease_expires_at": null
+    },
+    {
+      "job_id": "saved_882c31983fbfa5b3402df653133d98351d5911224782e9138524274c4919190c",
+      "state": "succeeded",
+      "attempt_count": 1,
+      "available_at": "2026-09-11T01:57:00.439Z",
+      "lease_expires_at": null
+    },
+    {
+      "job_id": "saved_01be68b3728625cfd14d463ef54f38c5d31fd4d74ac5fab16e1b7abc5facf121",
+      "state": "succeeded",
+      "attempt_count": 1,
+      "available_at": "2026-09-11T01:58:59.939Z",
+      "lease_expires_at": null
+    },
+    {
+      "job_id": "saved_8b5b0fd1bba12bdb16ded376c71781d70e962b7030f4cb722d77dfce37a3a9d9",
+      "state": "succeeded",
+      "attempt_count": 1,
+      "available_at": "2026-09-11T01:59:59.918Z",
+      "lease_expires_at": null
+    }
+  ],
+  "results": [
+    {
+      "analysis_run_id": "6804fdf2-56e6-4215-86ba-d366236877fb",
+      "projection_id": "4cf4d2f6-b3e1-4746-aaa7-58acaaaeeb48",
+      "input_revision": 31,
+      "namespace": "isolated_test",
+      "created_at": "2026-09-11T02:00:06.899Z"
+    }
+  ],
+  "invocations": [
+    {
+      "invocation_id": "d7ce4039-9815-47e7-9fb4-88f4d1c61316",
+      "version_id": "3281dc36-3c28-47f9-a3eb-1923ff7e2c64",
+      "result_sha256": "70f001520c1c4f18624071d9c25452db11b05010abbaa0fb0dfcaceba80fe715",
+      "recorded_at": "2026-09-11T01:40:28.790Z",
+      "retainedOriginalResult": true
+    }
+  ],
+  "runs": [
+    {
+      "canonical_analysis_run_id": "98749f38-93c9-46b0-87bc-246577b506b8",
+      "status": "completed",
+      "documentSnapshotId": "saved-documents:2026-06:224cb3ba7a479dfa5f824a126bb4128c91e121bb6e6aafe4ebe10bcfb3e56de9"
+    },
+    {
+      "canonical_analysis_run_id": "56567b5c-c5d7-4a6f-8a1e-9cbe8b7b5cd0",
+      "status": "completed",
+      "documentSnapshotId": "saved-documents:2026-06:4dfa59bb83916d6b6dbc4d13bcb6428d3ff3ab913e1873b2852045453bddf0e1"
+    },
+    {
+      "canonical_analysis_run_id": "cd17e2fa-95f7-4b0e-8456-b8643c34eb20",
+      "status": "completed",
+      "documentSnapshotId": "saved-documents:2026-06:5bafd91a2cc08e41cd1b4aebf5a6fb5648b7f039882e4bc974f5467fdad8889a"
+    },
+    {
+      "canonical_analysis_run_id": "f93dcf4a-52a8-4509-8583-06f85586c96a",
+      "status": "completed",
+      "documentSnapshotId": "saved-documents:2026-06:2034e3dc6f21bb56124077e5db4481a2896780f47137abe8f4f3611c192e6675"
+    },
+    {
+      "canonical_analysis_run_id": "ee1fbb3d-c7cc-448c-830d-dfd8992e8f22",
+      "status": "completed",
+      "documentSnapshotId": "saved-documents:2026-06:f8d1c2eec348b35d31267c01ed23e03155c47bdefbced28be2df528c19703174"
+    },
+    {
+      "canonical_analysis_run_id": "56173811-23c5-4174-8289-2da9d083374a",
+      "status": "completed",
+      "documentSnapshotId": "saved-documents:2026-06:f8d1c2eec348b35d31267c01ed23e03155c47bdefbced28be2df528c19703174"
+    }
+  ]
+}

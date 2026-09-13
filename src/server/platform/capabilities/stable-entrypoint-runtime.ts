@@ -70,7 +70,7 @@ export const STABLE_ENTRYPOINT_CAPABILITY_REQUIREMENTS: readonly StableEntrypoin
   inventory.entries.map((entry) => requirementFor(entry)),
 );
 
-/** Frozen product dispatcher denominator: 32 Next roots plus the route registrar (UX Run 1 / U0 added CEP-096..CEP-101: 26 → 32). */
+/** Registered dispatcher denominator: 47 Next roots plus the route registrar, including the two closed DEV operations roots. */
 export const STABLE_PRODUCT_DISPATCHER_ROOTS: readonly StableEntrypointCapabilityRequirement[] = deepFreeze(
   STABLE_ENTRYPOINT_CAPABILITY_REQUIREMENTS.filter((entry) =>
     entry.product_stable
@@ -82,10 +82,10 @@ const createdRuntimes = new WeakSet<object>();
 
 export function validateStableEntrypointCapabilityRequirements(): readonly string[] {
   const issues: string[] = [];
-  if (inventory.entries.length !== 108) issues.push("CAPABILITY_ENTRYPOINT_DENOMINATOR_CHANGED");
+  if (inventory.entries.length !== 116) issues.push("CAPABILITY_ENTRYPOINT_DENOMINATOR_CHANGED");
   if (STABLE_ENTRYPOINT_CAPABILITY_REQUIREMENTS.length !== inventory.entries.length) issues.push("CAPABILITY_ENTRYPOINT_MAPPING_INCOMPLETE");
-  if (inventory.entries.filter((entry) => entry.product_stable).length !== 97) issues.push("CAPABILITY_PRODUCT_STABLE_DENOMINATOR_CHANGED");
-  if (STABLE_PRODUCT_DISPATCHER_ROOTS.length !== 40) issues.push("CAPABILITY_PRODUCT_DISPATCHER_DENOMINATOR_CHANGED");
+  if (inventory.entries.filter((entry) => entry.product_stable).length !== 105) issues.push("CAPABILITY_PRODUCT_STABLE_DENOMINATOR_CHANGED");
+  if (STABLE_PRODUCT_DISPATCHER_ROOTS.length !== 48) issues.push("CAPABILITY_PRODUCT_DISPATCHER_DENOMINATOR_CHANGED");
   if (requirementById.size !== inventory.entries.length) issues.push("CAPABILITY_ENTRYPOINT_ID_DUPLICATE");
 
   for (const entry of inventory.entries) {

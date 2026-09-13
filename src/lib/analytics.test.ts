@@ -6,23 +6,21 @@ afterEach(() => {
 });
 
 describe("trackEvent", () => {
-  it("queues events until GA4 is initialized", () => {
+  it("does not queue external events while measurement is closed", () => {
     const browserWindow: Record<string, unknown> = {};
     vi.stubGlobal("window", browserWindow);
 
     trackEvent("payment_returned", { source: "invoice4u" });
 
-    expect(browserWindow.tivdocAnalyticsQueue).toEqual([
-      { eventName: "payment_returned", params: {} },
-    ]);
+    expect(browserWindow.tivdocAnalyticsQueue).toBeUndefined();
   });
 
-  it("sends events immediately after GA4 is initialized", () => {
+  it("does not send even when a legacy GA4 function exists", () => {
     const gtag = vi.fn();
     vi.stubGlobal("window", { gtag });
 
     trackEvent("start_check");
 
-    expect(gtag).toHaveBeenCalledWith("event", "start_check", {});
+    expect(gtag).not.toHaveBeenCalled();
   });
 });

@@ -27,13 +27,15 @@ import {
 } from "./crypto.ts";
 import { resolveCaseAccessDb, type CaseAccessDb } from "./db.ts";
 import {
-  renderAbandonmentReminder, renderAccessCode, renderCaseLink, renderDocumentRequest, renderReportReady, sendNotification, type NotificationOutcome, type NotificationTemplate,
+  renderAbandonmentReminder, renderAccessCode, renderCaseLink, renderDocumentRequest, renderReportReady, type NotificationOutcome, type NotificationTemplate,
 } from "./notifications.ts";
 // D-9 lives in one place: the request table S3.3 built. The link must not name a
 // different number of days from the one the thread actually enforces.
 import { REQUEST_TIMING } from "../reports/refusal-requests.ts";
 import { openDocumentRequest } from "../reports/awaiting-document.ts";
 import { abandonmentAfterHours, abandonmentCandidates, markAbandonmentReminder, optOutOfReminders, optOutUrl, type SweepOutcome } from "./abandonment.ts";
+
+import { notifyCase } from "./notification-outbox.ts";
 
 const DAY = 86_400;
 const HOUR = 3_600;
@@ -44,7 +46,7 @@ export type SendLinkResult = Readonly<{
   case_id: string;
   // S1.5 / U2: `refused` is not `send_failed` — the recipient is outside the delivery allowlist,
   // nothing reached a provider, and no resend will ever change that.
-  outcome: "sent" | "already_sent" | "send_failed" | "refused" | "no_contact" | "contact_unverified" | "no_store";
+  outcome: "queued" | "sent" | "already_sent" | "send_failed" | "refused" | "no_contact" | "contact_unverified" | "no_store";
   token_id: string | null;
   provider: string | null;
   error_code: string | null;
@@ -148,16 +150,18 @@ async function identityOf(db: CaseAccessDb, contact: NormalizedContact): Promise
 }
 
 async function recordNotification(db: CaseAccessDb, input: Readonly<{ case_id: string | null; identity_id: string | null; channel: ContactChannel; template: NotificationTemplate; outcome: NotificationOutcome }>): Promise<void> {
-  await db.rpc("case_notification_record", {
+  const directReceipt=input.outcome.provider==='resend'&&input.outcome.state==='sent'&&input.outcome.provider_message_id;
+  await db.rpc(directReceipt?"case_notification_record_provider":"case_notification_record", {
     target_case: input.case_id, target_identity: input.identity_id, target_channel: input.channel, target_template: input.template,
     target_state: input.outcome.state, target_provider: input.outcome.provider, target_payload_sha256: input.outcome.payload_sha256,
     target_error_code: input.outcome.error_code,
+    ...(directReceipt?{target_provider_message_id:input.outcome.provider_message_id}:{}),
   });
 }
 
 async function sendCode(db: CaseAccessDb, input: Readonly<{ caseId: string | null; identityId: string; contact: NormalizedContact; code: string }>): Promise<NotificationOutcome> {
   const rendered = renderAccessCode({ code: input.code, expiresInMinutes: productOffer().access.code_ttl_minutes });
-  const outcome = await sendNotification({ template: "access_code", channel: input.contact.channel, to: input.contact.normalized, ...rendered });
+  const outcome = await notifyCase(db,{caseId:input.caseId,identityId:input.identityId},{ template: "access_code", channel: input.contact.channel, to: input.contact.normalized, ...rendered });
   await recordNotification(db, { case_id: input.caseId, identity_id: input.identityId, channel: input.contact.channel, template: "access_code", outcome });
   return outcome;
 }
@@ -279,28 +283,29 @@ export async function issueAndSendCaseLink(caseId: string, purpose: LinkPurpose 
 }
 
 /** S1.5 / U2: a refusal is its own outcome — never folded into a send failure the customer could retry. */
-function mapSendOutcome(state: "sent" | "failed" | "refused"): "sent" | "send_failed" | "refused" {
-  return state === "sent" ? "sent" : state === "refused" ? "refused" : "send_failed";
+function mapSendOutcome(state: NotificationOutcome["state"]): "queued" | "sent" | "send_failed" | "refused" {
+  return state === "queued" ? "queued" : state === "sent" ? "sent" : state === "refused" ? "refused" : "send_failed";
 }
 
 async function deliverLink(db: CaseAccessDb, input: Readonly<{ caseId: string; identityId: string; contact: NormalizedContact; firstName: string | null; publicId: string; token: string; ttlHours: number }>): Promise<NotificationOutcome> {
   const linkUrl = `${publicOrigin()}/case/${input.token}`;
   const rendered = renderCaseLink({ firstName: input.firstName, publicId: input.publicId, linkUrl, expiresInHours: input.ttlHours });
-  const outcome = await sendNotification({ template: "case_link", channel: input.contact.channel, to: input.contact.normalized, ...rendered });
+  const outcome = await notifyCase(db,{caseId:input.caseId,identityId:input.identityId,tokenHash:hashToken(input.token)},{ template: "case_link", channel: input.contact.channel, to: input.contact.normalized, ...rendered });
   await recordNotification(db, { case_id: input.caseId, identity_id: input.identityId, channel: input.contact.channel, template: "case_link", outcome });
   return outcome;
 }
 
 /** U4. The catch-up sweep the reconcile cron runs: every verified payment of a verified contact without a sent link gets exactly one. */
-export async function sweepPendingCaseLinks(limit = 50, db?: CaseAccessDb | null): Promise<Readonly<{ examined: number; sent: number; failed: number; refused: number; already_sent: number }>> {
+export async function sweepPendingCaseLinks(limit = 50, db?: CaseAccessDb | null): Promise<Readonly<{ examined: number; queued: number; sent: number; failed: number; refused: number; already_sent: number }>> {
   const store = db ?? await resolveCaseAccessDb();
-  const summary = { examined: 0, sent: 0, failed: 0, refused: 0, already_sent: 0 };
+  const summary = { examined: 0, queued: 0, sent: 0, failed: 0, refused: 0, already_sent: 0 };
   if (!store) return summary;
   const pending = await store.rpc<{ case_id: string }>("case_access_pending_links", { target_limit: limit });
   for (const row of pending) {
     summary.examined += 1;
     const result = await issueAndSendCaseLink(row.case_id, "payment_verified", store);
-    if (result.outcome === "sent") summary.sent += 1;
+    if (result.outcome === "queued") summary.queued += 1;
+    else if (result.outcome === "sent") summary.sent += 1;
     else if (result.outcome === "already_sent") summary.already_sent += 1;
     else if (result.outcome === "refused") summary.refused += 1;
     else summary.failed += 1;
@@ -334,7 +339,7 @@ export async function sendReportReadyNotification(caseId: string, db?: CaseAcces
   }))[0];
   if (!issued) return { case_id: caseId, outcome: "send_failed", token_id: null, provider: null, error_code: "token_issue_failed" };
   const rendered = renderReportReady({ publicId: found.public_id, linkUrl: `${publicOrigin()}/case/${token}` });
-  const outcome = await sendNotification({ template: "report_ready", channel: found.contact.channel, to: found.contact.normalized, ...rendered });
+  const outcome = await notifyCase(store,{caseId,identityId,tokenHash:hashToken(token)},{ template: "report_ready", channel: found.contact.channel, to: found.contact.normalized, ...rendered });
   await recordNotification(store, { case_id: caseId, identity_id: identityId, channel: found.contact.channel, template: "report_ready", outcome });
   await store.rpc("case_access_token_mark_send", { target_token: issued.token_id, target_state: outcome.state, target_error_code: outcome.error_code });
   return { case_id: caseId, outcome: mapSendOutcome(outcome.state), token_id: issued.token_id, provider: outcome.provider, error_code: outcome.error_code };
@@ -382,7 +387,7 @@ export async function sendDocumentRequestLink(caseId: string, db?: CaseAccessDb 
     linkUrl: `${publicOrigin()}/case/${token}`,
     expiresInDays: REQUEST_TIMING.expiry_days,
   });
-  const outcome = await sendNotification({ template: "document_request", channel: found.contact.channel, to: found.contact.normalized, ...rendered });
+  const outcome = await notifyCase(store,{caseId,identityId,tokenHash:hashToken(token)},{ template: "document_request", channel: found.contact.channel, to: found.contact.normalized, ...rendered });
   await recordNotification(store, { case_id: caseId, identity_id: identityId, channel: found.contact.channel, template: "document_request", outcome });
   await store.rpc("case_access_token_mark_send", { target_token: issued.token_id, target_state: outcome.state, target_error_code: outcome.error_code });
   return { case_id: caseId, outcome: mapSendOutcome(outcome.state), token_id: issued.token_id, provider: outcome.provider, error_code: outcome.error_code };
@@ -412,6 +417,7 @@ export async function sweepAbandonedCases(
     { afterHours: input.afterHours ?? abandonmentAfterHours(), limit: input.limit ?? 50 },
     store,
   );
+  let queued = 0;
   let sent = 0;
   let failed = 0;
   let refused = 0;
@@ -443,7 +449,7 @@ export async function sweepAbandonedCases(
       linkUrl: `${origin}/case/${token}`,
       optOutUrl: optOutUrl(origin, token),
     });
-    const outcome = await sendNotification({
+    const outcome = await notifyCase(store,{caseId:candidate.case_id,identityId,tokenHash:hashToken(token)},{
       template: "abandonment_reminder", channel: found.contact.channel, to: found.contact.normalized, ...rendered,
     });
     await recordNotification(store, {
@@ -452,11 +458,12 @@ export async function sweepAbandonedCases(
     });
     await store.rpc("case_access_token_mark_send", { target_token: issued.token_id, target_state: outcome.state, target_error_code: outcome.error_code });
     await markAbandonmentReminder({ caseId: candidate.case_id, state: outcome.state }, store);
-    if (outcome.state === "sent") sent += 1;
+    if (outcome.state === "queued") queued += 1;
+    else if (outcome.state === "sent") sent += 1;
     else if (outcome.state === "refused") refused += 1;
     else failed += 1;
   }
-  return Object.freeze({ examined: candidates.length, sent, failed, refused, skipped_no_contact: skipped });
+  return Object.freeze({ examined: candidates.length, queued, sent, failed, refused, skipped_no_contact: skipped });
 }
 
 // ---------------------------------------------------------------------------

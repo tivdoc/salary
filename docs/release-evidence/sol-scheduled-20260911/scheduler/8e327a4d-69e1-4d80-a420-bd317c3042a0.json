@@ -1,0 +1,79 @@
+{
+  "schema_version": "managed-dev-supervisor-receipt-v1",
+  "control_id": "abf1d07f-ea93-421b-8be0-4fec78bb13cc",
+  "run_id": "8e327a4d-69e1-4d80-a420-bd317c3042a0",
+  "pid": 17344,
+  "child_pid": 17436,
+  "started_at": "2026-09-11T01:45:55.776Z",
+  "finished_at": "2026-09-11T01:46:20.319Z",
+  "build_sha": "506548866dc6543a4406135e146af7ff61cb8971",
+  "bundle_sha256": "7eb7d2d215a7485262789c4711aa1d413ec116733494d420ebfdbe84ee5555bb",
+  "tick": 15,
+  "state": "finished",
+  "stop_reason": null,
+  "exit_code": 0,
+  "stdout_sha256": "db023406ac2e60eb4d5f7090856053bc761835317d7b1584b5eb8b18724342c9",
+  "stdout_bytes": 1924,
+  "stderr_bytes": 0,
+  "summary": {
+    "state": "finished",
+    "code": null,
+    "buildSha": "506548866dc6543a4406135e146af7ff61cb8971",
+    "items": [
+      {
+        "caseId": "33f41e2f-56b5-420c-8ee2-310201813d35",
+        "state": "succeeded",
+        "lastError": null,
+        "jobId": "saved_4f508ff1a034271e41d5e87e1acbef949cdb1e7360db80f949c5eb4ec2f55efa"
+      }
+    ],
+    "budget": {
+      "contentRequests": 6,
+      "generations": 3,
+      "countRequests": 3,
+      "reservedUpperBoundUsd": 2.136,
+      "unknownOutcomes": 0
+    },
+    "notifications": {
+      "state": "finished",
+      "code": null,
+      "queued": 10,
+      "deliveryConfirmed": false,
+      "attempts": [
+        {
+          "state": "provider_accepted",
+          "provider": "resend",
+          "provider_message_id": "77e007fd-90fa-4b2b-ae87-dd6a9a6ad3a0",
+          "error_code": null
+        },
+        {
+          "state": "provider_accepted",
+          "provider": "resend",
+          "provider_message_id": "1d3d6465-20ed-40d7-a6e7-d8c5db9a054a",
+          "error_code": null
+        }
+      ]
+    },
+    "health": {
+      "state": "available",
+      "code": null,
+      "data": {
+        "checked_at": "2026-09-11T01:46:20.857Z",
+        "last_activity_at": "2026-09-11T01:46:15.476Z",
+        "capability_expires_at": "2026-09-11T04:10:00.000Z",
+        "daily_claims": 2,
+        "total_claims": 2,
+        "daily_limit": 20,
+        "total_limit": 20,
+        "cases": [
+          {
+            "case_id": "33f41e2f-56b5-420c-8ee2-310201813d35",
+            "pending_requests": 14,
+            "authority_state": "missing",
+            "authority_expires_at": null
+          }
+        ]
+      }
+    }
+  }
+}

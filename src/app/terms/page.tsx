@@ -3,13 +3,18 @@ import Link from "next/link";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { formatPrice, productOffer } from "@/lib/product-offer";
-import { termsVersionLabel } from "@/lib/legal-terms";
+import { PriceTiers } from "@/components/landing/price-tiers";
+import { termsVersionLabel, resolveTermsPresentationVersion, RETAINED_TERMS_VERSION, REPORT_NOTIFICATION_NOTICE, privacyVersionHref, TERMS_VERSION } from "@/lib/legal-terms";
+import RetainedTerms20260907 from "@/components/legal/retained-terms-2026-09-07";
 import { guardStableAppEntrypoint } from "@/server/platform/capabilities/stable-next-entrypoint";
 
-export const metadata: Metadata = { title: "תנאי שימוש | Tivdoc" };
+export const metadata: Metadata = { alternates: { canonical: "/terms" }, title: "תנאי שימוש | Tivdoc" };
 
-export default async function TermsPage() {
+export default async function TermsPage({searchParams}: {searchParams:Promise<{version?:string|string[]}>}) {
   await guardStableAppEntrypoint("CEP-009");
+  const version=resolveTermsPresentationVersion((await searchParams)?.version);
+  if(version===RETAINED_TERMS_VERSION)return <RetainedTerms20260907 />;
+  if(version===null)return <><SiteHeader /><main id="main-content" className="legal-page"><div className="legal-shell"><h1>נוסח התנאים המבוקש אינו זמין כאן.</h1><p>לא מוצגים תנאים חדשים במקום הגרסה שנשמרה בהזמנה. אפשר לפנות לתמיכה מתוך התיק לבירור הגרסה.</p></div></main><SiteFooter /></>;
   return (
     <>
       <SiteHeader />
@@ -35,10 +40,17 @@ export default async function TermsPage() {
           <section>
             <h2>מה השירות מספק?</h2>
             <p>
-              Tivdoc קולט מידע ומסמכים ומבצע בדיקה ראשונית שעשויה להצביע על חריגות
+              Tivdoc הוא שירות בדיקת AI שקולט מידע ומסמכים ומבצע בדיקה ראשונית שעשויה להצביע על חריגות
               או פערים אפשריים בתלוש, בשכר ובזכויות בעבודה. היקף הבדיקה נקבע לפי
               המוצר שנרכש והמידע שנמסר, וייתכן שנבקש מסמכים או פרטים נוספים.
+              אין התחייבות לבדיקת איש מקצוע בכל דוח. פנייה לתמיכת המפעיל אינה אישור מקצועי לממצאים.
             </p>
+          </section>
+
+          <section>
+            <h2>הודעות על זמינות הדוח</h2>
+            <p>{REPORT_NOTIFICATION_NOTICE}</p>
+            <p>הסכמה לגרסה קודמת של התנאים אינה מתעדכנת בעקבות פרסום סעיף זה.</p>
           </section>
 
           <section>
@@ -68,9 +80,17 @@ export default async function TermsPage() {
                   is a sentence that becomes false the day the price changes. */}
               מחיר הבדיקה הראשונית הוא {formatPrice(productOffer().initial_check.price)}, כולל מע״מ ככל שחל. התשלום מתבצע דרך
               Invoice4u. פרטי כרטיס אינם נשמרים ב־Tivdoc, ורק אימות תשלום שהתקבל
-              בצד השרת מסמן את התשלום ואת תיק הבדיקה כ־paid. חזרה לעמוד Tivdoc ללא
+              בצד השרת מסמן את התשלום ואת תיק הבדיקה כשולמו. חזרה לעמוד Tivdoc ללא
               אימות כזה אינה הוכחת תשלום.
             </p>
+          </section>
+
+          <section>
+            <h2>הצעת שדרוג לדוח מלא</h2>
+            <p>המחיר הכולל נקבע לפי פער כספי מבוסס בחודשים שנבדקו בפועל. אין הכפלה לחודשים שלא נבדקו. הבדיקה הראשונית כוללת חודש אחד ועד שלושה נושאים; התוצאה ששולמה נשארת זמינה גם ללא שדרוג. הרכישה המלאה תיפתח רק כשאפשר למסור את הכיסוי המוצע.</p>
+            <PriceTiers />
+            <p>לפני רכישה יוצגו התקופה והנושאים הכלולים, המחיר הכולל, התשלום הראשוני המאומת שקוזז והיתרה לתשלום. הקיזוז ניתן פעם אחת לאותה זהות ולאותו תיק. הצעה תקפה לשבעה ימים; שינוי במידע לפני רכישה מחייב הצעה מעודכנת ואישור שלה. לאחר רכישה המחיר וההיקף שנרכשו נשמרים.</p>
+            <p>אם תיקון טעות בממצא מוריד את מדרגת המחיר באותו היקף שנרכש, תיפתח בקשה להחזר ההפרש. אם הפער המתוקן נמוך מסף השדרוג, תיפתח בקשה להחזר מלוא תשלום השדרוג. סכום שאינו ידוע אינו נחשב לאפס. הגדלת הפער בעקבות תיקון אינה יוצרת חיוב נוסף. בקשת החזר או אישורה אינם אישור שהכסף הוחזר; השלמת ההחזר תוצג רק לאחר אימות ספק התשלום.</p>
           </section>
 
           <section>
@@ -100,7 +120,7 @@ export default async function TermsPage() {
             <h2>פרטיות ומסמכים</h2>
             <p>
               איסוף המידע, השימוש בו, מסירתו לספקים, תקופות השמירה ובקשות עיון,
-              תיקון ומחיקה מפורטים ב־<Link className="text-link" href="/privacy">מדיניות הפרטיות</Link>.
+              תיקון ומחיקה מפורטים ב־<Link className="text-link" href={privacyVersionHref(TERMS_VERSION)}>מדיניות הפרטיות</Link>.
               המסמכים אינם נשלחים למעסיק ללא הוראה מפורשת ממך.
             </p>
           </section>

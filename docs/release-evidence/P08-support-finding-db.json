@@ -1,0 +1,13 @@
+{
+  "checks": [
+    "saved report resolves its retained old source, never the replacement",
+    "unreferenced version and foreign case are both refused",
+    "correction retry creates one pending request without changing the report",
+    "finding correction and its exact report/finding link appear once in the unified customer support thread",
+    "changed retry and cross-case correction cannot overwrite or attach"
+  ],
+  "fixtures": "synthetic rollback transaction; retained source metadata only",
+  "storage_bytes_verified": false,
+  "database": "tivdoc_release_replay_20260907",
+  "production": "untouched"
+}

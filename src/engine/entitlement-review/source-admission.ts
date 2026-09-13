@@ -1,0 +1,164 @@
+import {assertQuestionnaireSource} from './declarations.ts';
+import {canonicalSha256} from '../rule-runtime/canonical.ts';
+import type {DocumentReviewInput,ReviewDocument} from '../document-review/contracts.ts';
+import type {DocumentReviewSource} from '../document-review/calculations.ts';
+import {parseReviewCompletionInput,resolveReviewCompletion,reviewDeclaredAnswerValue} from '../document-review/completions.ts';
+import {entitlementEvidenceSchema,type EntitlementEvidence} from './contracts.ts';
+import {assertTypedPeriodDerivation} from './typed-product-facts.ts';
+import {isDeclaredPeriodSource} from './convalescence/product-facts.ts';
+import {minimumWageEntitlementInputSchema} from './minimum-wage/contracts.ts';
+import {materializeMinimumWageCaseFacts} from '../ai-release-decisions/minimum-wage-case.ts';
+import {pensionEntitlementInputSchema} from './pension/contracts.ts';
+import {replayPensionProductFacts} from './pension/product-facts.ts';
+import {convalescenceEntitlementInputSchema} from './convalescence/contracts.ts';
+import {replayConvalescenceCaseFacts} from './convalescence/product-decisions.ts';
+import {obligationsEntitlementInputSchema} from './obligations/contracts.ts';
+import {replayObligationProductFacts} from './obligations/case-replay.ts';
+import {OBLIGATIONS_CASE_POLICY} from './obligations/source-policy.ts';
+import {materializeTravelJourneyFacts} from './travel/journey-facts.ts';
+import {TRAVEL_JOURNEY_FACTS_POLICY} from './travel/product-facts.ts';
+import {assertProductAgeRangeMaterialization} from './age-range-materialization.ts';
+import {assertPensionSourceFacts} from './pension/source-facts.ts';
+import {obligationProductFactKey,type ObligationProductFactKey} from './obligations/product-facts.ts';
+import {vacationEntitlementInputSchema} from './vacation/contracts.ts';
+import {replayVacationProductFacts} from './vacation/product-facts.ts';
+import {vacationSourceFactKey} from './vacation/product-source-evidence.ts';
+import {workingTimeEntitlementInputSchema} from './working-time/contracts.ts';
+import {assertWorkingTimeAnswerTarget,isWorkingTimeRestDeclarationSource,assertWorkingTimeRestDerivation} from './working-time/product-facts.ts';
+import {assertWorkingTimeSourceFacts} from './working-time/source-facts.ts';
+import {travelEntitlementInputSchema} from './travel/contracts.ts';
+import {sharedPersonalAliasFact,sharedPersonalAnswerIsCurrent,assertSharedPersonalMaterialization} from './shared-product-facts.ts';
+
+/** Inspect source citations rather than treating a caller's 'known' or
+ * 'accepted' label as evidence. Legal sources are supplied by the selected
+ * compiled catalog; client documents come from the immutable saved input. */
+export function assertEntitlementSourcePacket(input:DocumentReviewInput,candidate:unknown,legalDocuments:readonly ReviewDocument[]):EntitlementEvidence{
+ const packet=entitlementEvidenceSchema.parse(candidate);
+ if(packet.case_id!==input.case_id||packet.order_id!==input.purchased_scope.order_id
+  ||packet.receipt_sha256!==input.purchased_scope.receipt_sha256
+  ||canonicalSha256(packet.period)!==canonicalSha256(input.period))throw Error('ENTITLEMENT_PACKET_SCOPE');
+ const documents=[...input.documents];
+ for(const law of legalDocuments){
+  const existing=documents.find(d=>d.document_id===law.document_id);
+  if(existing&&(existing.version_id!==law.version_id||existing.file_sha256!==law.file_sha256||existing.page_count!==law.page_count))throw Error('ENTITLEMENT_LEGAL_SOURCE_CHANGED');
+  if(existing)documents[documents.indexOf(existing)]=law;else documents.push(law);
+ }
+ const completion=parseReviewCompletionInput(input.completion_input);
+ assertSharedPersonalMaterialization(input,packet);
+ assertProductAgeRangeMaterialization(input,packet);
+ if(packet.pension){const pension=pensionEntitlementInputSchema.parse(packet.pension);if(pension.source_facts)assertPensionSourceFacts(pension,input);}
+ if(packet.obligations&&input.entitlement_evidence?.obligations){
+  const original=obligationsEntitlementInputSchema.parse(input.entitlement_evidence.obligations),effective=obligationsEntitlementInputSchema.parse(packet.obligations);
+  if(original.case_policy===OBLIGATIONS_CASE_POLICY&&canonicalSha256(original)!==canonicalSha256(effective)){
+   const expected=replayObligationProductFacts(effective,original,input);
+   if(canonicalSha256(expected.obligations.map(o=>({id:o.obligation_id,assessments:o.assessments})))!==canonicalSha256(effective.obligations.map(o=>({id:o.obligation_id,assessments:o.assessments}))))throw Error('OBLIGATION_CASE_ASSESSMENT_REPLAY');
+  }
+ }
+ for(const raw of packet.working_time===undefined?[]:workingTimeEntitlementInputSchema.array().min(1).max(6).parse(packet.working_time)){const b=workingTimeEntitlementInputSchema.parse(raw);if(b.product_facts?.schema_version==='working-time-product-facts-v2')assertWorkingTimeSourceFacts(b,input);}
+ function citation(value:DocumentReviewSource){
+  if(value.reading==='questionnaire_declaration'){assertQuestionnaireSource(input,value);return;}
+  if(value.reading==='customer_declaration'){
+   const history=input.answer_history.find(h=>h.receipt.request_id===value.document_id
+    &&`${h.receipt.request_id}:${h.receipt.answer_revision}`===value.version_id
+    &&h.receipt.answer_sha256===value.file_sha256&&h.receipt.answer_sha256===value.reading_receipt_sha256);
+   if(!history||history.receipt.case_id!==input.case_id||history.request.target.required_evidence_kind!=='customer_declaration')throw Error('ENTITLEMENT_ANSWER_SOURCE_REQUIRED');
+   const r=history.receipt;
+   if(!sharedPersonalAnswerIsCurrent(input,r.answer_sha256)){
+    const admitted=resolveReviewCompletion({request:history.request,current:completion,actor:{case_id:input.case_id,identity_id:r.identity_id},
+     answer:{request_id:r.request_id,revision:r.answer_revision,answered_at:r.answered_at,state:r.state,value:r.value}});
+    if(admitted.state==='stale'||admitted.requires_source_verification||admitted.receipt.answer_sha256!==r.answer_sha256)throw Error('ENTITLEMENT_ANSWER_SOURCE_STALE');
+   }
+   const newer=input.answer_history.some(h=>h.receipt.request_id===r.request_id&&h.receipt.answer_revision>r.answer_revision);
+   if(newer)throw Error('ENTITLEMENT_ANSWER_SOURCE_REPLACED');
+   return;
+  }
+  const document=documents.find(d=>d.document_id===value.document_id&&d.version_id===value.version_id);
+  if(!document||document.case_id!==input.case_id||document.file_sha256!==value.file_sha256
+   ||document.page_count===null||value.page<1||value.page>document.page_count
+   ||![document.reading_sha256,...(document.accepted_reading_sha256??[])].includes(value.reading_receipt_sha256))throw Error('ENTITLEMENT_READING_SOURCE_BINDING');
+  if(value.reading==='source_research'&&!legalDocuments.some(d=>canonicalSha256(d)===canonicalSha256(document)))throw Error('ENTITLEMENT_LEGAL_SOURCE_REQUIRED');
+ }
+ let nodes=0;
+ function visit(value:unknown,depth=0,path=''):void{
+  if(++nodes>25000||depth>35)throw Error('ENTITLEMENT_PACKET_BOUNDS');
+  if(!value||typeof value!=='object')return;
+  if(Array.isArray(value)){for(const [i,item]of value.entries())visit(item,depth+1,path+'.'+i);return;}
+  const object=value as Record<string,unknown>;
+  if(path==='travel.commute_days'&&object.state==='declared'&&input.entitlement_evidence?.travel&&packet.travel){
+   const original=travelEntitlementInputSchema.parse(input.entitlement_evidence.travel),effective=travelEntitlementInputSchema.parse(packet.travel);
+   if(original.product_facts?.schema_version===TRAVEL_JOURNEY_FACTS_POLICY&&original.commute_days===null){
+    const expected=materializeTravelJourneyFacts(effective,original,input).commute_days;
+    if(canonicalSha256(expected)!==canonicalSha256(object))throw Error('TRAVEL_JOURNEY_SOURCE_REPLAY');
+   }
+  }
+  if(object.state==='derived'&&path==='convalescence.population'){
+   if(!input.entitlement_evidence?.convalescence||!packet.convalescence)throw Error('CV_DERIVED_POPULATION_KEY');
+   const raw=convalescenceEntitlementInputSchema.parse(input.entitlement_evidence.convalescence),effective=convalescenceEntitlementInputSchema.parse(packet.convalescence);
+   const expected=replayConvalescenceCaseFacts(effective,raw,input).population;
+   if(raw.source_gates_policy!=='cv-source-gates-v2'||!raw.case_recipe_bindings?.length||canonicalSha256(expected)!==canonicalSha256(object))throw Error('CV_DERIVED_POPULATION_REPLAY');
+  }
+  if(object.state==='derived'&&path.startsWith('vacation.')){
+   if(!['vacation.facts.aged_21_or_more','vacation.facts.under_60','vacation.derived_seniority'].includes(path)||!input.entitlement_evidence?.vacation||!packet.vacation)throw Error('VACATION_DERIVED_FACT_KEY');
+   const raw=vacationEntitlementInputSchema.parse(input.entitlement_evidence.vacation),effective=vacationEntitlementInputSchema.parse(packet.vacation),replay=replayVacationProductFacts(effective,raw,input);
+   const expected=path==='vacation.derived_seniority'?replay.derived_seniority:Reflect.get(replay.facts,path.slice('vacation.facts.'.length));
+   if(!raw.case_recipe_bindings?.length||canonicalSha256(expected??null)!==canonicalSha256(object))throw Error('VACATION_DERIVED_FACT_REPLAY');
+  }
+  if(object.state==='derived'&&path.startsWith('pension.')){
+   const key=path.slice('pension.facts.'.length);
+   if(!['pension.facts.aged_21_or_more','pension.facts.under_60'].includes(path)||!input.entitlement_evidence?.pension||!packet.pension)throw Error('PENSION_DERIVED_FACT_KEY');
+   const raw=pensionEntitlementInputSchema.parse(input.entitlement_evidence.pension),effective=pensionEntitlementInputSchema.parse(packet.pension);
+   const replay=replayPensionProductFacts(effective,raw,input);
+   if(!raw.case_recipe_bindings?.length||canonicalSha256(Reflect.get(replay.facts,key))!==canonicalSha256(object))throw Error('PENSION_DERIVED_FACT_REPLAY');
+  }
+  if(object.state==='derived'&&path.startsWith('minimum_wage.')){
+   const key=path.slice('minimum_wage.'.length);
+   if(!['population','employment','method','eligible_pay_inventory'].includes(key)||!input.entitlement_evidence?.minimum_wage||!packet.minimum_wage)throw Error('MW_CASE_DERIVED_FACT_KEY');
+   const raw=minimumWageEntitlementInputSchema.parse(input.entitlement_evidence.minimum_wage),effective=minimumWageEntitlementInputSchema.parse(packet.minimum_wage);
+   const replay=materializeMinimumWageCaseFacts(effective,raw,input);
+   if(!raw.case_recipe_bindings?.length||canonicalSha256(Reflect.get(replay,key))!==canonicalSha256(object))throw Error('MW_CASE_DERIVED_FACT_REPLAY');
+  }
+  // A source pointer is not permission to replace the receipt's answer value.
+  const boundSource=object.source as DocumentReviewSource|undefined;
+  if(boundSource?.reading==='questionnaire_declaration')assertQuestionnaireSource(input,boundSource,object.value);
+  if(boundSource?.reading==='customer_declaration'&&('value' in object||'printed_value' in object)){
+   const h=input.answer_history.find(h=>h.receipt.answer_sha256===boundSource.reading_receipt_sha256);
+   const supplied='printed_value' in object?object.printed_value:object.value;
+   const shared=sharedPersonalAliasFact(input,packet,path,object);
+   const personal=/^(minimum_wage|pension|travel|vacation|convalescence)\.(product_facts\.[a-z_]+)$/u.exec(path);
+   const obligation=/^obligations\.obligations\.(\d+)\.product_facts\.([a-z_]+)$/u.exec(path);
+   if(obligation){
+    const branch=obligationsEntitlementInputSchema.parse(packet.obligations),item=branch.obligations[Number(obligation[1])],key=obligation[2];
+    const keys:readonly string[]=['agreement_used_for_employment','agreement_made_or_renewed_on','changes_or_side_terms','employer_disputes_term'];
+    if(!item?.product_facts||!keys.includes(key)||!h||h.request.target.fact_key!==obligationProductFactKey(branch,item,key as ObligationProductFactKey))throw Error('OBLIGATION_PRODUCT_ANSWER_TARGET');
+   }
+   if(personal&&!shared){
+    const branch=personal[1]==='pension'?pensionEntitlementInputSchema.parse(packet.pension):personal[1]==='travel'?travelEntitlementInputSchema.parse(packet.travel):personal[1]==='vacation'?vacationEntitlementInputSchema.parse(packet.vacation):personal[1]==='convalescence'?convalescenceEntitlementInputSchema.parse(packet.convalescence):minimumWageEntitlementInputSchema.parse(packet.minimum_wage);
+    const pins=input.documents.filter(d=>branch.source_manifest.some(m=>m.kind==='case_document'&&m.document_id===d.document_id)).map(d=>({case_id:d.case_id,document_id:d.document_id,version_id:d.version_id,source_sha256:d.file_sha256}));
+    const sourceFact=personal[1]==='vacation'&&['product_facts.same_employer_or_workplace','product_facts.preceding_quarter_full_months'].includes(personal[2]);
+    const key=sourceFact?vacationSourceFactKey(personal[2]==='product_facts.same_employer_or_workplace'?'same_employer_or_workplace':'preceding_quarter_full_months'):personal[1]==='pension'?`entitlement.pension.${canonicalSha256({period:input.period,pins,path:personal[2]}).slice(0,32)}`
+     :`entitlement.${personal[1]}.${canonicalSha256({period:input.period,pins,path:personal[2],key:'personal.'+personal[2]}).slice(0,28)}`;
+    if(!h||h.request.target.fact_key!==key)throw Error('ENTITLEMENT_PERSONAL_ANSWER_TARGET');
+   }
+   const work=/^working_time\.(\d+)\.(.+)$/u.exec(path),workBranch=work?workingTimeEntitlementInputSchema.array().min(1).max(6).parse(packet.working_time)[Number(work[1])]:null;
+   if(work&&workBranch&&!shared&&work[2].startsWith('product_facts.'))assertWorkingTimeAnswerTarget(input,workBranch,work[2],object);
+   if(isWorkingTimeRestDeclarationSource(boundSource)){
+    if(!workBranch||work?.[2]!=='rest_window'||!h||!assertWorkingTimeRestDerivation(workBranch,object))throw Error('WT_DECLARED_REST_CHANGED');
+   }else if(isDeclaredPeriodSource(boundSource)){
+    if(!h||!assertTypedPeriodDerivation(packet,path,object))throw Error('ENTITLEMENT_DECLARED_PERIOD_CHANGED');
+   }else if(!shared&&(!h||(h.receipt.state==='provided'?String(supplied)!==String(reviewDeclaredAnswerValue(h.request.target,h.receipt.value))&&!(supplied==='ongoing'&&h.receipt.value==='העבודה נמשכת'):supplied!==null)))throw Error('ENTITLEMENT_ANSWER_VALUE_CHANGED');
+  }
+  if('reading_receipt_sha256'in object&&'document_id'in object&&'file_sha256'in object) citation(object as DocumentReviewSource);
+  if('source_manifest'in object){
+   if(!Array.isArray(object.source_manifest))throw Error('ENTITLEMENT_MANIFEST_REQUIRED');
+   for(const item of object.source_manifest){
+    const pin=item as Record<string,unknown>,document=documents.find(d=>d.document_id===pin.document_id&&d.version_id===pin.version_id);
+    if(pin.kind==='customer_answer'||pin.kind==='questionnaire')continue; // Each answer citation is admitted above and rechecked by the calculation executor.
+    if(!document||document.file_sha256!==pin.file_sha256||document.page_count!==pin.page_count
+     ||(pin.kind==='legal_source'?pin.case_id!==null:pin.case_id!==input.case_id))throw Error('ENTITLEMENT_MANIFEST_BINDING');
+   }
+  }
+  for(const [key,item]of Object.entries(object))visit(item,depth+1,path?path+'.'+key:key);
+ }
+ visit(packet);
+ return packet;
+}

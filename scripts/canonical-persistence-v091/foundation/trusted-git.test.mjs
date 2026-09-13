@@ -34,6 +34,17 @@ describe.skipIf(process.platform !== "win32")("V0.9.1 trusted Git foundation", (
     expect(receipt.index_entries_checked).toBeGreaterThan(0);
   });
 
+  it("validates linked worktree pointers and still rejects a forged backlink", async () => {
+    const root = await createRepository();
+    const linked = path.join(root, "linked");
+    rawGit(root, ["worktree", "add", "--detach", linked, "HEAD"]);
+    const receipt = assertTrustedGitRepository(linked);
+    expect(receipt.common_dir).not.toBe(receipt.git_dir);
+    const backlink = path.join(receipt.git_dir, "gitdir");
+    await writeFile(backlink, path.join(root, "wrong", ".git"));
+    expect(() => assertTrustedGitRepository(linked)).toThrow("TRUSTED_GIT_WORKTREE_BACKLINK_MISMATCH");
+  });
+
   it("ignores hostile inherited GIT_* variables", () => {
     const poisoned = {
       GIT_CONFIG_COUNT: "1",

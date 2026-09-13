@@ -1,0 +1,13 @@
+{
+  "month": "2026-06",
+  "hours": "182",
+  "rateMinor": null,
+  "monthlyMinor": 644385,
+  "divisor": 182,
+  "expectedMinor": 644385,
+  "recordedMinor": 644385,
+  "gapMinor": 0,
+  "publishedHourlyGapMinor": 24000,
+  "rounding": "half_up_only_at_final_minor_unit",
+  "humanApproval": false
+}

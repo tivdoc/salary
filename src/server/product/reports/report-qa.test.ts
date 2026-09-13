@@ -84,10 +84,10 @@ describe("D-10.2 / D-10.3 — which reports a person must read", () => {
     expect(publicationDecision(ranged, { documentTrack: "automatic" }).reasons).toEqual(["finding_over_ceiling"]);
   });
 
-  it("does not treat a not-checked topic as a reason on its own", () => {
+  it("does not publish a status update with zero checked topics", () => {
     // Nothing was claimed about these topics, so there is nothing to review.
-    expect(publicationDecision(ALL_AWAITING_VERIFICATION, { documentTrack: "automatic" }).automatic).toBe(true);
-    expect(publicationDecision(S06_REFUSED, { documentTrack: "automatic" }).automatic).toBe(true);
+    expect(publicationDecision(ALL_AWAITING_VERIFICATION, { documentTrack: "automatic" }).automatic).toBe(false);
+    expect(publicationDecision(S06_REFUSED, { documentTrack: "automatic" }).automatic).toBe(false);
   });
 
   it("gives every reason a sentence, and keeps them in one order", () => {
@@ -154,7 +154,8 @@ describe("S6.1 — the queue, the wording and the log", () => {
     const before = JSON.stringify(S05_LOW_CERTAINTY);
     const queued = await recordPublicationDecision({ caseId: CASE_ID, projectionId: PROJECTION_ID, projection: S05_LOW_CERTAINTY, documentTrack: "automatic" }, db);
     await setWording({ qaId: queued.row!.id, operator: OPERATOR, wording: { minimum_wage: "מה שחסר כאן הוא אישור שלך על מספר השעות." } }, db);
-    const published = await decideReview({ qaId: queued.row!.id, state: "published", operator: OPERATOR, reviewSeconds: 240 }, db);
+    await decideReview({ qaId: queued.row!.id, fingerprint:'a'.repeat(64), state: "approved", operator: OPERATOR, reviewSeconds: 240 }, db);
+    const published = await decideReview({ qaId: queued.row!.id, fingerprint:'a'.repeat(64), state: "published", operator: OPERATOR, reviewSeconds: 240 }, db);
 
     expect(published?.state).toBe("published");
     expect(published?.operator_identity).toBe(OPERATOR);
@@ -169,7 +170,7 @@ describe("S6.1 — the queue, the wording and the log", () => {
   it("will not decide without an operator", async () => {
     const db = fakeCaseAccessDb([CASE]);
     const queued = await recordPublicationDecision({ caseId: CASE_ID, projectionId: PROJECTION_ID, projection: S05_LOW_CERTAINTY, documentTrack: "automatic" }, db);
-    await expect(decideReview({ qaId: queued.row!.id, state: "published", operator: " " }, db)).rejects.toThrow("CASE_REPORT_QA_OPERATOR_REQUIRED");
+    await expect(decideReview({ qaId: queued.row!.id, fingerprint:'a'.repeat(64), state: "published", operator: " " }, db)).rejects.toThrow("CASE_REPORT_QA_OPERATOR_REQUIRED");
     expect(db.report_qa[0]!.state).toBe("queued");
   });
 
@@ -177,9 +178,10 @@ describe("S6.1 — the queue, the wording and the log", () => {
     const db = fakeCaseAccessDb([CASE]);
     const queued = await recordPublicationDecision({ caseId: CASE_ID, projectionId: PROJECTION_ID, projection: S05_LOW_CERTAINTY, documentTrack: "automatic" }, db);
     await setWording({ qaId: queued.row!.id, operator: OPERATOR, wording: { minimum_wage: "ניסוח שעבר בקרה אנושית" } }, db);
-    await decideReview({ qaId: queued.row!.id, state: "published", operator: OPERATOR }, db);
+    await decideReview({ qaId: queued.row!.id, fingerprint:'a'.repeat(64), state: "approved", operator: OPERATOR }, db);
+    await decideReview({ qaId: queued.row!.id, fingerprint:'a'.repeat(64), state: "published", operator: OPERATOR }, db);
 
-    expect(db.report_qa_log.map((line) => line.action)).toEqual(["queued", "wording_edited", "published"]);
+    expect(db.report_qa_log.map((line) => line.action)).toEqual(["queued", "wording_edited", "approved", "published"]);
     expect(db.report_qa_log.every((line) => line.operator_identity.length > 1)).toBe(true);
   });
 });
@@ -188,7 +190,8 @@ describe("S6.2 — a parameter changed", () => {
   it("returns published reports that used the parameter to the queue, and leaves the rest alone", async () => {
     const db = fakeCaseAccessDb([CASE]);
     const queued = await recordPublicationDecision({ caseId: CASE_ID, projectionId: PROJECTION_ID, projection: S05_LOW_CERTAINTY, documentTrack: "automatic" }, db);
-    await decideReview({ qaId: queued.row!.id, state: "published", operator: OPERATOR }, db);
+    await decideReview({ qaId: queued.row!.id, fingerprint:'a'.repeat(64), state: "approved", operator: OPERATOR }, db);
+    await decideReview({ qaId: queued.row!.id, fingerprint:'a'.repeat(64), state: "published", operator: OPERATOR }, db);
 
     const used = Object.keys(S05_LOW_CERTAINTY.topics.find((topic) => Object.keys(topic.parameter_grades).length > 0)!.parameter_grades)[0]!;
     expect(reportsTouchedByParameter([{ qaId: queued.row!.id, projection: S05_LOW_CERTAINTY }], used)).toEqual([queued.row!.id]);

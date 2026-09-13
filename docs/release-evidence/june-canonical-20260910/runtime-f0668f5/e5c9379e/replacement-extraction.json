@@ -1,0 +1,1820 @@
+{
+  "run": {
+    "result": {
+      "first_pass": {
+        "kind": "first_pass",
+        "model": "synthetic-june-canonical-injected",
+        "pass_id": "42163b82-7349-4004-ad5b-b6c04d351271",
+        "validation": {
+          "issues": [],
+          "status": "valid",
+          "field_assessments": [
+            {
+              "field": "document_type",
+              "status": "valid",
+              "issue_codes": [],
+              "candidate_id": "951be523-8cd2-478a-a1fe-d04913988932"
+            },
+            {
+              "field": "salary_period",
+              "status": "valid",
+              "issue_codes": [],
+              "candidate_id": "01dc9502-5395-4c78-8167-e3e092f6dd86"
+            },
+            {
+              "field": "salary_type",
+              "status": "valid",
+              "issue_codes": [],
+              "candidate_id": "54f6e61f-8fc3-4289-b7ee-c7cfb243b5de"
+            },
+            {
+              "field": "regular_hours",
+              "status": "valid",
+              "issue_codes": [],
+              "candidate_id": "e140fda3-fe13-4419-84c9-1c647d284f32"
+            },
+            {
+              "field": "hourly_rate",
+              "status": "valid",
+              "issue_codes": [],
+              "candidate_id": "97a1ddaf-f48d-4f6a-9a74-9d9f81d33dff"
+            },
+            {
+              "field": "base_monthly_salary",
+              "status": "valid",
+              "issue_codes": [],
+              "candidate_id": "bf9d3b59-555f-472a-8ce7-f93540d7c51e"
+            },
+            {
+              "field": "gross_salary",
+              "status": "valid",
+              "issue_codes": [],
+              "candidate_id": "bbc8108c-3964-4ade-a18e-238dd26166aa"
+            },
+            {
+              "field": "total_deductions",
+              "status": "valid",
+              "issue_codes": [],
+              "candidate_id": "7afc3f3d-37ee-4962-a209-b73a36949229"
+            },
+            {
+              "field": "net_salary",
+              "status": "valid",
+              "issue_codes": [],
+              "candidate_id": "fa433ffd-e547-4675-8f55-f8fe2586d7b7"
+            }
+          ]
+        },
+        "prompt_version": "payslip-extraction-openai-v2-first-r4",
+        "raw_extraction": {
+          "fields": [
+            {
+              "field": "document_type",
+              "source": {
+                "page": 1,
+                "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5",
+                "text_fragment": "document type"
+              },
+              "raw_value": "payslip",
+              "confidence": 0.96,
+              "candidate_id": "951be523-8cd2-478a-a1fe-d04913988932",
+              "warning_flags": [],
+              "extraction_method": "ai_vision"
+            },
+            {
+              "field": "salary_period",
+              "source": {
+                "page": 1,
+                "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5",
+                "text_fragment": "Period: 06/2026"
+              },
+              "raw_value": "06/2026",
+              "confidence": 0.94,
+              "candidate_id": "01dc9502-5395-4c78-8167-e3e092f6dd86",
+              "warning_flags": [],
+              "extraction_method": "ai_vision"
+            },
+            {
+              "field": "salary_type",
+              "source": {
+                "page": 1,
+                "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5",
+                "text_fragment": "Salary type: hourly"
+              },
+              "raw_value": "hourly",
+              "confidence": 0.94,
+              "candidate_id": "54f6e61f-8fc3-4289-b7ee-c7cfb243b5de",
+              "warning_flags": [],
+              "extraction_method": "ai_vision"
+            },
+            {
+              "field": "regular_hours",
+              "source": {
+                "page": 1,
+                "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5",
+                "text_fragment": "Synthetic regular base salary: 100"
+              },
+              "raw_value": "100",
+              "confidence": 0.94,
+              "candidate_id": "e140fda3-fe13-4419-84c9-1c647d284f32",
+              "warning_flags": [],
+              "extraction_method": "ai_vision"
+            },
+            {
+              "field": "hourly_rate",
+              "source": {
+                "page": 1,
+                "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5",
+                "text_fragment": "Synthetic regular base salary: 33.00"
+              },
+              "raw_value": "33.00",
+              "confidence": 0.94,
+              "candidate_id": "97a1ddaf-f48d-4f6a-9a74-9d9f81d33dff",
+              "warning_flags": [],
+              "extraction_method": "ai_vision"
+            },
+            {
+              "field": "base_monthly_salary",
+              "source": {
+                "page": 1,
+                "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5",
+                "text_fragment": "Synthetic regular base salary: 3300.00"
+              },
+              "raw_value": "3300.00",
+              "confidence": 0.94,
+              "candidate_id": "bf9d3b59-555f-472a-8ce7-f93540d7c51e",
+              "warning_flags": [],
+              "extraction_method": "ai_vision"
+            },
+            {
+              "field": "gross_salary",
+              "source": {
+                "page": 1,
+                "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5",
+                "text_fragment": "Synthetic regular base salary: 3300.00"
+              },
+              "raw_value": "3300.00",
+              "confidence": 0.94,
+              "candidate_id": "bbc8108c-3964-4ade-a18e-238dd26166aa",
+              "warning_flags": [],
+              "extraction_method": "ai_vision"
+            },
+            {
+              "field": "total_deductions",
+              "source": {
+                "page": 1,
+                "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5",
+                "text_fragment": "Synthetic regular base salary: 0.00"
+              },
+              "raw_value": "0.00",
+              "confidence": 0.94,
+              "candidate_id": "7afc3f3d-37ee-4962-a209-b73a36949229",
+              "warning_flags": [],
+              "extraction_method": "ai_vision"
+            },
+            {
+              "field": "net_salary",
+              "source": {
+                "page": 1,
+                "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5",
+                "text_fragment": "Synthetic regular base salary: 3300.00"
+              },
+              "raw_value": "3300.00",
+              "confidence": 0.94,
+              "candidate_id": "fa433ffd-e547-4675-8f55-f8fe2586d7b7",
+              "warning_flags": [],
+              "extraction_method": "ai_vision"
+            }
+          ],
+          "status": "completed",
+          "provider": {
+            "provider_id": "openai",
+            "model_version": "synthetic-june-canonical-injected",
+            "extractor_version": "2.0"
+          },
+          "warnings": [],
+          "operation": {
+            "duration_ms": 9,
+            "token_usage": null,
+            "provider_response_id": "synthetic-june-canonical-e7537a7b-2085-4f1d-a9eb-f757b0b63421"
+          },
+          "error_code": null,
+          "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5",
+          "extracted_at": "2026-09-10T15:16:34.260Z",
+          "extraction_id": "42163b82-7349-4004-ad5b-b6c04d351271",
+          "quality_metrics": {
+            "page_count": 1,
+            "text_coverage": null,
+            "rotation_degrees": 0,
+            "source_resolution_dpi": null
+          },
+          "sensitive_metadata": [],
+          "additional_components": [
+            {
+              "source": {
+                "page": 1,
+                "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5",
+                "text_fragment": "Regular base salary"
+              },
+              "rate_raw": "33.00",
+              "amount_raw": "3300.00",
+              "confidence": 0.94,
+              "component_id": "0b9ef190-237c-452a-8a02-88bff8112b3a",
+              "quantity_raw": "100",
+              "source_label": "Regular base salary",
+              "semantic_kind": "hourly_base",
+              "warning_flags": [],
+              "percentage_raw": null,
+              "normalized_label": "hourly_base",
+              "extraction_method": "ai_vision"
+            }
+          ],
+          "detected_document_type": "payslip",
+          "document_quality_confidence": 0.96,
+          "earnings_components_complete": true
+        },
+        "requested_fields": [
+          "document_type",
+          "salary_period",
+          "employment_start_date",
+          "salary_type",
+          "base_monthly_salary",
+          "hourly_rate",
+          "regular_hours",
+          "overtime_125_hours",
+          "overtime_150_hours",
+          "gross_salary",
+          "total_deductions",
+          "net_salary",
+          "travel_amount",
+          "convalescence_amount",
+          "pension_employee_contribution",
+          "pension_employer_contribution",
+          "severance_contribution",
+          "pension_base",
+          "pension_employee_rate",
+          "pension_employer_rate",
+          "severance_rate",
+          "vacation_balance",
+          "sick_balance"
+        ],
+        "selected_regions": [],
+        "confidence_assessment": {
+          "decisions": [
+            {
+              "field": "salary_period",
+              "status": "needs_confirmation",
+              "threshold": 0.95,
+              "applicable": true,
+              "reason_codes": [
+                "below_field_threshold"
+              ],
+              "candidate_ids": [
+                "01dc9502-5395-4c78-8167-e3e092f6dd86"
+              ],
+              "effective_confidence": 0.94
+            },
+            {
+              "field": "salary_type",
+              "status": "needs_confirmation",
+              "threshold": 0.95,
+              "applicable": true,
+              "reason_codes": [
+                "below_field_threshold"
+              ],
+              "candidate_ids": [
+                "54f6e61f-8fc3-4289-b7ee-c7cfb243b5de"
+              ],
+              "effective_confidence": 0.94
+            },
+            {
+              "field": "gross_salary",
+              "status": "needs_confirmation",
+              "threshold": 0.95,
+              "applicable": true,
+              "reason_codes": [
+                "below_field_threshold"
+              ],
+              "candidate_ids": [
+                "bbc8108c-3964-4ade-a18e-238dd26166aa"
+              ],
+              "effective_confidence": 0.94
+            },
+            {
+              "field": "total_deductions",
+              "status": "needs_confirmation",
+              "threshold": 0.95,
+              "applicable": true,
+              "reason_codes": [
+                "below_field_threshold"
+              ],
+              "candidate_ids": [
+                "7afc3f3d-37ee-4962-a209-b73a36949229"
+              ],
+              "effective_confidence": 0.94
+            },
+            {
+              "field": "net_salary",
+              "status": "needs_confirmation",
+              "threshold": 0.95,
+              "applicable": true,
+              "reason_codes": [
+                "below_field_threshold"
+              ],
+              "candidate_ids": [
+                "fa433ffd-e547-4675-8f55-f8fe2586d7b7"
+              ],
+              "effective_confidence": 0.94
+            },
+            {
+              "field": "hourly_rate",
+              "status": "needs_confirmation",
+              "threshold": 0.95,
+              "applicable": true,
+              "reason_codes": [
+                "below_field_threshold"
+              ],
+              "candidate_ids": [
+                "97a1ddaf-f48d-4f6a-9a74-9d9f81d33dff"
+              ],
+              "effective_confidence": 0.94
+            },
+            {
+              "field": "regular_hours",
+              "status": "needs_confirmation",
+              "threshold": 0.95,
+              "applicable": true,
+              "reason_codes": [
+                "below_field_threshold"
+              ],
+              "candidate_ids": [
+                "e140fda3-fe13-4419-84c9-1c647d284f32"
+              ],
+              "effective_confidence": 0.94
+            },
+            {
+              "field": "pension_base",
+              "status": "not_applicable",
+              "threshold": 0.95,
+              "applicable": false,
+              "reason_codes": [],
+              "candidate_ids": [],
+              "effective_confidence": 0
+            },
+            {
+              "field": "pension_employee_contribution",
+              "status": "not_applicable",
+              "threshold": 0.95,
+              "applicable": false,
+              "reason_codes": [],
+              "candidate_ids": [],
+              "effective_confidence": 0
+            },
+            {
+              "field": "pension_employer_contribution",
+              "status": "not_applicable",
+              "threshold": 0.95,
+              "applicable": false,
+              "reason_codes": [],
+              "candidate_ids": [],
+              "effective_confidence": 0
+            },
+            {
+              "field": "severance_contribution",
+              "status": "not_applicable",
+              "threshold": 0.95,
+              "applicable": false,
+              "reason_codes": [],
+              "candidate_ids": [],
+              "effective_confidence": 0
+            },
+            {
+              "field": "overtime_125_hours",
+              "status": "not_applicable",
+              "threshold": 0.95,
+              "applicable": false,
+              "reason_codes": [],
+              "candidate_ids": [],
+              "effective_confidence": 0
+            },
+            {
+              "field": "overtime_150_hours",
+              "status": "not_applicable",
+              "threshold": 0.95,
+              "applicable": false,
+              "reason_codes": [],
+              "candidate_ids": [],
+              "effective_confidence": 0
+            }
+          ]
+        },
+        "normalized_extraction": {
+          "fields": [
+            {
+              "field": "document_type",
+              "source": {
+                "page": 1,
+                "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5",
+                "text_fragment": "document type"
+              },
+              "raw_value": "payslip",
+              "confidence": 0.96,
+              "candidate_id": "951be523-8cd2-478a-a1fe-d04913988932",
+              "warning_flags": [],
+              "normalized_value": "payslip",
+              "extraction_method": "ai_vision"
+            },
+            {
+              "field": "salary_period",
+              "source": {
+                "page": 1,
+                "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5",
+                "text_fragment": "Period: 06/2026"
+              },
+              "raw_value": "06/2026",
+              "confidence": 0.94,
+              "candidate_id": "01dc9502-5395-4c78-8167-e3e092f6dd86",
+              "warning_flags": [],
+              "normalized_value": {
+                "year": 2026,
+                "month": 6,
+                "end_date": "2026-06-30",
+                "start_date": "2026-06-01"
+              },
+              "extraction_method": "ai_vision"
+            },
+            {
+              "field": "salary_type",
+              "source": {
+                "page": 1,
+                "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5",
+                "text_fragment": "Salary type: hourly"
+              },
+              "raw_value": "hourly",
+              "confidence": 0.94,
+              "candidate_id": "54f6e61f-8fc3-4289-b7ee-c7cfb243b5de",
+              "warning_flags": [],
+              "normalized_value": "hourly",
+              "extraction_method": "ai_vision"
+            },
+            {
+              "field": "regular_hours",
+              "source": {
+                "page": 1,
+                "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5",
+                "text_fragment": "Synthetic regular base salary: 100"
+              },
+              "raw_value": "100",
+              "confidence": 0.94,
+              "candidate_id": "e140fda3-fe13-4419-84c9-1c647d284f32",
+              "warning_flags": [],
+              "normalized_value": {
+                "unit": "hours_per_month",
+                "amount": "100"
+              },
+              "extraction_method": "ai_vision"
+            },
+            {
+              "field": "hourly_rate",
+              "source": {
+                "page": 1,
+                "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5",
+                "text_fragment": "Synthetic regular base salary: 33.00"
+              },
+              "raw_value": "33.00",
+              "confidence": 0.94,
+              "candidate_id": "97a1ddaf-f48d-4f6a-9a74-9d9f81d33dff",
+              "warning_flags": [],
+              "normalized_value": {
+                "currency": "ILS",
+                "minor_units": 3300
+              },
+              "extraction_method": "ai_vision"
+            },
+            {
+              "field": "base_monthly_salary",
+              "source": {
+                "page": 1,
+                "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5",
+                "text_fragment": "Synthetic regular base salary: 3300.00"
+              },
+              "raw_value": "3300.00",
+              "confidence": 0.94,
+              "candidate_id": "bf9d3b59-555f-472a-8ce7-f93540d7c51e",
+              "warning_flags": [],
+              "normalized_value": {
+                "currency": "ILS",
+                "minor_units": 330000
+              },
+              "extraction_method": "ai_vision"
+            },
+            {
+              "field": "gross_salary",
+              "source": {
+                "page": 1,
+                "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5",
+                "text_fragment": "Synthetic regular base salary: 3300.00"
+              },
+              "raw_value": "3300.00",
+              "confidence": 0.94,
+              "candidate_id": "bbc8108c-3964-4ade-a18e-238dd26166aa",
+              "warning_flags": [],
+              "normalized_value": {
+                "currency": "ILS",
+                "minor_units": 330000
+              },
+              "extraction_method": "ai_vision"
+            },
+            {
+              "field": "total_deductions",
+              "source": {
+                "page": 1,
+                "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5",
+                "text_fragment": "Synthetic regular base salary: 0.00"
+              },
+              "raw_value": "0.00",
+              "confidence": 0.94,
+              "candidate_id": "7afc3f3d-37ee-4962-a209-b73a36949229",
+              "warning_flags": [],
+              "normalized_value": {
+                "currency": "ILS",
+                "minor_units": 0
+              },
+              "extraction_method": "ai_vision"
+            },
+            {
+              "field": "net_salary",
+              "source": {
+                "page": 1,
+                "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5",
+                "text_fragment": "Synthetic regular base salary: 3300.00"
+              },
+              "raw_value": "3300.00",
+              "confidence": 0.94,
+              "candidate_id": "fa433ffd-e547-4675-8f55-f8fe2586d7b7",
+              "warning_flags": [],
+              "normalized_value": {
+                "currency": "ILS",
+                "minor_units": 330000
+              },
+              "extraction_method": "ai_vision"
+            }
+          ],
+          "status": "completed",
+          "provider": {
+            "provider_id": "openai",
+            "model_version": "synthetic-june-canonical-injected",
+            "extractor_version": "2.0"
+          },
+          "warnings": [],
+          "operation": {
+            "duration_ms": 9,
+            "token_usage": null,
+            "provider_response_id": "synthetic-june-canonical-e7537a7b-2085-4f1d-a9eb-f757b0b63421"
+          },
+          "error_code": null,
+          "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5",
+          "extracted_at": "2026-09-10T15:16:34.260Z",
+          "extraction_id": "42163b82-7349-4004-ad5b-b6c04d351271",
+          "quality_metrics": {
+            "page_count": 1,
+            "text_coverage": null,
+            "rotation_degrees": 0,
+            "source_resolution_dpi": null
+          },
+          "sensitive_metadata": [],
+          "additional_components": [
+            {
+              "rate": {
+                "currency": "ILS",
+                "minor_units": 3300
+              },
+              "amount": {
+                "currency": "ILS",
+                "minor_units": 330000
+              },
+              "source": {
+                "page": 1,
+                "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5",
+                "text_fragment": "Regular base salary"
+              },
+              "quantity": "100",
+              "rate_raw": "33.00",
+              "amount_raw": "3300.00",
+              "confidence": 0.94,
+              "percentage": null,
+              "component_id": "0b9ef190-237c-452a-8a02-88bff8112b3a",
+              "quantity_raw": "100",
+              "source_label": "Regular base salary",
+              "semantic_kind": "hourly_base",
+              "warning_flags": [],
+              "percentage_raw": null,
+              "normalized_label": "hourly_base",
+              "extraction_method": "ai_vision",
+              "normalization_warnings": []
+            }
+          ],
+          "detected_document_type": "payslip",
+          "document_quality_confidence": 0.96,
+          "earnings_components_complete": true
+        },
+        "salary_type_assessment": {
+          "inferred": null,
+          "documented": {
+            "value": "hourly",
+            "raw_value": "hourly",
+            "confidence": 0.94,
+            "candidate_id": "54f6e61f-8fc3-4289-b7ee-c7cfb243b5de"
+          }
+        },
+        "totals_section_visible": true,
+        "pension_section_visible": false
+      },
+      "resolutions": [
+        {
+          "field": "document_type",
+          "status": "confirmed",
+          "reason_codes": [
+            "first_pass_preserved"
+          ],
+          "first_pass_status": "confirmed",
+          "selected_candidate_id": "951be523-8cd2-478a-a1fe-d04913988932",
+          "recovery_candidate_ids": [],
+          "first_pass_candidate_ids": [
+            "951be523-8cd2-478a-a1fe-d04913988932"
+          ]
+        },
+        {
+          "field": "salary_period",
+          "status": "candidate",
+          "reason_codes": [
+            "first_pass_preserved"
+          ],
+          "first_pass_status": "candidate",
+          "selected_candidate_id": "01dc9502-5395-4c78-8167-e3e092f6dd86",
+          "recovery_candidate_ids": [],
+          "first_pass_candidate_ids": [
+            "01dc9502-5395-4c78-8167-e3e092f6dd86"
+          ]
+        },
+        {
+          "field": "salary_type",
+          "status": "candidate",
+          "reason_codes": [
+            "first_pass_preserved"
+          ],
+          "first_pass_status": "candidate",
+          "selected_candidate_id": "54f6e61f-8fc3-4289-b7ee-c7cfb243b5de",
+          "recovery_candidate_ids": [],
+          "first_pass_candidate_ids": [
+            "54f6e61f-8fc3-4289-b7ee-c7cfb243b5de"
+          ]
+        },
+        {
+          "field": "base_monthly_salary",
+          "status": "candidate",
+          "reason_codes": [
+            "first_pass_preserved"
+          ],
+          "first_pass_status": "candidate",
+          "selected_candidate_id": "bf9d3b59-555f-472a-8ce7-f93540d7c51e",
+          "recovery_candidate_ids": [],
+          "first_pass_candidate_ids": [
+            "bf9d3b59-555f-472a-8ce7-f93540d7c51e"
+          ]
+        },
+        {
+          "field": "hourly_rate",
+          "status": "candidate",
+          "reason_codes": [
+            "first_pass_preserved"
+          ],
+          "first_pass_status": "candidate",
+          "selected_candidate_id": "97a1ddaf-f48d-4f6a-9a74-9d9f81d33dff",
+          "recovery_candidate_ids": [],
+          "first_pass_candidate_ids": [
+            "97a1ddaf-f48d-4f6a-9a74-9d9f81d33dff"
+          ]
+        },
+        {
+          "field": "regular_hours",
+          "status": "candidate",
+          "reason_codes": [
+            "first_pass_preserved"
+          ],
+          "first_pass_status": "candidate",
+          "selected_candidate_id": "e140fda3-fe13-4419-84c9-1c647d284f32",
+          "recovery_candidate_ids": [],
+          "first_pass_candidate_ids": [
+            "e140fda3-fe13-4419-84c9-1c647d284f32"
+          ]
+        },
+        {
+          "field": "gross_salary",
+          "status": "candidate",
+          "reason_codes": [
+            "first_pass_preserved"
+          ],
+          "first_pass_status": "candidate",
+          "selected_candidate_id": "bbc8108c-3964-4ade-a18e-238dd26166aa",
+          "recovery_candidate_ids": [],
+          "first_pass_candidate_ids": [
+            "bbc8108c-3964-4ade-a18e-238dd26166aa"
+          ]
+        },
+        {
+          "field": "total_deductions",
+          "status": "candidate",
+          "reason_codes": [
+            "first_pass_preserved"
+          ],
+          "first_pass_status": "candidate",
+          "selected_candidate_id": "7afc3f3d-37ee-4962-a209-b73a36949229",
+          "recovery_candidate_ids": [],
+          "first_pass_candidate_ids": [
+            "7afc3f3d-37ee-4962-a209-b73a36949229"
+          ]
+        },
+        {
+          "field": "net_salary",
+          "status": "candidate",
+          "reason_codes": [
+            "first_pass_preserved"
+          ],
+          "first_pass_status": "candidate",
+          "selected_candidate_id": "fa433ffd-e547-4675-8f55-f8fe2586d7b7",
+          "recovery_candidate_ids": [],
+          "first_pass_candidate_ids": [
+            "fa433ffd-e547-4675-8f55-f8fe2586d7b7"
+          ]
+        }
+      ],
+      "recovery_passes": [],
+      "final_extraction": {
+        "fields": [
+          {
+            "field": "document_type",
+            "source": {
+              "page": 1,
+              "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5",
+              "text_fragment": "document type"
+            },
+            "raw_value": "payslip",
+            "confidence": 0.96,
+            "candidate_id": "951be523-8cd2-478a-a1fe-d04913988932",
+            "warning_flags": [],
+            "normalized_value": "payslip",
+            "extraction_method": "ai_vision"
+          },
+          {
+            "field": "salary_period",
+            "source": {
+              "page": 1,
+              "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5",
+              "text_fragment": "Period: 06/2026"
+            },
+            "raw_value": "06/2026",
+            "confidence": 0.94,
+            "candidate_id": "01dc9502-5395-4c78-8167-e3e092f6dd86",
+            "warning_flags": [],
+            "normalized_value": {
+              "year": 2026,
+              "month": 6,
+              "end_date": "2026-06-30",
+              "start_date": "2026-06-01"
+            },
+            "extraction_method": "ai_vision"
+          },
+          {
+            "field": "salary_type",
+            "source": {
+              "page": 1,
+              "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5",
+              "text_fragment": "Salary type: hourly"
+            },
+            "raw_value": "hourly",
+            "confidence": 0.94,
+            "candidate_id": "54f6e61f-8fc3-4289-b7ee-c7cfb243b5de",
+            "warning_flags": [],
+            "normalized_value": "hourly",
+            "extraction_method": "ai_vision"
+          },
+          {
+            "field": "regular_hours",
+            "source": {
+              "page": 1,
+              "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5",
+              "text_fragment": "Synthetic regular base salary: 100"
+            },
+            "raw_value": "100",
+            "confidence": 0.94,
+            "candidate_id": "e140fda3-fe13-4419-84c9-1c647d284f32",
+            "warning_flags": [],
+            "normalized_value": {
+              "unit": "hours_per_month",
+              "amount": "100"
+            },
+            "extraction_method": "ai_vision"
+          },
+          {
+            "field": "hourly_rate",
+            "source": {
+              "page": 1,
+              "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5",
+              "text_fragment": "Synthetic regular base salary: 33.00"
+            },
+            "raw_value": "33.00",
+            "confidence": 0.94,
+            "candidate_id": "97a1ddaf-f48d-4f6a-9a74-9d9f81d33dff",
+            "warning_flags": [],
+            "normalized_value": {
+              "currency": "ILS",
+              "minor_units": 3300
+            },
+            "extraction_method": "ai_vision"
+          },
+          {
+            "field": "base_monthly_salary",
+            "source": {
+              "page": 1,
+              "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5",
+              "text_fragment": "Synthetic regular base salary: 3300.00"
+            },
+            "raw_value": "3300.00",
+            "confidence": 0.94,
+            "candidate_id": "bf9d3b59-555f-472a-8ce7-f93540d7c51e",
+            "warning_flags": [],
+            "normalized_value": {
+              "currency": "ILS",
+              "minor_units": 330000
+            },
+            "extraction_method": "ai_vision"
+          },
+          {
+            "field": "gross_salary",
+            "source": {
+              "page": 1,
+              "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5",
+              "text_fragment": "Synthetic regular base salary: 3300.00"
+            },
+            "raw_value": "3300.00",
+            "confidence": 0.94,
+            "candidate_id": "bbc8108c-3964-4ade-a18e-238dd26166aa",
+            "warning_flags": [],
+            "normalized_value": {
+              "currency": "ILS",
+              "minor_units": 330000
+            },
+            "extraction_method": "ai_vision"
+          },
+          {
+            "field": "total_deductions",
+            "source": {
+              "page": 1,
+              "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5",
+              "text_fragment": "Synthetic regular base salary: 0.00"
+            },
+            "raw_value": "0.00",
+            "confidence": 0.94,
+            "candidate_id": "7afc3f3d-37ee-4962-a209-b73a36949229",
+            "warning_flags": [],
+            "normalized_value": {
+              "currency": "ILS",
+              "minor_units": 0
+            },
+            "extraction_method": "ai_vision"
+          },
+          {
+            "field": "net_salary",
+            "source": {
+              "page": 1,
+              "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5",
+              "text_fragment": "Synthetic regular base salary: 3300.00"
+            },
+            "raw_value": "3300.00",
+            "confidence": 0.94,
+            "candidate_id": "fa433ffd-e547-4675-8f55-f8fe2586d7b7",
+            "warning_flags": [],
+            "normalized_value": {
+              "currency": "ILS",
+              "minor_units": 330000
+            },
+            "extraction_method": "ai_vision"
+          }
+        ],
+        "status": "completed",
+        "provider": {
+          "provider_id": "openai",
+          "model_version": "synthetic-june-canonical-injected",
+          "extractor_version": "2.1"
+        },
+        "warnings": [],
+        "operation": {
+          "duration_ms": 9,
+          "token_usage": null,
+          "provider_response_id": null
+        },
+        "error_code": null,
+        "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5",
+        "extracted_at": "2026-09-10T15:16:34.260Z",
+        "extraction_id": "3c2ff9f4-66dc-4fd6-8cbf-72c2e9c076d7",
+        "quality_metrics": {
+          "page_count": 1,
+          "text_coverage": null,
+          "rotation_degrees": 0,
+          "source_resolution_dpi": null
+        },
+        "sensitive_metadata": [],
+        "additional_components": [
+          {
+            "rate": {
+              "currency": "ILS",
+              "minor_units": 3300
+            },
+            "amount": {
+              "currency": "ILS",
+              "minor_units": 330000
+            },
+            "source": {
+              "page": 1,
+              "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5",
+              "text_fragment": "Regular base salary"
+            },
+            "quantity": "100",
+            "rate_raw": "33.00",
+            "amount_raw": "3300.00",
+            "confidence": 0.94,
+            "percentage": null,
+            "component_id": "0b9ef190-237c-452a-8a02-88bff8112b3a",
+            "quantity_raw": "100",
+            "source_label": "Regular base salary",
+            "semantic_kind": "hourly_base",
+            "warning_flags": [],
+            "percentage_raw": null,
+            "normalized_label": "hourly_base",
+            "extraction_method": "ai_vision",
+            "normalization_warnings": []
+          }
+        ],
+        "detected_document_type": "payslip",
+        "document_quality_confidence": 0.96,
+        "earnings_components_complete": true
+      },
+      "final_validation": {
+        "issues": [],
+        "status": "valid",
+        "field_assessments": [
+          {
+            "field": "document_type",
+            "status": "valid",
+            "issue_codes": [],
+            "candidate_id": "951be523-8cd2-478a-a1fe-d04913988932"
+          },
+          {
+            "field": "salary_period",
+            "status": "valid",
+            "issue_codes": [],
+            "candidate_id": "01dc9502-5395-4c78-8167-e3e092f6dd86"
+          },
+          {
+            "field": "salary_type",
+            "status": "valid",
+            "issue_codes": [],
+            "candidate_id": "54f6e61f-8fc3-4289-b7ee-c7cfb243b5de"
+          },
+          {
+            "field": "regular_hours",
+            "status": "valid",
+            "issue_codes": [],
+            "candidate_id": "e140fda3-fe13-4419-84c9-1c647d284f32"
+          },
+          {
+            "field": "hourly_rate",
+            "status": "valid",
+            "issue_codes": [],
+            "candidate_id": "97a1ddaf-f48d-4f6a-9a74-9d9f81d33dff"
+          },
+          {
+            "field": "base_monthly_salary",
+            "status": "valid",
+            "issue_codes": [],
+            "candidate_id": "bf9d3b59-555f-472a-8ce7-f93540d7c51e"
+          },
+          {
+            "field": "gross_salary",
+            "status": "valid",
+            "issue_codes": [],
+            "candidate_id": "bbc8108c-3964-4ade-a18e-238dd26166aa"
+          },
+          {
+            "field": "total_deductions",
+            "status": "valid",
+            "issue_codes": [],
+            "candidate_id": "7afc3f3d-37ee-4962-a209-b73a36949229"
+          },
+          {
+            "field": "net_salary",
+            "status": "valid",
+            "issue_codes": [],
+            "candidate_id": "fa433ffd-e547-4675-8f55-f8fe2586d7b7"
+          }
+        ]
+      },
+      "extractor_version": "2.1",
+      "recovery_decision": {
+        "regions": [],
+        "skipped": true,
+        "requested": false,
+        "reason_codes": [
+          "recovery_skipped_no_material_gain"
+        ],
+        "fields_requested": [],
+        "expected_information_gain": "none"
+      },
+      "current_validation": {
+        "issues": [],
+        "status": "valid",
+        "field_assessments": [
+          {
+            "field": "document_type",
+            "status": "valid",
+            "issue_codes": [],
+            "candidate_id": "951be523-8cd2-478a-a1fe-d04913988932"
+          },
+          {
+            "field": "salary_period",
+            "status": "valid",
+            "issue_codes": [],
+            "candidate_id": "01dc9502-5395-4c78-8167-e3e092f6dd86"
+          },
+          {
+            "field": "salary_type",
+            "status": "valid",
+            "issue_codes": [],
+            "candidate_id": "54f6e61f-8fc3-4289-b7ee-c7cfb243b5de"
+          },
+          {
+            "field": "regular_hours",
+            "status": "valid",
+            "issue_codes": [],
+            "candidate_id": "e140fda3-fe13-4419-84c9-1c647d284f32"
+          },
+          {
+            "field": "hourly_rate",
+            "status": "valid",
+            "issue_codes": [],
+            "candidate_id": "97a1ddaf-f48d-4f6a-9a74-9d9f81d33dff"
+          },
+          {
+            "field": "base_monthly_salary",
+            "status": "valid",
+            "issue_codes": [],
+            "candidate_id": "bf9d3b59-555f-472a-8ce7-f93540d7c51e"
+          },
+          {
+            "field": "gross_salary",
+            "status": "valid",
+            "issue_codes": [],
+            "candidate_id": "bbc8108c-3964-4ade-a18e-238dd26166aa"
+          },
+          {
+            "field": "total_deductions",
+            "status": "valid",
+            "issue_codes": [],
+            "candidate_id": "7afc3f3d-37ee-4962-a209-b73a36949229"
+          },
+          {
+            "field": "net_salary",
+            "status": "valid",
+            "issue_codes": [],
+            "candidate_id": "fa433ffd-e547-4675-8f55-f8fe2586d7b7"
+          }
+        ]
+      },
+      "historical_validation": {
+        "issues": [],
+        "status": "valid",
+        "field_assessments": [
+          {
+            "field": "document_type",
+            "status": "valid",
+            "issue_codes": [],
+            "candidate_id": "951be523-8cd2-478a-a1fe-d04913988932"
+          },
+          {
+            "field": "salary_period",
+            "status": "valid",
+            "issue_codes": [],
+            "candidate_id": "01dc9502-5395-4c78-8167-e3e092f6dd86"
+          },
+          {
+            "field": "salary_type",
+            "status": "valid",
+            "issue_codes": [],
+            "candidate_id": "54f6e61f-8fc3-4289-b7ee-c7cfb243b5de"
+          },
+          {
+            "field": "regular_hours",
+            "status": "valid",
+            "issue_codes": [],
+            "candidate_id": "e140fda3-fe13-4419-84c9-1c647d284f32"
+          },
+          {
+            "field": "hourly_rate",
+            "status": "valid",
+            "issue_codes": [],
+            "candidate_id": "97a1ddaf-f48d-4f6a-9a74-9d9f81d33dff"
+          },
+          {
+            "field": "base_monthly_salary",
+            "status": "valid",
+            "issue_codes": [],
+            "candidate_id": "bf9d3b59-555f-472a-8ce7-f93540d7c51e"
+          },
+          {
+            "field": "gross_salary",
+            "status": "valid",
+            "issue_codes": [],
+            "candidate_id": "bbc8108c-3964-4ade-a18e-238dd26166aa"
+          },
+          {
+            "field": "total_deductions",
+            "status": "valid",
+            "issue_codes": [],
+            "candidate_id": "7afc3f3d-37ee-4962-a209-b73a36949229"
+          },
+          {
+            "field": "net_salary",
+            "status": "valid",
+            "issue_codes": [],
+            "candidate_id": "fa433ffd-e547-4675-8f55-f8fe2586d7b7"
+          }
+        ]
+      },
+      "resolution_policy_version": "payslip-v2.1-non-degrading-resolution-4",
+      "final_confidence_assessment": {
+        "decisions": [
+          {
+            "field": "salary_period",
+            "status": "needs_confirmation",
+            "threshold": 0.95,
+            "applicable": true,
+            "reason_codes": [
+              "below_field_threshold"
+            ],
+            "candidate_ids": [
+              "01dc9502-5395-4c78-8167-e3e092f6dd86"
+            ],
+            "effective_confidence": 0.94
+          },
+          {
+            "field": "salary_type",
+            "status": "needs_confirmation",
+            "threshold": 0.95,
+            "applicable": true,
+            "reason_codes": [
+              "below_field_threshold"
+            ],
+            "candidate_ids": [
+              "54f6e61f-8fc3-4289-b7ee-c7cfb243b5de"
+            ],
+            "effective_confidence": 0.94
+          },
+          {
+            "field": "gross_salary",
+            "status": "needs_confirmation",
+            "threshold": 0.95,
+            "applicable": true,
+            "reason_codes": [
+              "below_field_threshold"
+            ],
+            "candidate_ids": [
+              "bbc8108c-3964-4ade-a18e-238dd26166aa"
+            ],
+            "effective_confidence": 0.94
+          },
+          {
+            "field": "total_deductions",
+            "status": "needs_confirmation",
+            "threshold": 0.95,
+            "applicable": true,
+            "reason_codes": [
+              "below_field_threshold"
+            ],
+            "candidate_ids": [
+              "7afc3f3d-37ee-4962-a209-b73a36949229"
+            ],
+            "effective_confidence": 0.94
+          },
+          {
+            "field": "net_salary",
+            "status": "needs_confirmation",
+            "threshold": 0.95,
+            "applicable": true,
+            "reason_codes": [
+              "below_field_threshold"
+            ],
+            "candidate_ids": [
+              "fa433ffd-e547-4675-8f55-f8fe2586d7b7"
+            ],
+            "effective_confidence": 0.94
+          },
+          {
+            "field": "hourly_rate",
+            "status": "needs_confirmation",
+            "threshold": 0.95,
+            "applicable": true,
+            "reason_codes": [
+              "below_field_threshold"
+            ],
+            "candidate_ids": [
+              "97a1ddaf-f48d-4f6a-9a74-9d9f81d33dff"
+            ],
+            "effective_confidence": 0.94
+          },
+          {
+            "field": "regular_hours",
+            "status": "needs_confirmation",
+            "threshold": 0.95,
+            "applicable": true,
+            "reason_codes": [
+              "below_field_threshold"
+            ],
+            "candidate_ids": [
+              "e140fda3-fe13-4419-84c9-1c647d284f32"
+            ],
+            "effective_confidence": 0.94
+          },
+          {
+            "field": "pension_base",
+            "status": "not_applicable",
+            "threshold": 0.95,
+            "applicable": false,
+            "reason_codes": [],
+            "candidate_ids": [],
+            "effective_confidence": 0
+          },
+          {
+            "field": "pension_employee_contribution",
+            "status": "not_applicable",
+            "threshold": 0.95,
+            "applicable": false,
+            "reason_codes": [],
+            "candidate_ids": [],
+            "effective_confidence": 0
+          },
+          {
+            "field": "pension_employer_contribution",
+            "status": "not_applicable",
+            "threshold": 0.95,
+            "applicable": false,
+            "reason_codes": [],
+            "candidate_ids": [],
+            "effective_confidence": 0
+          },
+          {
+            "field": "severance_contribution",
+            "status": "not_applicable",
+            "threshold": 0.95,
+            "applicable": false,
+            "reason_codes": [],
+            "candidate_ids": [],
+            "effective_confidence": 0
+          },
+          {
+            "field": "overtime_125_hours",
+            "status": "not_applicable",
+            "threshold": 0.95,
+            "applicable": false,
+            "reason_codes": [],
+            "candidate_ids": [],
+            "effective_confidence": 0
+          },
+          {
+            "field": "overtime_150_hours",
+            "status": "not_applicable",
+            "threshold": 0.95,
+            "applicable": false,
+            "reason_codes": [],
+            "candidate_ids": [],
+            "effective_confidence": 0
+          }
+        ]
+      },
+      "resolved_historical_issue_codes": []
+    },
+    "snapshot": {
+      "facts": [
+        {
+          "path": "documents.period",
+          "value": {
+            "period": {
+              "end_date": "2026-06-30",
+              "start_date": "2026-06-01"
+            },
+            "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5"
+          },
+          "status": "candidate",
+          "case_id": "e5c9379e-836d-4520-8cfc-d7de754dcfc3",
+          "fact_id": "d45123f5-060b-4554-891f-95a8fd4ae069",
+          "confidence": 0.94,
+          "created_at": "2026-09-10T15:16:34.040Z",
+          "provenance": [
+            {
+              "read_by": "machine",
+              "verified": false,
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "locator": {
+                  "page": 1,
+                  "text_span": "Period: 06/2026"
+                },
+                "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5"
+              }
+            }
+          ],
+          "resolution": null,
+          "conflicting_fact_ids": []
+        },
+        {
+          "path": "employment.start_date",
+          "value": null,
+          "status": "missing",
+          "case_id": "e5c9379e-836d-4520-8cfc-d7de754dcfc3",
+          "fact_id": "2f4e7800-653e-4aea-82a5-d5a2abe90f77",
+          "confidence": 0.96,
+          "created_at": "2026-09-10T15:16:34.040Z",
+          "provenance": [
+            {
+              "read_by": "machine",
+              "verified": false,
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5"
+              }
+            }
+          ],
+          "resolution": null,
+          "conflicting_fact_ids": []
+        },
+        {
+          "path": "compensation.salary_type",
+          "value": "hourly",
+          "status": "candidate",
+          "case_id": "e5c9379e-836d-4520-8cfc-d7de754dcfc3",
+          "fact_id": "f3657b9a-48de-4d07-869a-f372e9e2774a",
+          "confidence": 0.94,
+          "created_at": "2026-09-10T15:16:34.040Z",
+          "provenance": [
+            {
+              "read_by": "machine",
+              "verified": false,
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "locator": {
+                  "page": 1,
+                  "text_span": "Salary type: hourly"
+                },
+                "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5"
+              }
+            }
+          ],
+          "resolution": null,
+          "conflicting_fact_ids": []
+        },
+        {
+          "path": "compensation.base_monthly_salary",
+          "value": {
+            "currency": "ILS",
+            "minor_units": 330000
+          },
+          "status": "candidate",
+          "case_id": "e5c9379e-836d-4520-8cfc-d7de754dcfc3",
+          "fact_id": "1a762246-c1d7-4e87-84fb-0a456afe1f69",
+          "confidence": 0.94,
+          "created_at": "2026-09-10T15:16:34.040Z",
+          "provenance": [
+            {
+              "read_by": "machine",
+              "verified": false,
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "locator": {
+                  "page": 1,
+                  "text_span": "Synthetic regular base salary: 3300.00"
+                },
+                "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5"
+              }
+            }
+          ],
+          "resolution": null,
+          "conflicting_fact_ids": []
+        },
+        {
+          "path": "compensation.hourly_rate",
+          "value": {
+            "currency": "ILS",
+            "minor_units": 3300
+          },
+          "status": "candidate",
+          "case_id": "e5c9379e-836d-4520-8cfc-d7de754dcfc3",
+          "fact_id": "f001ecd7-ae66-49e7-8bd5-21fe4c7343c2",
+          "confidence": 0.94,
+          "created_at": "2026-09-10T15:16:34.040Z",
+          "provenance": [
+            {
+              "read_by": "machine",
+              "verified": false,
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "locator": {
+                  "page": 1,
+                  "text_span": "Synthetic regular base salary: 33.00"
+                },
+                "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5"
+              }
+            }
+          ],
+          "resolution": null,
+          "conflicting_fact_ids": []
+        },
+        {
+          "path": "compensation.gross_salary",
+          "value": {
+            "currency": "ILS",
+            "minor_units": 330000
+          },
+          "status": "candidate",
+          "case_id": "e5c9379e-836d-4520-8cfc-d7de754dcfc3",
+          "fact_id": "d5aa8fa8-0cf1-4458-8d9c-d0be2054030b",
+          "confidence": 0.94,
+          "created_at": "2026-09-10T15:16:34.040Z",
+          "provenance": [
+            {
+              "read_by": "machine",
+              "verified": false,
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "locator": {
+                  "page": 1,
+                  "text_span": "Synthetic regular base salary: 3300.00"
+                },
+                "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5"
+              }
+            }
+          ],
+          "resolution": null,
+          "conflicting_fact_ids": []
+        },
+        {
+          "path": "compensation.net_salary",
+          "value": {
+            "currency": "ILS",
+            "minor_units": 330000
+          },
+          "status": "candidate",
+          "case_id": "e5c9379e-836d-4520-8cfc-d7de754dcfc3",
+          "fact_id": "89be271b-f8e2-4e58-8c50-176b7e19423e",
+          "confidence": 0.94,
+          "created_at": "2026-09-10T15:16:34.040Z",
+          "provenance": [
+            {
+              "read_by": "machine",
+              "verified": false,
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "locator": {
+                  "page": 1,
+                  "text_span": "Synthetic regular base salary: 3300.00"
+                },
+                "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5"
+              }
+            }
+          ],
+          "resolution": null,
+          "conflicting_fact_ids": []
+        },
+        {
+          "path": "work.regular_hours",
+          "value": {
+            "unit": "hours_per_month",
+            "amount": "100"
+          },
+          "status": "candidate",
+          "case_id": "e5c9379e-836d-4520-8cfc-d7de754dcfc3",
+          "fact_id": "01e8e2c5-ad07-433a-8fde-c8880e94253f",
+          "confidence": 0.94,
+          "created_at": "2026-09-10T15:16:34.040Z",
+          "provenance": [
+            {
+              "read_by": "machine",
+              "verified": false,
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "locator": {
+                  "page": 1,
+                  "text_span": "Synthetic regular base salary: 100"
+                },
+                "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5"
+              }
+            }
+          ],
+          "resolution": null,
+          "conflicting_fact_ids": []
+        },
+        {
+          "path": "work.overtime_125_hours",
+          "value": null,
+          "status": "missing",
+          "case_id": "e5c9379e-836d-4520-8cfc-d7de754dcfc3",
+          "fact_id": "1640a836-b810-4aa5-8ad8-bf51b02ccd29",
+          "confidence": 0.96,
+          "created_at": "2026-09-10T15:16:34.040Z",
+          "provenance": [
+            {
+              "read_by": "machine",
+              "verified": false,
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5"
+              }
+            }
+          ],
+          "resolution": null,
+          "conflicting_fact_ids": []
+        },
+        {
+          "path": "work.overtime_150_hours",
+          "value": null,
+          "status": "missing",
+          "case_id": "e5c9379e-836d-4520-8cfc-d7de754dcfc3",
+          "fact_id": "cfbf177c-b141-4b74-87cf-b1195d10b910",
+          "confidence": 0.96,
+          "created_at": "2026-09-10T15:16:34.040Z",
+          "provenance": [
+            {
+              "read_by": "machine",
+              "verified": false,
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5"
+              }
+            }
+          ],
+          "resolution": null,
+          "conflicting_fact_ids": []
+        },
+        {
+          "path": "work.overtime_hours",
+          "value": null,
+          "status": "missing",
+          "case_id": "e5c9379e-836d-4520-8cfc-d7de754dcfc3",
+          "fact_id": "869e6a55-ade3-41a4-8238-e891caf684db",
+          "confidence": 0.96,
+          "created_at": "2026-09-10T15:16:34.040Z",
+          "provenance": [
+            {
+              "read_by": "machine",
+              "verified": false,
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5"
+              }
+            }
+          ],
+          "resolution": null,
+          "conflicting_fact_ids": []
+        },
+        {
+          "path": "pension.base_salary",
+          "value": null,
+          "status": "missing",
+          "case_id": "e5c9379e-836d-4520-8cfc-d7de754dcfc3",
+          "fact_id": "e52c46b1-963d-4d99-8c3f-7faa45cbcb2b",
+          "confidence": 0.96,
+          "created_at": "2026-09-10T15:16:34.040Z",
+          "provenance": [
+            {
+              "read_by": "machine",
+              "verified": false,
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5"
+              }
+            }
+          ],
+          "resolution": null,
+          "conflicting_fact_ids": []
+        },
+        {
+          "path": "pension.contributions",
+          "value": null,
+          "status": "missing",
+          "case_id": "e5c9379e-836d-4520-8cfc-d7de754dcfc3",
+          "fact_id": "5ed1d004-ae27-4cd8-8fcb-87fa44e0d98a",
+          "confidence": 0.96,
+          "created_at": "2026-09-10T15:16:34.040Z",
+          "provenance": [
+            {
+              "read_by": "machine",
+              "verified": false,
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5"
+              }
+            }
+          ],
+          "resolution": null,
+          "conflicting_fact_ids": []
+        },
+        {
+          "path": "pension.severance_contribution",
+          "value": null,
+          "status": "missing",
+          "case_id": "e5c9379e-836d-4520-8cfc-d7de754dcfc3",
+          "fact_id": "7aa48404-7091-4113-8e12-c82cc86cdf9a",
+          "confidence": 0.96,
+          "created_at": "2026-09-10T15:16:34.040Z",
+          "provenance": [
+            {
+              "read_by": "machine",
+              "verified": false,
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5"
+              }
+            }
+          ],
+          "resolution": null,
+          "conflicting_fact_ids": []
+        },
+        {
+          "path": "travel.reimbursement",
+          "value": null,
+          "status": "missing",
+          "case_id": "e5c9379e-836d-4520-8cfc-d7de754dcfc3",
+          "fact_id": "b313930d-2b96-432d-80a7-545b05cb1d70",
+          "confidence": 0.96,
+          "created_at": "2026-09-10T15:16:34.040Z",
+          "provenance": [
+            {
+              "read_by": "machine",
+              "verified": false,
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5"
+              }
+            }
+          ],
+          "resolution": null,
+          "conflicting_fact_ids": []
+        },
+        {
+          "path": "convalescence.payment",
+          "value": null,
+          "status": "missing",
+          "case_id": "e5c9379e-836d-4520-8cfc-d7de754dcfc3",
+          "fact_id": "b51ac566-6a5e-4897-89db-5f74b16c7f3b",
+          "confidence": 0.96,
+          "created_at": "2026-09-10T15:16:34.040Z",
+          "provenance": [
+            {
+              "read_by": "machine",
+              "verified": false,
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5"
+              }
+            }
+          ],
+          "resolution": null,
+          "conflicting_fact_ids": []
+        },
+        {
+          "path": "leave.vacation_balance",
+          "value": null,
+          "status": "missing",
+          "case_id": "e5c9379e-836d-4520-8cfc-d7de754dcfc3",
+          "fact_id": "fcd9adf3-b01d-4e9e-8b20-63fb7d7568a4",
+          "confidence": 0.96,
+          "created_at": "2026-09-10T15:16:34.040Z",
+          "provenance": [
+            {
+              "read_by": "machine",
+              "verified": false,
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5"
+              }
+            }
+          ],
+          "resolution": null,
+          "conflicting_fact_ids": []
+        },
+        {
+          "path": "leave.sick_balance",
+          "value": null,
+          "status": "missing",
+          "case_id": "e5c9379e-836d-4520-8cfc-d7de754dcfc3",
+          "fact_id": "5b00d4ee-2bc7-444d-8fd9-b460d35a3b14",
+          "confidence": 0.96,
+          "created_at": "2026-09-10T15:16:34.040Z",
+          "provenance": [
+            {
+              "read_by": "machine",
+              "verified": false,
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5"
+              }
+            }
+          ],
+          "resolution": null,
+          "conflicting_fact_ids": []
+        }
+      ],
+      "case_id": "e5c9379e-836d-4520-8cfc-d7de754dcfc3",
+      "created_at": "2026-09-10T15:16:34.040Z",
+      "snapshot_id": "3c2ff9f4-66dc-4fd6-8cbf-72c2e9c076d7",
+      "schema_version": "1.0.0",
+      "analysis_run_id": "567b369d-17f0-4b12-8c75-efefe7cc1f41"
+    },
+    "preprocessing": [
+      {
+        "reason": "unsupported_source",
+        "applied": false,
+        "grayscale": false,
+        "source_width": null,
+        "contrast_gain": 1,
+        "sharpen_sigma": 0,
+        "source_height": null,
+        "deskew_degrees": 0,
+        "upscale_factor": 1,
+        "crop_plan_version": "payslip-semantic-bands-1",
+        "preprocessing_version": "payslip-raster-preprocess-1"
+      }
+    ],
+    "provider_receipts": [
+      {
+        "cost": {
+          "status": "not_returned_by_provider",
+          "amount_usd": null
+        },
+        "origin": "injected_test_provider",
+        "status": "completed",
+        "case_id": "e5c9379e-836d-4520-8cfc-d7de754dcfc3",
+        "pass_kind": "first_pass",
+        "created_at": "2026-09-10T15:16:34.260Z",
+        "error_code": null,
+        "document_id": "78dc4348-de33-403c-9b95-6d9abf2308e5",
+        "duration_ms": 9,
+        "http_status": null,
+        "token_usage": null,
+        "actual_model": null,
+        "extraction_id": "42163b82-7349-4004-ad5b-b6c04d351271",
+        "source_sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+        "prompt_version": "payslip-extraction-openai-v2-first-r4",
+        "receipt_sha256": "17f6a5e137b50ecdeb83fd1a8e67a5cef9db978641dfc080d58e74e36ad59739",
+        "request_sha256": "341b290c4f30dac4069063eea4e51441b1380af2e3b9d84c065c50dad886db6d",
+        "schema_version": "tivdoc-openai-provider-receipt-v1",
+        "analysis_run_id": "567b369d-17f0-4b12-8c75-efefe7cc1f41",
+        "requested_model": "synthetic-june-canonical-injected",
+        "source_mime_type": "application/pdf",
+        "extractor_version": "2.0",
+        "source_page_count": 1,
+        "source_size_bytes": 1409,
+        "provider_attempted": true,
+        "provider_request_id": null,
+        "provider_response_id": "synthetic-june-canonical-e7537a7b-2085-4f1d-a9eb-f757b0b63421",
+        "raw_extraction_sha256": "07f9660a9f66ef3bc50602cb9fe3faa3866468986b61325ef46fcff6daac08bd"
+      }
+    ]
+  },
+  "case_id": "e5c9379e-836d-4520-8cfc-d7de754dcfc3",
+  "version_id": "78dc4348-de33-403c-9b95-6d9abf2308e5",
+  "input_sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+  "result_sha256": "2bf1ee758e59205023b59620bf551f93c45d21feb1d80bbae8c58c91c9c54f7f",
+  "expected_month": "2026-06",
+  "schema_version": "tivdoc-saved-extraction-v1",
+  "period_mismatch": false,
+  "product_document_id": "9a15212a-cc61-4ca6-ac3f-1d39dd2aa3b7",
+  "requires_confirmation": true
+}

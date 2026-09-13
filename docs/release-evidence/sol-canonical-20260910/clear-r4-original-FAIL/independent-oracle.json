@@ -1,0 +1,28 @@
+{
+  "synthetic": true,
+  "humanReview": false,
+  "legalGoldenApproval": false,
+  "period": {
+    "year": 2026,
+    "month": 6,
+    "start_date": "2026-06-01",
+    "end_date": "2026-06-30"
+  },
+  "salaryType": "hourly",
+  "employmentStartDate": "2025-01-15",
+  "regularHours": [
+    "100"
+  ],
+  "hourlyRateMinor": 3300,
+  "baseMinor": 330000,
+  "grossMinor": 330000,
+  "deductionsMinor": 0,
+  "netMinor": 330000,
+  "paidComponentCount": 1,
+  "outcome": "readable",
+  "canonicalExpectedMinor": 354058,
+  "canonicalGapMinor": 24058,
+  "publishedHourlyExpectedMinor": 354000,
+  "publishedHourlyGapMinor": 24000,
+  "financialFormulaDisclosure": "Canonical candidate uses full-precision monthly/182 with final half-up agorot rounding; published-hourly engineering comparator uses35.40."
+}

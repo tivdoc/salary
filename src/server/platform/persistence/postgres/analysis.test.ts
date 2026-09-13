@@ -305,6 +305,24 @@ describe("V0.9 W2 canonical PostgreSQL analysis adapters", () => {
     expect(client.statements.some((query) => query.name === "analysis_run_complete")).toBe(false);
   });
 
+  it("decodes an exact purchased topic subset while preserving the legacy seven-topic default", () => {
+    const topics=WAVE3_TOPICS.slice(0,3), scoped=bundle({topic_results:topicResults().slice(0,3)});
+    expect(decodeBundle(scoped,topics).topic_results).toHaveLength(3);
+    expect(()=>decodeBundle(scoped)).toThrow("TOPIC_SET_INVALID");
+    for(const results of [topicResults().slice(0,2),topicResults().slice(0,4),[topicResults()[0],topicResults()[0],topicResults()[2]]]) {
+      expect(()=>decodeBundle(bundle({topic_results:results}),topics)).toThrow("TOPIC_SET_INVALID");
+    }
+  });
+
+  it("binds completion to the saved command, refusing missing, duplicate and unpurchased topics before any write", async () => {
+    const scopedCommand={...command(),requested_topics:WAVE3_TOPICS.slice(0,3)};
+    for(const wrong of [selections().slice(0,2),selections().slice(0,4),[selections()[0],selections()[0],selections()[2]]]) {
+      const client=new RecordingClient(()=>result([{...runRow(),command:scopedCommand,command_sha256:canonicalSha256(scopedCommand)}]));
+      await expect(createPostgresAnalysisRepositories(context(client),TENANT_ID).caseAnalysis.complete({analysis_run_id:RUN_ID,selections:wrong,dependencies:dependencies(),bundle:bundle(),report:report()})).rejects.toMatchObject({code:"TOPIC_SET_INVALID"});
+      expect(client.statements.every(q=>q.name==="analysis_run_by_id")).toBe(true);
+    }
+  });
+
   it("binds approval to the exact model/report hash and conceals non-eligible reports", async () => {
     const decision = {
       task_id: "review-task-001",

@@ -1,0 +1,51 @@
+{
+  "proofId": "92903f3b-795f-4130-bc1e-6450f60d7018",
+  "priorReceiptSha256": "b09ea215d9d7166cead3c2f152fb1efa765ff9ef16df27af6d239cfe51fd2f8c",
+  "cleanupReceiptSha256": "7b138469b71406f103a4db075ae44ffb4b4cd6b2102f364863d9124d92795cc3",
+  "applicationGitSha": "a30f881dca092bbec91cb48aae7fdfc670d0ee5f",
+  "driverGitSha": "512b2a21eae9fa37f32431c8ec1ca81f41f90fff",
+  "applicationDiff": [
+    "src/server/product/processing/retained-live-notification.postgres.test.ts"
+  ],
+  "caseId": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+  "requestId": "59aa4632-0d35-47b2-b62d-4e744e79417b",
+  "originalFullFlowVerdict": "FAIL",
+  "originalNotificationVerdict": "FAIL",
+  "originalReceiptsUnchanged": true,
+  "newProviderCalls": 0,
+  "noNotifyCall": true,
+  "noOcrCalls": true,
+  "noCustomerSessionCreated": true,
+  "canonicalBlockedReplayProved": false,
+  "currentFinancialReportCreated": false,
+  "currentHead": {
+    "revision": 19,
+    "input_sha256": "4a441855d959a35e2f6d2fc108d2487e074e9988e62f1b3dbd62980dc8a5f294"
+  },
+  "newJob": {
+    "jobId": "saved_cf1f0bcf66bb0d4150f48ddf8d1564557f63a4e2ecf0b42e0512b73dfbf094b8",
+    "source": {
+      "schema_version": "saved-case-work-v1",
+      "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+      "revision": 19,
+      "input_sha256": "4a441855d959a35e2f6d2fc108d2487e074e9988e62f1b3dbd62980dc8a5f294",
+      "mode": "draft"
+    },
+    "state": "queued",
+    "executed": false
+  },
+  "newJobCleanup": {
+    "jobId": "saved_cf1f0bcf66bb0d4150f48ddf8d1564557f63a4e2ecf0b42e0512b73dfbf094b8",
+    "state": "cancelled"
+  },
+  "phase": "complete",
+  "checks": [
+    "Persisted real delivery, identified answer, source checkpoint, and completed cleanup verified; answer retry changes neither answer nor input revision.",
+    "Fresh authenticated machine admits and dispatches exactly the current paid input; retry creates no duplicate job, and no worker/provider/report execution occurs."
+  ],
+  "verdict": "PASS",
+  "checkedAt": "2026-09-09T22:41:26.596Z",
+  "cleanupVerified": true,
+  "remainingBlock": "Current source lacks salary_type/base candidates; dispatch alone proves no new calculation or financial report.",
+  "productionChanged": false
+}

@@ -1,0 +1,15 @@
+{
+  "migration": "20260907190000_request_pause_trigger_authority.sql",
+  "sha256": "a7700f50bae9f25c8be168dc95b9b1374b6e336ee875272259df3adf16d7bd8f",
+  "database": "tivdoc_release_replay_20260907",
+  "checks": [
+    "web retains no direct order-pause UPDATE or trigger EXECUTE",
+    "actual web role closes only the selected same-case request pause",
+    "unrelated request pause remains open",
+    "even a malformed pre-existing foreign-order link cannot close another case pause"
+  ],
+  "synthetic": true,
+  "productionChanged": false,
+  "requestTransactionRolledBack": true,
+  "temporaryOrdersRemoved": true
+}

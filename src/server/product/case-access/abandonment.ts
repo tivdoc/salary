@@ -31,6 +31,7 @@ export type AbandonmentCandidate = Readonly<{ case_id: string; public_id: string
 
 export type SweepOutcome = Readonly<{
   examined: number;
+  queued?: number;
   sent: number;
   failed: number;
   refused: number;
@@ -67,7 +68,7 @@ export async function optOutOfReminders(caseId: string, db?: CaseAccessDb | null
 
 /** Records what happened to a case's one reminder. */
 export async function markAbandonmentReminder(
-  input: Readonly<{ caseId: string; state: "sent" | "failed" | "refused" }>,
+  input: Readonly<{ caseId: string; state: "queued" | "sent" | "failed" | "refused" }>,
   db?: CaseAccessDb | null,
 ): Promise<boolean> {
   const store = db ?? await resolveCaseAccessDb();

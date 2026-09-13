@@ -1,0 +1,110 @@
+{
+  "schemaVersion": "tivdoc-live-normalization-diagnostic-v1",
+  "checkedAt": "2026-09-09T20:25:53.191Z",
+  "normalizationPolicyVersion": "payslip-normalization-v2-explicit-full-month",
+  "normalizationCodeSha256": "5233e50674eb8781857c0e180fde1ed919e07792dd41d696d9f0cfe255bcf1cc",
+  "providerCalledForReplay": false,
+  "originalCheckpointsChanged": false,
+  "databaseChanged": false,
+  "financialRunCreated": false,
+  "legalReadinessProved": false,
+  "scope": "Offline first-pass normalization diagnostic only; the original corpus runs remain failed. No new extraction or successful end-to-end report is claimed.",
+  "results": [
+    {
+      "id": "clear",
+      "sourceSha256": "2fa82b32745a51044242bb334c1de8d5bec913d26280cf3729e2833a9cd7bd0d",
+      "originalCheckpointFileSha256": "4f778a386c1af90b9472351a7634849d51d5d75060912b1e8419958091500a49",
+      "originalCheckpointResultSha256": "162e1fb85e69db9d467499136e4faddaabb4e36b426ed480b4d1382b2c4a9e2c",
+      "originalRawPassSha256": "2aa9af88f0d110722b5f7734a788e7205850020a31a65dcbb0575b4547b3e372",
+      "providerReceiptSha256": "2840a172e4b0aaf624c154615e07dcd723a15138a4882ef65b497010fbf016ee",
+      "originalRawPeriod": "01/06/2026 - 30/06/2026",
+      "originalNormalizedPeriod": null,
+      "derivativeNormalizedPeriod": {
+        "year": 2026,
+        "month": 6,
+        "start_date": "2026-06-01",
+        "end_date": "2026-06-30"
+      },
+      "confidence": 0.94,
+      "confidenceDecision": {
+        "field": "salary_period",
+        "applicable": true,
+        "status": "needs_confirmation",
+        "effective_confidence": 0.94,
+        "threshold": 0.95,
+        "candidate_ids": [
+          "2b559587-c51a-4c08-96f5-56fe6e4797d7"
+        ],
+        "reason_codes": [
+          "below_field_threshold"
+        ]
+      },
+      "remainingValidationIssues": []
+    },
+    {
+      "id": "he-clear",
+      "sourceSha256": "f74f83f18beed42de39c8fc02615a0d05e0f25bc53b2410314dd4f9a56c05a6b",
+      "originalCheckpointFileSha256": "1f938eaee64ab33d77852e0a641c272aab35947f782ee9735c8ddac15c941a5b",
+      "originalCheckpointResultSha256": "163b45a44168a54991f54b4a6c60b4bbe6f95240dd7a0c123f1e1bc8aec4a415",
+      "originalRawPassSha256": "3dc1f2efffca69fc097a5f638292348c97b5488eb03a986c3a3ecd5a9a3bf103",
+      "providerReceiptSha256": "2dcfc4b5c3164a7ba90ad6fb51e9cd740b2af43220a6b2dddbc70854c439425b",
+      "originalRawPeriod": "30/06/2026 - 01/06/2026",
+      "originalNormalizedPeriod": null,
+      "derivativeNormalizedPeriod": null,
+      "confidence": 0.94,
+      "confidenceDecision": {
+        "field": "salary_period",
+        "applicable": true,
+        "status": "needs_confirmation",
+        "effective_confidence": 0,
+        "threshold": 0.95,
+        "candidate_ids": [],
+        "reason_codes": [
+          "critical_field_missing",
+          "below_field_threshold"
+        ]
+      },
+      "remainingValidationIssues": [
+        "normalization_failed",
+        "moderate_field_confidence",
+        "moderate_field_confidence",
+        "conflicting_candidates",
+        "payslip_totals_mismatch"
+      ]
+    },
+    {
+      "id": "he-scan-clear",
+      "sourceSha256": "6a7225348270f9b8351b053c8b274b9686e5d17ffdf547d3d456059911a9b526",
+      "originalCheckpointFileSha256": "40db7e69040e81fb95d534f3466cadd0a7d69e9a1ab05bb5ad9f1b3fc00ecc5f",
+      "originalCheckpointResultSha256": "7703d5d07e4bbd611c95ec8d4f9f353debfdbb1a8d61a0bfc0b657e96ded2ae7",
+      "originalRawPassSha256": "0ba912467d84372d2be82849fdbc601f2d5a3e2357b4aa9a4eb140cd69e837a1",
+      "providerReceiptSha256": "0f4d0f02a0ecab7d23e6d83cd6fb733c16cf960b1fe0a132c935bb706e0e250a",
+      "originalRawPeriod": "01/06/2026 - 30/06/2026",
+      "originalNormalizedPeriod": null,
+      "derivativeNormalizedPeriod": {
+        "year": 2026,
+        "month": 6,
+        "start_date": "2026-06-01",
+        "end_date": "2026-06-30"
+      },
+      "confidence": 0.94,
+      "confidenceDecision": {
+        "field": "salary_period",
+        "applicable": true,
+        "status": "needs_confirmation",
+        "effective_confidence": 0.94,
+        "threshold": 0.95,
+        "candidate_ids": [
+          "99870fe8-b017-4722-9f95-5c9bc040b0ea"
+        ],
+        "reason_codes": [
+          "below_field_threshold"
+        ]
+      },
+      "remainingValidationIssues": [
+        "invalid_percentage",
+        "gross_component_mismatch"
+      ]
+    }
+  ]
+}

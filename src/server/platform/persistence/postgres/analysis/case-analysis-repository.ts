@@ -3,6 +3,7 @@ import type {
   PersistedCaseAnalysisRun,
   PinnedAnalysisDependencies,
 } from "../../../../../engine/case-analysis/contracts";
+import {CASE_ANALYSIS_CODE_VERSION} from "../../../../../engine/case-analysis/contracts";
 import { canonicalSha256 } from "../../../../../engine/rule-runtime/canonical";
 import type {
   AnalysisResultBundle,
@@ -83,7 +84,7 @@ export class PostgresCaseAnalysisRepository implements CaseAnalysisRepositoryPor
          select
            private.canonical_text_uuid('analysis_run', $3), private.resolve_engine_case_id($1, $2),
            'full_investigation', 'running',
-           'canonical_case_analysis', 'case-analysis@0.6.0',
+           'canonical_case_analysis', '${CASE_ANALYSIS_CODE_VERSION}',
            nullif(current_setting('tivdoc.engine_git_sha', true), ''),
            'tivdoc-case-analysis-v0.6.0', 'tivdoc-canonical-persistence-v0.9.0', null,
            $6::jsonb, $5, $4, transaction_timestamp(), transaction_timestamp(),
@@ -152,8 +153,10 @@ export class PostgresCaseAnalysisRepository implements CaseAnalysisRepositoryPor
     bundle: AnalysisResultBundle;
     report: DeterministicReportArtifacts;
   }>): Promise<PersistedCaseAnalysisRun> {
-    validateSelections(input.selections);
-    const bundle = decodeBundle(input.bundle);
+    const existing = await this.getByRunId(input.analysis_run_id);
+    if (!existing) throw new PostgresAnalysisError("ANALYSIS_RUN_NOT_FOUND");
+    validateSelections(input.selections, existing.command.requested_topics);
+    const bundle = decodeBundle(input.bundle, existing.command.requested_topics);
     validateReport(input.report);
     if (bundle.analysis_run_id !== input.analysis_run_id
         || input.report.analysis_result_sha256 !== bundle.result_sha256
@@ -162,8 +165,6 @@ export class PostgresCaseAnalysisRepository implements CaseAnalysisRepositoryPor
         || input.dependencies.catalog_sha256 !== bundle.catalog_sha256) {
       throw new PostgresAnalysisError("IMMUTABLE_COMPLETED_RUN_MISMATCH");
     }
-    const existing = await this.getByRunId(input.analysis_run_id);
-    if (!existing) throw new PostgresAnalysisError("ANALYSIS_RUN_NOT_FOUND");
     if (existing.completed) {
       if (existing.bundle?.result_sha256 !== bundle.result_sha256
           || existing.report?.report_sha256 !== input.report.report_sha256) {
@@ -180,18 +181,23 @@ export class PostgresCaseAnalysisRepository implements CaseAnalysisRepositoryPor
       analysis_run_id: input.analysis_run_id,
       dependencies: input.dependencies,
       selections: input.selections,
+      expected_topics: existing.command.requested_topics,
     });
-    await this.repositories.topicResults.persistSeven({
+    await this.repositories.topicResults.persistScoped({
       case_id: bundle.case_id,
       analysis_run_id: input.analysis_run_id,
       topic_results: bundle.topic_results,
+      expected_topics: existing.command.requested_topics,
     });
     await this.repositories.traceFindings.persistTraces({
       case_id: bundle.case_id,
       analysis_run_id: input.analysis_run_id,
       topic_results: bundle.topic_results,
+      expected_topics: existing.command.requested_topics,
+      source_scope: bundle,
     });
-    await this.repositories.traceFindings.assertFindingsDisabled({
+    if(bundle.ai_release)await this.repositories.traceFindings.persistAiReleaseFindings({bundle});
+    else await this.repositories.traceFindings.assertFindingsDisabled({
       case_id: bundle.case_id,
       analysis_run_id: input.analysis_run_id,
     });
@@ -328,9 +334,9 @@ function decodeRunRow(value: unknown): PersistedCaseAnalysisRun {
     throw new PostgresAnalysisError("ANALYSIS_ROW_VERSION_UNSUPPORTED");
   }
   const selections = Object.freeze(array(completion.selections).map(decodeSelection));
-  validateSelections(selections);
+  validateSelections(selections, command.requested_topics);
   const dependencies = decodeDependencies(completion.dependencies);
-  const bundle = decodeBundle(completion.bundle);
+  const bundle = decodeBundle(completion.bundle, command.requested_topics);
   const report = decodeReport(completion.report);
   if (bundle.analysis_run_id !== analysisRunId || bundle.case_id !== command.case_id
       || report.analysis_result_sha256 !== bundle.result_sha256) {

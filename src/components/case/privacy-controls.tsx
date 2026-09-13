@@ -1,0 +1,12 @@
+"use client";
+import {useState,useRef} from 'react';
+import Link from 'next/link';
+export function PrivacyControls({cases}:{cases:readonly {public_id:string}[]}){
+ const [selected,setSelected]=useState(cases[0]?.public_id??''),[kind,setKind]=useState('access'),[message,setMessage]=useState(''),[status,setStatus]=useState(''),[busy,setBusy]=useState(false),[reauth,setReauth]=useState(false);const retry=useRef<{body:string;id:string}|null>(null);
+ async function send(action:'request'|'export'){
+  setBusy(true);setStatus('');setReauth(false);try{const key=JSON.stringify({selected,kind,message});if(!retry.current||retry.current.body!==key)retry.current={body:key,id:crypto.randomUUID()};const response=await fetch('/api/account',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(action==='export'?{action,publicId:selected}:{action,publicId:selected,kind,message,id:retry.current.id})});if(!response.ok){const error=await response.json();setReauth(error.code==='reauth_required');throw new Error(error.error??'הבקשה לא הושלמה');}
+  if(action==='export'){const blob=await response.blob(),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`Tivdoc-personal-data-${selected}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);setStatus('קובץ המידע הוכן להורדה למכשיר שלך.');}else{setStatus('הבקשה נקלטה לטיפול. קליטתה אינה אישור שמידע תוקן או נמחק. לרשימה המעודכנת אפשר לרענן את העמוד.');}
+  }catch(error){setStatus(error instanceof Error?error.message:'הבקשה לא הושלמה');}finally{setBusy(false);}
+ }
+ return <section><h2>המידע שלי</h2>{cases.length===0?<p>אין תיקים משויכים לחשבון זה.</p>:<><label>תיק <select value={selected} onChange={e=>setSelected(e.target.value)}>{cases.map(c=><option key={c.public_id}>{c.public_id}</option>)}</select></label><button disabled={busy} onClick={()=>send('export')}>הורדת המידע האישי</button><p>יצוא דורש כניסה עם קוד אימות ב־15 הדקות האחרונות. מסמכי המקור נגישים מתוך התיק והדוחות.</p><label>סוג בקשה <select value={kind} onChange={e=>setKind(e.target.value)}><option value="access">עיון במידע</option><option value="correction">תיקון מידע</option><option value="deletion">מחיקת מידע</option></select></label><label>פרטי הבקשה <textarea value={message} onChange={e=>setMessage(e.target.value)} maxLength={2000}/></label><button disabled={busy||message.trim().length<4} onClick={()=>send('request')}>שליחת בקשה</button></>}<p role="status">{status}</p>{reauth?<Link href="/login?reauth=1">כניסה מחדש</Link>:null}</section>;
+}

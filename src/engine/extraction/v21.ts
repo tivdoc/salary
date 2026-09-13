@@ -27,8 +27,8 @@ import {
 } from "./v2.ts";
 
 export const PAYSLIP_EXTRACTION_V21_VERSION = "2.1";
-export const PAYSLIP_V21_RESOLUTION_POLICY_VERSION = "payslip-v2.1-non-degrading-resolution-1";
-export const RECOVERY_PROMOTION_MIN_CONFIDENCE = 0.9;
+export const PAYSLIP_V21_RESOLUTION_POLICY_VERSION = "payslip-v2.1-non-degrading-resolution-4";
+export const RECOVERY_PROMOTION_MIN_CONFIDENCE = 0.95;
 
 export const expectedInformationGainSchema = z.enum([
   "none",
@@ -92,7 +92,8 @@ export type FieldResolutionV21 = Readonly<z.infer<typeof fieldResolutionV21Schem
 export const payslipExtractionV21ResultSchema = z
   .object({
     extractor_version: z.literal(PAYSLIP_EXTRACTION_V21_VERSION),
-    resolution_policy_version: z.literal(PAYSLIP_V21_RESOLUTION_POLICY_VERSION),
+    // Existing immutable checkpoints remain readable under their own policy.
+    resolution_policy_version: z.enum(["payslip-v2.1-non-degrading-resolution-2", "payslip-v2.1-non-degrading-resolution-3", PAYSLIP_V21_RESOLUTION_POLICY_VERSION]),
     first_pass: payslipExtractionPassSchema,
     recovery_passes: z.array(payslipExtractionPassSchema).max(1),
     recovery_decision: recoveryDecisionSchema,
@@ -311,7 +312,7 @@ function firstPassStatus(pass: PayslipExtractionPass, candidates: readonly Norma
   if (assessment?.status === "invalid") return "invalid";
   if (assessment?.status === "requires_confirmation") return "requires_confirmation";
   if (assessment?.status === "suspicious") return "suspicious";
-  const threshold = criticalFieldThresholds[candidate.field as keyof typeof criticalFieldThresholds] ?? 0.9;
+  const threshold = criticalFieldThresholds[candidate.field as keyof typeof criticalFieldThresholds] ?? 0.95;
   return candidate.confidence >= threshold ? "confirmed" : "candidate";
 }
 
@@ -396,7 +397,7 @@ function withResolutionConflicts(
   const status = statusRank[validation.status] > statusRank.requires_confirmation
     ? validation.status
     : "requires_confirmation";
-  return gate0ValidationSchema.parse({ status, field_assessments: fieldAssessments, issues });
+  return gate0ValidationSchema.parse({ ...validation, status, field_assessments: fieldAssessments, issues });
 }
 
 function mergeStickyValidation(input: {
@@ -404,6 +405,8 @@ function mergeStickyValidation(input: {
   current: Gate0Validation;
   recoveredFields: ReadonlySet<PayslipFieldKey>;
 }) {
+  if(input.historical.component_duplicate_policy!==input.current.component_duplicate_policy)
+    throw new TypeError('EXTRACTION_VALIDATION_POLICY_MISMATCH');
   const currentCodes = new Set(input.current.issues.map((issue) => issue.code));
   const resolvedHistorical = new Set<string>();
   for (const issue of input.historical.issues) {
@@ -442,7 +445,7 @@ function mergeStickyValidation(input: {
     issueDerivedStatus,
   );
   return {
-    validation: gate0ValidationSchema.parse({ status, field_assessments: fieldAssessments, issues: mergedIssues }),
+    validation: gate0ValidationSchema.parse({ ...input.current, status, field_assessments: fieldAssessments, issues: mergedIssues }),
     resolvedHistoricalIssueCodes: [...resolvedHistorical].sort(),
   };
 }
@@ -457,6 +460,8 @@ export function resolvePayslipExtractionPassesV21(input: {
 }): PayslipExtractionV21Result {
   const firstPass = payslipExtractionPassSchema.parse(input.first_pass);
   const recoveryPasses = input.recovery_passes.map((pass) => payslipExtractionPassSchema.parse(pass));
+  if(recoveryPasses.some(pass=>pass.validation.component_duplicate_policy!==firstPass.validation.component_duplicate_policy))
+    throw new TypeError('EXTRACTION_VALIDATION_POLICY_MISMATCH');
   if (recoveryPasses.length > 1) throw new TypeError("V2.1 allows at most one recovery pass");
   const decision = recoveryDecisionSchema.parse(input.recovery_decision);
   if (decision.requested !== (recoveryPasses.length === 1)) {
@@ -475,6 +480,7 @@ export function resolvePayslipExtractionPassesV21(input: {
     .map((candidate) => rawCandidate(candidate, rawCandidates));
   const resolutionDrafts = new Map<PayslipFieldKey, FieldResolutionV21>();
   const promotionCandidates = new Map<PayslipFieldKey, NormalizedCandidateField>();
+  const readingCandidates = new Map<PayslipFieldKey, RawCandidateField>();
 
   for (const field of allFields) {
     const firstCandidates = candidatesFor(firstPass, field);
@@ -567,6 +573,17 @@ export function resolvePayslipExtractionPassesV21(input: {
     if (preconditionsMet) {
       promotionCandidates.set(field, recoveryCandidate);
     } else {
+      // A usable cell may still need an identified reader because its model
+      // confidence/region does not satisfy automatic recovery. Preserve one
+      // unambiguous valid observation, explicitly gated by Gate0 everywhere.
+      // The untouched raw recovery pass remains its original evidence.
+      const canRequestReading = recoveryPass !== undefined &&
+        recoveryPass.raw_extraction.status !== "failed" && recoveryCandidates.length === 1 &&
+        recoveryAssessment?.status === "valid" && recoveryCandidate.warning_flags.length === 0;
+      if (canRequestReading) {
+        const raw = rawCandidate(recoveryCandidate, rawCandidates);
+        readingCandidates.set(field, {...raw, warning_flags: [...raw.warning_flags, "recovery_reading_confirmation_required"]});
+      }
       resolutionDrafts.set(field, fieldResolutionV21Schema.parse({
         field,
         status: "requires_confirmation",
@@ -574,7 +591,7 @@ export function resolvePayslipExtractionPassesV21(input: {
         first_pass_candidate_ids: [],
         recovery_candidate_ids: recoveryIds,
         selected_candidate_id: null,
-        reason_codes: ["recovery_candidate_not_promotable"],
+        reason_codes: ["recovery_candidate_not_promotable", ...(canRequestReading ? ["recovery_candidate_retained_for_identified_reading"] : [])],
       }));
     }
   }
@@ -593,6 +610,7 @@ export function resolvePayslipExtractionPassesV21(input: {
   const provisionalValidation = validatePayslipGate0(provisionalExtraction, {
     reference_year: input.reference_year,
     critical_context: input.critical_context,
+    component_duplicate_policy: firstPass.validation.component_duplicate_policy,
   });
   const recoveredFields = new Set<PayslipFieldKey>();
   for (const [field, candidate] of promotionCandidates) {
@@ -629,6 +647,7 @@ export function resolvePayslipExtractionPassesV21(input: {
     ...[...promotionCandidates.entries()]
       .filter(([field]) => recoveredFields.has(field))
       .map(([, candidate]) => rawCandidate(candidate, rawCandidates)),
+    ...readingCandidates.values(),
   ];
   const finalRaw = buildFinalRaw({
     firstPass,
@@ -641,6 +660,7 @@ export function resolvePayslipExtractionPassesV21(input: {
   const deterministicValidation = validatePayslipGate0(finalExtraction, {
     reference_year: input.reference_year,
     critical_context: input.critical_context,
+    component_duplicate_policy: firstPass.validation.component_duplicate_policy,
   });
   const currentValidation = withResolutionConflicts(deterministicValidation, resolutions);
   const sticky = mergeStickyValidation({

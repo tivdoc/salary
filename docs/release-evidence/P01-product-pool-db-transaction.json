@@ -1,0 +1,15 @@
+{
+  "passed": true,
+  "checks": [
+    "eight concurrent cold RPCs use one real verified-TLS web pool with at most two TCP clients",
+    "actual idle TCP clients drain without ending the reusable pool",
+    "the same pool reconnects for a fresh authorized RPC after idle release"
+  ],
+  "port": 6543,
+  "poolsCreated": 1,
+  "remainingTcpClients": 0,
+  "database": "tivdoc_release_replay_20260907",
+  "scope": "Read-only empty synthetic case UUID through actual server resolver/web-role RPC/TLS driver; constructor instrumentation counts actual pools. No case or identity created. Local idle drain, not proof of Vercel suspension.",
+  "productionChanged": false,
+  "secretsIncluded": false
+}

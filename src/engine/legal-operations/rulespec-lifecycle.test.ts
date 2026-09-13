@@ -16,6 +16,10 @@ import { createRuleSpecPackage, type RuleSpecPackage } from "./rulespec.ts";
 import { SYNTHETIC_SEVEN_TOPIC_FIXTURES, syntheticBindings } from "./synthetic-fixtures.ts";
 
 const NOW = "2040-01-01T00:00:00.000Z";
+function legacyTopic(rule:RuleSpecPackage){
+ if(rule.topic==='contract'||rule.topic==='bonuses')throw Error('SYNTHETIC_SEVEN_TOPIC_SCOPE');return rule.topic;
+}
+
 
 function reference(
   rule: RuleSpecPackage,
@@ -58,7 +62,7 @@ function lifecycle(rule: RuleSpecPackage, commandPrefix: string) {
   });
   instance.bindDependencies({
     manifest,
-    bindings: syntheticBindings(rule.topic, rule.content_sha256, rule.golden_case_set_sha256),
+    bindings: syntheticBindings(legacyTopic(rule), rule.content_sha256, rule.golden_case_set_sha256),
     metadata: { command_id: `${commandPrefix}.dependencies`, occurred_at: NOW },
   });
   instance.markGoldenReady({
@@ -164,7 +168,7 @@ describe("non-operative RuleSpec lifecycle", () => {
     });
     instance.bindDependencies({
       manifest,
-      bindings: syntheticBindings(realInactive.topic, realInactive.content_sha256,
+      bindings: syntheticBindings(legacyTopic(realInactive), realInactive.content_sha256,
         realInactive.golden_case_set_sha256),
       metadata: { command_id: "syn.command.real.dependencies", occurred_at: NOW },
     });

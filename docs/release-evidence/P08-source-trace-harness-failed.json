@@ -1,0 +1,13 @@
+{
+  "verdict": "FAIL",
+  "gitSha": "708226b5e5e62fbcadc499ed41f82ee4a813dee5",
+  "proof": null,
+  "failure": "expected error: Engine version history is append-o… { …(15) } to match object { code: '42501' }\n(17 matching properties omitted from actual)",
+  "cleanupFailure": null,
+  "syntheticCasesRemoved": 2,
+  "syntheticIdentitiesRemoved": 2,
+  "machineSessionRevoked": true,
+  "traceAndAnalysisRolledBack": false,
+  "browserProof": false,
+  "productionChanged": false
+}

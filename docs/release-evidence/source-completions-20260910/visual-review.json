@@ -1,0 +1,14 @@
+{
+  "observer": "Codex visual inspection of actual persisted PDF rendered with Poppler",
+  "at": "2026-09-10T05:13:29.686Z",
+  "pagesReviewed": [
+    "calculated-page-1.png"
+  ],
+  "runId": "b4d823c8-dafc-41ee-80ef-3f1ce48124e2",
+  "readable": true,
+  "clippedContentObserved": false,
+  "amountsMatch": true,
+  "sourceCompletionAndEngineeringLabelsVisible": true,
+  "minorBidiSpacingPresent": true,
+  "pdfSha256": "53ec291f5bec204e65dbf9d918f42d76f749820da1f6c85da74733b42d72d6e3"
+}

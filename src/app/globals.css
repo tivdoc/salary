@@ -1,20 +1,16 @@
 :root {
-  /* S4 (4.6). The funnel, the case screens and /operations are a deliberately
-     light palette; without this a browser in dark mode repaints form controls,
-     scrollbars and the default focus ring dark against it. The landing declares
-     the same thing on `.v5`; this covers everything else. */
   color-scheme: light;
-  --paper: #f7f3e8;
-  --paper-deep: #ece6d8;
+  --paper: #FAF8F5;
+  --paper-deep: #F0EDF5;
   --surface: #ffffff;
-  --ink: #111111;
-  --blue: #2155ff;
-  --blue-dark: #163fc9;
-  --yellow: #ffd84d;
-  --green: #0b7a53;
-  --red: #c63d32;
-  --muted: #6c6a63;
-  --border: #d8d2c5;
+  --ink: #302C48;
+  --blue: #302C48;
+  --blue-dark: #423C60;
+  --yellow: #E8845C;
+  --green: #24664C;
+  --red: #AC3535;
+  --muted: #686477;
+  --border: #DDD9E3;
   --radius: 10px;
   --shadow-paper: 0 30px 80px rgba(70, 61, 38, 0.14), 0 3px 8px rgba(70, 61, 38, 0.1);
 }
@@ -432,7 +428,7 @@ mark {
 
 .payslip__title span,
 .payslip__identity span {
-  color: #6c6a63;
+  color: #686477;
   font-size: 11px;
 }
 
@@ -1502,7 +1498,7 @@ mark {
 
 .field input::placeholder,
 .field textarea::placeholder {
-  color: #6c6a63;
+  color: #686477;
   opacity: 1;
 }
 

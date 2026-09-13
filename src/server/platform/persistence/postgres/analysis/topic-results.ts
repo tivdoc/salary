@@ -1,8 +1,8 @@
 import { canonicalSha256 } from "../../../../../engine/rule-runtime/canonical";
-import type { TopicAnalysisResult } from "../../../../../engine/wave3/contracts";
+import {WAVE3_TOPICS, type Wave3Topic, type TopicAnalysisResult } from "../../../../../engine/wave3/contracts";
 import { statement, type PostgresTransactionContext } from "../contracts";
 import { mapPostgresAnalysisError, PostgresAnalysisError } from "./errors";
-import { assertSafeIdentifier, assertSevenTopics, validateTopicResult } from "./validation";
+import { assertSafeIdentifier, assertRequestedTopics, validateTopicResult } from "./validation";
 
 export class PostgresTopicResultRepository {
   constructor(
@@ -17,7 +17,11 @@ export class PostgresTopicResultRepository {
     analysis_run_id: string;
     topic_results: readonly TopicAnalysisResult[];
   }>): Promise<void> {
-    assertSevenTopics(input.topic_results);
+    return this.persistScoped({...input, expected_topics:WAVE3_TOPICS});
+  }
+
+  async persistScoped(input: Readonly<{case_id:string;analysis_run_id:string;topic_results:readonly TopicAnalysisResult[];expected_topics:readonly Wave3Topic[]}>):Promise<void> {
+    assertRequestedTopics(input.topic_results,input.expected_topics);
     try {
       for (const untrusted of input.topic_results) {
         const result = validateTopicResult(untrusted);

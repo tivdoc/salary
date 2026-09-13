@@ -2,6 +2,10 @@ import { z } from "zod";
 import { domainCodeSchema, uuidSchema } from "../domain/primitives.ts";
 import { payslipFieldKeySchema } from "./contracts.ts";
 import { normalizedPayslipExtractionSchema, type NormalizedCandidateField, type NormalizedPayslipExtraction } from "./payslip.ts";
+import {canonicalSha256} from '../rule-runtime/canonical.ts';
+
+export const SOURCE_ROW_DUPLICATE_POLICY='source-row-cells-v1' as const;
+export const componentDuplicatePolicySchema=z.literal(SOURCE_ROW_DUPLICATE_POLICY);
 
 export const gate0StatusSchema = z.enum(["valid", "suspicious", "invalid", "requires_confirmation"]);
 export const validationSeveritySchema = z.enum(["warning", "error", "confirmation"]);
@@ -30,6 +34,8 @@ export const gate0ValidationSchema = z
     status: gate0StatusSchema,
     field_assessments: z.array(fieldAssessmentSchema),
     issues: z.array(gate0IssueSchema),
+    // Absence retains the historical grouping and exact old serialized shape.
+    component_duplicate_policy: componentDuplicatePolicySchema.optional(),
   })
   .strict();
 
@@ -92,6 +98,43 @@ function moneyMinorUnits(field: NormalizedCandidateField | undefined) {
   return (field.normalized_value as { minor_units: number }).minor_units;
 }
 
+function representedComponentIds(extraction: NormalizedPayslipExtraction) {
+  const represented = new Set<string>();
+  const amountProjections = [
+    ["base_monthly_salary", ["base_salary", "hourly_base"]],
+    ["travel_amount", ["travel"]],
+    ["convalescence_amount", ["convalescence"]],
+  ] as const;
+  for (const [fieldName, semanticKinds] of amountProjections) {
+    const fields = extraction.fields.filter(field => field.field === fieldName);
+    const components = extraction.additional_components.filter(component => component.amount_raw !== null
+      && semanticKinds.some(kind => kind === component.semantic_kind));
+    // V2 preserves a payroll row and projects its amount into a known field.
+    // Without an explicit row ID, collapse only an unambiguous one-to-one
+    // projection. Duplicate/conflicting observations retain their own gates.
+    if (fields.length !== 1 || components.length !== 1) continue;
+    const field = fields[0], component = components[0];
+    const value = field.normalized_value as { currency: string; minor_units: number } | null;
+    if (!value || !component.amount || component.amount_raw === null
+      || value.currency !== component.amount.currency || value.minor_units !== component.amount.minor_units
+      || field.raw_value.trim() !== component.amount_raw.trim()
+      || field.extraction_method !== component.extraction_method
+      || field.source.document_id !== extraction.document_id
+      || field.source.document_id !== component.source.document_id || field.source.page !== component.source.page) continue;
+    const fieldBox = field.source.bounding_box, componentBox = component.source.bounding_box;
+    if (fieldBox || componentBox) {
+      if (!fieldBox || !componentBox
+        || fieldBox.coordinate_space !== componentBox.coordinate_space
+        || fieldBox.x !== componentBox.x || fieldBox.y !== componentBox.y
+        || fieldBox.width !== componentBox.width || fieldBox.height !== componentBox.height) continue;
+    }
+    // Text fragments deliberately differ: the field carries evidence label +
+    // raw value, while the retained component carries the payroll row label.
+    represented.add(component.component_id);
+  }
+  return represented;
+}
+
 function hoursAmount(field: NormalizedCandidateField | undefined) {
   if (!field || !hoursFields.has(field.field) || field.normalized_value === null) return null;
   return (field.normalized_value as { amount: string }).amount;
@@ -126,9 +169,11 @@ export function validatePayslipGate0(
   options: {
     reference_year?: number;
     critical_context?: Gate0CriticalContext;
+    component_duplicate_policy?: typeof SOURCE_ROW_DUPLICATE_POLICY;
   } = {},
 ): Gate0Validation {
   const extraction = normalizedPayslipExtractionSchema.parse(input);
+  const duplicatePolicy=options.component_duplicate_policy===undefined?undefined:componentDuplicatePolicySchema.parse(options.component_duplicate_policy);
   const referenceYear = options.reference_year ?? new Date().getUTCFullYear();
   const assessments = new Map<string, MutableAssessment>(
     extraction.fields.map((field) => [
@@ -207,6 +252,9 @@ export function validatePayslipGate0(
     if (field.warning_flags.includes("ocr_ambiguous") || field.warning_flags.includes("possible_scale_error")) {
       addIssue("ocr_value_ambiguous", "requires_confirmation", "confirmation", [field], "OCR evidence indicates an ambiguous value or scale.");
     }
+    if (field.warning_flags.includes("recovery_reading_confirmation_required")) {
+      addIssue("recovery_reading_confirmation_required", "requires_confirmation", "confirmation", [field], "This recovery-only observation requires an identified document reading; model confidence alone cannot confirm it.");
+    }
 
     if (field.field === "salary_period") {
       const period = field.normalized_value as { month: number; year: number };
@@ -254,8 +302,19 @@ export function validatePayslipGate0(
   const mappedComponents = new Map<string, typeof extraction.additional_components>();
   for (const component of extraction.additional_components) {
     if (component.normalized_label === null) continue;
-    const group = mappedComponents.get(component.normalized_label) ?? [];
-    mappedComponents.set(component.normalized_label, [...group, component]);
+    // A deduction category is not a row identity. Keep different tax/pension
+    // deductions separate; a repeated reading of the same located row and
+    // literal cells remains a possible duplicate. All other historic groups,
+    // totals checks and confidence thresholds are unchanged.
+    const key=duplicatePolicy===SOURCE_ROW_DUPLICATE_POLICY&&component.semantic_kind==='deduction'
+      ? canonicalSha256({kind:'deduction_source_row',document_id:component.source.document_id,page:component.source.page,
+        text_fragment:component.source.text_fragment??null,bounding_box:component.source.bounding_box??null,
+        source_label:component.source_label,normalized_label:component.normalized_label,
+        quantity_raw:component.quantity_raw,rate_raw:component.rate_raw,percentage_raw:component.percentage_raw,amount_raw:component.amount_raw,
+        quantity:component.quantity,rate:component.rate,percentage:component.percentage,amount:component.amount})
+      : canonicalSha256({kind:'legacy_semantic_label',normalized_label:component.normalized_label});
+    const group = mappedComponents.get(key) ?? [];
+    mappedComponents.set(key, [...group, component]);
   }
   for (const components of mappedComponents.values()) {
     if (components.length < 2) continue;
@@ -338,7 +397,7 @@ export function validatePayslipGate0(
     grossField && deductionsField && netField
   ) {
     const expectedNet = grossTotal - deductionsTotal;
-    if (scaledDifferenceIsLarge(BigInt(netTotal), BigInt(expectedNet), BigInt(1), 2)) {
+    if (absolute(BigInt(netTotal) - BigInt(expectedNet)) > BigInt(100)) {
       addIssue(
         "payslip_totals_mismatch",
         "requires_confirmation",
@@ -355,12 +414,18 @@ export function validatePayslipGate0(
       .map((field) => firstField(extraction, field))
       .filter((field): field is NormalizedCandidateField => field !== undefined);
     const componentAmounts = knownComponentFields.map(moneyMinorUnits).filter((value): value is number => value !== null);
-    const additionalAmounts = extraction.additional_components.map((component) => component.amount?.minor_units ?? 0);
+    const represented = representedComponentIds(extraction);
+    const additionalAmounts = extraction.additional_components
+      // Retain all transcribed rows, but explicit deductions are not gross
+      // earnings. Unknown/other rows still participate; labels cannot bypass
+      // reconciliation. Deductions remain checked against gross/net above.
+      .filter((component) => component.semantic_kind !== "deduction" && !represented.has(component.component_id))
+      .map((component) => component.amount?.minor_units ?? 0);
     if (gross !== null && grossField && componentAmounts.length > 0) {
       const componentSum = [...componentAmounts, ...additionalAmounts].reduce((sum, value) => sum + value, 0);
       if (nearPowerOfTenScale(BigInt(gross), BigInt(componentSum))) {
         addIssue("ocr_scale_mismatch", "requires_confirmation", "confirmation", [grossField, ...knownComponentFields], "Gross salary and parsed components differ by an apparent factor of ten.");
-      } else if (scaledDifferenceIsLarge(BigInt(gross), BigInt(componentSum), BigInt(1), 3)) {
+      } else if (absolute(BigInt(gross) - BigInt(componentSum)) > BigInt(100)) {
         addIssue("gross_component_mismatch", "suspicious", "warning", [grossField, ...knownComponentFields], "Gross salary does not reconcile with the complete parsed component set.");
       }
     }
@@ -413,5 +478,6 @@ export function validatePayslipGate0(
     (current, assessment) => (statusRank[assessment.status] > statusRank[current] ? assessment.status : current),
     globalStatus,
   );
-  return gate0ValidationSchema.parse({ status, field_assessments: fieldAssessments, issues });
+  return gate0ValidationSchema.parse({ status, field_assessments: fieldAssessments, issues,
+    ...(duplicatePolicy?{component_duplicate_policy:duplicatePolicy}:{}) });
 }

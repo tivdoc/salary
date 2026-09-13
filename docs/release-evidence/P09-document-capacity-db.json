@@ -1,0 +1,15 @@
+{
+  "checks": [
+    "ordinary case still refuses a thirteenth payslip",
+    "paid historical scope expands only its own case and returns its actual selectable months",
+    "parallel uploads allocate slots 100 and 101 without truncation or changing earlier versions",
+    "server keeps the 25 MB per-batch bound despite larger whole-case capacity",
+    "concurrent reservations count toward the same paid capacity; only one wins the last slot",
+    "entitlement change is rechecked at completion and a failed commit preserves all prior documents",
+    "browser database roles cannot call the capacity helper"
+  ],
+  "database": "tivdoc_release_replay_20260907",
+  "runtime_roles": "two actual web credentials",
+  "fixtures": "synthetic QA metadata and seeded paid entitlement; no provider charge or Storage bytes",
+  "production": "untouched"
+}

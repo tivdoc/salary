@@ -1,0 +1,5 @@
+# Hash-pinned receipts retain their original bytes, including CRLF when present.
+# Keep ordinary whitespace checks; recognize CR as the line-ending byte.
+*.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+*.txt -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+*.html -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

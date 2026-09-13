@@ -77,7 +77,9 @@ const salaryTypeSchema = z
   })
   .strict();
 
-export const openAiPayslipV2StructuredOutputSchema = z
+// Keep the original r5 contract available for replay/audit. R6 adds a valid
+// location for separately printed observations; no old value is rewritten.
+export const openAiPayslipV2R5StructuredOutputSchema = z
   .object({
     detected_document_type: z.enum(["payslip", "unknown"]),
     document_quality: z.enum(["high", "medium", "low"]),
@@ -109,4 +111,33 @@ export const openAiPayslipV2StructuredOutputSchema = z
   })
   .strict();
 
+export const OPENAI_PAYSLIP_V2_OBSERVATION_SCHEMA_VERSION='payslip-v2-header-observations-v1' as const;
+export const openAiPayslipV2R6StructuredOutputSchema=openAiPayslipV2R5StructuredOutputSchema.extend({
+ generic_fields:z.array(genericFieldSchema.extend({field:z.enum([
+  'salary_period','employment_start_date','vacation_balance','sick_balance','regular_hours','hourly_rate',
+ ])}).strict()),
+}).strict();
+
+// R7 changes transcription instructions, not the structured source vocabulary.
+export const openAiPayslipV2StructuredOutputSchema=openAiPayslipV2R6StructuredOutputSchema;
+
+// R8 adds source-scope evidence without changing any R5/R6/R7 parser or bytes.
+export const openAiV2SourceScopeSchema=z.object({
+ period_kind:z.enum(['current','cumulative','retroactive','unknown']),
+ fund_kind:z.enum(['pension','study','severance','combined','unknown']),
+ column_label:z.string().trim().min(1).max(160).nullable(),
+}).strict();
+const evidenceR8=evidenceSchema.extend({source_scope:openAiV2SourceScopeSchema}).strict();
+const candidateR8=openAiV2ValueCandidateSchema.extend({evidence:evidenceR8}).strict();
+const contributionR8=z.object({rate_candidates:z.array(candidateR8).max(8),amount_candidates:z.array(candidateR8).max(8)}).strict();
+export const openAiPayslipV2R8StructuredOutputSchema=openAiPayslipV2R6StructuredOutputSchema.extend({
+ schema_version:z.literal('payslip-v2-source-scope-r8'),
+ salary_type:salaryTypeSchema.extend({documented_evidence:evidenceR8}).strict(),
+ generic_fields:z.array(z.object({field:z.enum(['salary_period','employment_start_date','vacation_balance','sick_balance','regular_hours','hourly_rate']),candidates:z.array(candidateR8).max(8)}).strict()),
+ payroll_rows:z.array(payrollRowSchema.extend({evidence:evidenceR8}).strict()).max(200),
+ totals:z.object({visible:z.boolean(),gross_candidates:z.array(candidateR8).max(8),deductions_candidates:z.array(candidateR8).max(8),net_candidates:z.array(candidateR8).max(8)}).strict(),
+ pension:z.object({visible:z.boolean(),base_candidates:z.array(candidateR8).max(8),employee:contributionR8,employer:contributionR8,severance:contributionR8}).strict(),
+}).strict();
+export const openAiPayslipV2AcceptedOutputSchema=z.union([openAiPayslipV2R8StructuredOutputSchema,openAiPayslipV2StructuredOutputSchema]);
 export type OpenAiPayslipV2StructuredOutput = Readonly<z.infer<typeof openAiPayslipV2StructuredOutputSchema>>;
+export type OpenAiPayslipV2AcceptedOutput = Readonly<z.infer<typeof openAiPayslipV2AcceptedOutputSchema>>;

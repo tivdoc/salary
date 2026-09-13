@@ -1,0 +1,133 @@
+{
+  "schemaVersion": "tivdoc-dev-financial-delivery-v1",
+  "verifiedAt": "2026-09-09T06:21:38.862Z",
+  "applicationCommit": "1fbf0f15987a971a54f8d042832786b5a44cb0fb",
+  "branch": "codex/tivdoc-release-completion",
+  "pr": "https://github.com/tivdoc/salary/pull/2",
+  "preview": {
+    "id": "dpl_HTsxNstUdoQ71EMrAGbPaGXG9nPF",
+    "url": "salary-3zlixydgx-tivdoccom-5042s-projects.vercel.app",
+    "target": "preview",
+    "readyState": "READY",
+    "sha": "1fbf0f15987a971a54f8d042832786b5a44cb0fb"
+  },
+  "ci": [
+    {
+      "conclusion": "success",
+      "headSha": "1fbf0f15987a971a54f8d042832786b5a44cb0fb",
+      "status": "completed",
+      "url": "https://github.com/tivdoc/salary/actions/runs/34316811245"
+    },
+    {
+      "conclusion": "success",
+      "headSha": "1fbf0f15987a971a54f8d042832786b5a44cb0fb",
+      "status": "completed",
+      "url": "https://github.com/tivdoc/salary/actions/runs/34316813836"
+    }
+  ],
+  "verificationHarness": {
+    "path": "scripts/release-completion/preview-dev-financial-flow.mts",
+    "sha256": "8bb8b80845a26f75da779b3ff766b3854f6f5f83e51ede9ff86304a1849fceb0",
+    "gitBlob": "4a31962d40903194073400c846a63fe4e605682b",
+    "gitWorktreeDirty": true,
+    "runtimeMatchesApplicationCommit": true,
+    "changes": "Explicit bounded browser waits and45-second per-check deadline; original browser HTTP200, saved UI and reload checks retained. JSON acknowledgement is read through an actual same-answer HTTP retry because Playwright stalled reading the browser-owned response after refresh. Single answer revision is asserted in DB."
+  },
+  "schema": {
+    "database": "tivdoc_release_replay_20260907",
+    "project": "cpzrbidxftzqcfeqqusu",
+    "migrationCount": 124,
+    "tail": "20260909050400_document_metadata_readings.sql",
+    "tailSha256": "eca5224233af913111f7d8a62ed782943796cf993573751d6e61972cc7ae67d6",
+    "proof": "Existing isolated DEV upgrade after rollback/ACL checks; no fresh full124 chain replay is claimed."
+  },
+  "acceptance": {
+    "dbIntegratedChecks": 12,
+    "sourceConfirmationSets": 2,
+    "freshNodeProcessReplays": 1,
+    "browserChecks": 11,
+    "financialRuns": 3,
+    "findings": 2,
+    "currentResults": 1,
+    "independentExpected": {
+      "month": "2026-06",
+      "regularHours": "100",
+      "baseMinor": 330000,
+      "expectedMinor": 354000,
+      "gapMinor": 24000,
+      "independentCalculation": "100 * 3540 minor units - 330000 minor units = 24000 minor units",
+      "humanLegalApproval": false
+    },
+    "htmlPdfSameRunAndBytes": true,
+    "foreignCustomerRefused": true,
+    "noSeededFindingsOrReports": true,
+    "authenticatedHttpAnswerRetry": true
+  },
+  "cleanup": {
+    "cases": 2,
+    "identities": 2,
+    "storageObjects": 2,
+    "machineSessionsRevoked": 2,
+    "canonicalAuditRetained": true,
+    "error": null
+  },
+  "liveOcrProof": false,
+  "legalActivation": false,
+  "managedWorkerLifecycleProof": false,
+  "realOtpProof": false,
+  "realPaymentProof": false,
+  "productionChanged": false,
+  "artifacts": [
+    {
+      "path": "docs/release-evidence/dev-financial-example/synthetic-june-2026-100-hours.pdf",
+      "sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d"
+    },
+    {
+      "path": "docs/release-evidence/dev-financial-example/synthetic-june-2026-missing-hours.pdf",
+      "sha256": "d7b5b567e94d8314283009bc73a2461857f668cc6f5f024d0d7f21aca2e295f3"
+    },
+    {
+      "path": "docs/release-evidence/dev-financial-example/initial-calculated.pdf",
+      "sha256": "d754da0a89d1641d67a3fa010d67b2c78a7c3557cb5877dd9883266bb90b8ab9"
+    },
+    {
+      "path": "docs/release-evidence/dev-financial-example/initial-calculated.html",
+      "sha256": "3a73091594ad3c93acc95ed1ac5008ee9a052441e67e472e87444b070f79d84a"
+    },
+    {
+      "path": "docs/release-evidence/dev-financial-example/initial-calculated.json",
+      "sha256": "20961c4d3ab59d2b3ac151a283966b5a020103fcd785f7c053f9fa1b9f31c423"
+    },
+    {
+      "path": "docs/release-evidence/dev-financial-example/answered-calculated.pdf",
+      "sha256": "76237d41d4330812e1b599832ac824957d66d8d560a5cd8d18a4b06ede44adbf"
+    },
+    {
+      "path": "docs/release-evidence/dev-financial-example/answered-calculated.html",
+      "sha256": "4792cae58b7af1d7b9fea60756734c87bdc0393ab05b7664250796de0007a046"
+    },
+    {
+      "path": "docs/release-evidence/dev-financial-example/answered-calculated.json",
+      "sha256": "f256bc238b7cf89ca4e53cec292cd1cf7363a8f5dbc0ab1f3d5771b0af08011f"
+    },
+    {
+      "path": "docs/release-evidence/dev-financial-example/independent-oracle.json",
+      "sha256": "d561366e6e9c6a0af8591755a6564f7de03003a8c0e1b9a1de835e700144e59c"
+    }
+  ],
+  "scope": "Engineering-only June2026 synthetic hourly base-pay comparison. Actual uploaded PDFs and durable canonical analysis, injected V2 transport, automated synthetic cell-reading confirmations, one identified browser hours answer. No human/legal approval or live OCR claim.",
+  "localFinalChecks": {
+    "typecheck": true,
+    "changedHarnessLint": true,
+    "applicationCiTestsPassed": 3181,
+    "applicationCiTestsSkipped": 64,
+    "closureChecksPassed": 48
+  },
+  "visualInspection": {
+    "initialPdf": true,
+    "answeredPdf": true,
+    "hosted390px": true,
+    "hosted1440px": true,
+    "amountsAndRunIdsVisibleInPdf": true
+  }
+}

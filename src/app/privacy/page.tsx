@@ -3,17 +3,22 @@ import Link from "next/link";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { guardStableAppEntrypoint } from "@/server/platform/capabilities/stable-next-entrypoint";
+import {termsVersionLabel,resolveTermsPresentationVersion,RETAINED_TERMS_VERSION,REPORT_NOTIFICATION_NOTICE} from "@/lib/legal-terms";
+import RetainedPrivacy20260907 from "@/components/legal/retained-privacy-2026-09-07";
 
-export const metadata: Metadata = { title: "מדיניות פרטיות | Tivdoc" };
+export const metadata: Metadata = { alternates: { canonical: "/privacy" }, title: "מדיניות פרטיות | Tivdoc" };
 
-export default async function PrivacyPage() {
+export default async function PrivacyPage({searchParams}: {searchParams:Promise<{version?:string|string[]}>}) {
   await guardStableAppEntrypoint("CEP-008");
+  const version=resolveTermsPresentationVersion((await searchParams)?.version);
+  if(version===RETAINED_TERMS_VERSION)return <RetainedPrivacy20260907 />;
+  if(version===null)return <><SiteHeader /><main id="main-content" className="legal-page"><div className="legal-shell"><h1>נוסח מדיניות הפרטיות המבוקש אינו זמין כאן.</h1><p>לא מוצגת מדיניות חדשה במקום הגרסה שנשמרה בהזמנה. אפשר לפנות לתמיכה מתוך התיק לבירור הגרסה.</p></div></main><SiteFooter /></>;
   return (
     <>
       <SiteHeader />
       <main id="main-content" className="legal-page">
         <div className="legal-shell">
-          <p className="mono legal-page__label">מדיניות פרטיות · עודכן ביום 28.8.2026</p>
+          <p className="mono legal-page__label">מדיניות פרטיות · עודכן ביום {termsVersionLabel()}</p>
           <h1>הפרטים והמסמכים שלך משמשים לבדיקה.</h1>
           <p className="legal-page__lead">
             מדיניות זו מסבירה איזה מידע נאסף בשירות Tivdoc, למה הוא נדרש, עם מי הוא
@@ -54,15 +59,18 @@ export default async function PrivacyPage() {
             <h2>למה המידע משמש?</h2>
             <p>
               המידע משמש לפתיחת תיק בדיקה; קליטת המסמכים; ביצוע בדיקה ראשונית של
-              השכר והזכויות; יצירת קשר כאשר חסר מידע; טיפול בתשלום, בביטול או בהחזר;
+              השכר והזכויות; יצירת קשר כאשר חסר מידע; הודעה על זמינות דוח בהתאם לתנאי ההזמנה שנשמרו; טיפול בתשלום, בביטול או בהחזר;
               אבטחת השירות, מניעת הונאה ותקלות; עמידה בחובות דין; ושיפור השירות.
               מידע מתלושים, חוזים או מתשובות חופשיות אינו משמש לפרסום ואינו נשלח
               למעסיק ללא הוראה מפורשת ממך.
             </p>
           </section>
 
+          <section><h2>הודעות שירות על הדוח</h2><p>{REPORT_NOTIFICATION_NOTICE}</p><p>עדכון מדיניות זו אינו יוצר הסכמה חדשה עבור הזמנה שנשמרה תחת גרסה קודמת.</p></section>
+
           <section>
             <h2>ספקים וקבלת מידע</h2>
+            <p>מדידת GA4 ו־Meta החיצונית אינה מופעלת כעת. מדדים תפעוליים נשמרים במערכת לצורך מתן השירות.</p>
             <p>
               השירות נעזר ב־Supabase למסד נתונים ולאחסון פרטי של מסמכים, ב־Vercel
               לאירוח ולהפעלת השרת, ב־Invoice4u לעיבוד התשלום ובהפקת מסמכי עסקה,
@@ -93,19 +101,20 @@ export default async function PrivacyPage() {
           <section>
             <h2>שמירת מידע ומחיקה</h2>
             <p>
-              מסמכים שהועלו נשמרים עד 90 ימים ממועד העלאתם ולאחר מכן נמחקים, אלא אם
+              מסמכים שהועלו נבחנים למחיקה לאחר 90 ימים ממועד העלאתם. מסמכים הדרושים לדוח או לגרסה שנשמרה ממשיכים להישמר, וכן אם
               נדרש לשמור אותם לזמן נוסף לצורך טיפול פעיל, מחלוקת, מניעת שימוש לרעה או
               חובה חוקית. נתוני תיק, פרטי קשר ותשובות לשאלון נשמרים עד 24 חודשים
-              ממועד הפעילות האחרונה בתיק ולאחר מכן נמחקים או עוברים אנונימיזציה.
+              ממועד הפעילות האחרונה בתיק, בכפוף לבחינת צורך בשמירה. מחיקה או אנונימיזציה יתועדו רק לאחר שבוצעו.
               נתוני חשבונאות, תשלום וחשבוניות נשמרים למשך התקופה הנדרשת לפי דין.
             </p>
           </section>
 
           <section>
             <h2>עיון, תיקון ומחיקה</h2>
+            <p><Link href="/account">חשבון ופרטיות — בקשות ומידע אישי</Link></p>
             <p>
               ניתן לבקש לעיין במידע אישי, לתקן מידע שאינו נכון, שלם, ברור או מעודכן,
-              או למחוק מידע שאינו דרוש עוד. יש לשלוח בקשה בכתב לכתובת המפעיל ולכלול
+              או למחוק מידע שאינו דרוש עוד. אפשר לשלוח בקשה דרך אזור החשבון והפרטיות לאחר כניסה, או בכתב לכתובת המפעיל ולכלול
               שם מלא, פרטי קשר ומידע שיאפשר לזהות את התיק. לצורך הגנה על המידע ייתכן
               שנבקש אימות זהות. הבקשה תטופל בתוך 30 ימים, בכפוף לזכויות, לחריגים
               ולחובות שמירת מידע הקבועים בדין.

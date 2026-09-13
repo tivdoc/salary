@@ -1,0 +1,20 @@
+{
+  "checks": [
+    "enqueue retry persists one encrypted intention",
+    "concurrent actual workers claim the intention once",
+    "stale fencing token cannot acknowledge another attempt",
+    "early duplicated delivery webhook is reconciled after API acceptance; secret message is removed",
+    "product receipt is delivery-confirmed and a late queued retry cannot downgrade it",
+    "out-of-order sent event cannot downgrade confirmed delivery",
+    "complaint suppresses future deliveries to this hashed recipient",
+    "customer web role cannot claim messages or manufacture provider events",
+    "late token queue receipt cannot downgrade a sent token",
+    "answered queued reminder is cancelled before a provider attempt",
+    "actual session renewal returns the extended database expiry used by the cookie",
+    "revoked session cannot reopen even when rolling renewal is requested"
+  ],
+  "database": "tivdoc_release_replay_20260907",
+  "fixtures": "synthetic; no message sent",
+  "provider_and_DNS_verified": false,
+  "production": "untouched"
+}

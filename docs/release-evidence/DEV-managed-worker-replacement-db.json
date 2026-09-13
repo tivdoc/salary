@@ -1,0 +1,268 @@
+{
+  "verdict": "PASS",
+  "gitSha": "71be72242d8af06c04bd7359946efb62e6372f2a",
+  "gitWorktreeDirty": false,
+  "schemaVersion": {
+    "requiredMigration": "20260909155945_automatic_dev_notification_snapshot.sql",
+    "runtimeEnqueueSignatureVerified": true
+  },
+  "runId": "6e5068c1-4aef-40c3-9044-8b35057f00d5",
+  "checks": [
+    "the external process committed a real running claim and exited; the database still reports processing with an unexpired lease",
+    "explicit replacement commits before the original lease expires, changes the current input, retains the logical document and preserves old object bytes",
+    "the original verified machine cannot admit the superseded source and its old job cannot be retried through the capability API",
+    "only six independently known fields of the replacement are confirmed through identified answer RPCs; absent hours are not invented",
+    "a focused missing-hours answer and its retry produce one new scheduler-generated 240 ILS run, preserving the missing-input history",
+    "after original lease expiry and later external processes, no old-source financial run or terminal publication appears; only the new run is current and old bytes remain accessible"
+  ],
+  "crash": {
+    "caseId": "69c3f2ee-83bd-45db-94dd-fc6cc6510d2d",
+    "pid": 17860,
+    "at": "2026-09-09T16:43:40.744Z",
+    "gitSha": "71be72242d8af06c04bd7359946efb62e6372f2a",
+    "claim": {
+      "state": "claimed",
+      "jobId": "saved_e1eb29d095c0ed748c04869eec6f99ef6e3bacb690751199ef3024dcba3f396b",
+      "fencingToken": 1
+    }
+  },
+  "replacementTiming": {
+    "before": "2026-09-09T16:43:41.068Z",
+    "oldLeaseExpiresAt": "2026-09-09T16:46:40.424Z",
+    "afterReplacement": "2026-09-09T16:43:42.285Z",
+    "oldLeaseUnexpiredAfterReplacement": true,
+    "clockModified": false
+  },
+  "confirmations": [
+    {
+      "sourceVersion": "519d52e3-7ab7-4268-9e22-4184723b5ff5",
+      "fields": [
+        "salary_type",
+        "salary_period",
+        "base_monthly_salary",
+        "gross_salary",
+        "net_salary",
+        "hourly_rate"
+      ],
+      "actor": "automated_known_synthetic_fixture_identity",
+      "humanReview": false,
+      "confidenceModified": false
+    }
+  ],
+  "runs": [
+    {
+      "runId": "7d4ea2c3-66df-4ed3-8c2a-61d16db8c059",
+      "inputRevision": 15,
+      "state": "missing_input",
+      "sourceVersion": "519d52e3-7ab7-4268-9e22-4184723b5ff5"
+    },
+    {
+      "runId": "0990dfd6-1f39-4a22-8e83-b812e97b0aa2",
+      "inputRevision": 17,
+      "state": "calculated",
+      "sourceVersion": "519d52e3-7ab7-4268-9e22-4184723b5ff5"
+    }
+  ],
+  "ticks": [
+    {
+      "schema_version": "managed-dev-synthetic-tick-v1",
+      "runId": "6e5068c1-4aef-40c3-9044-8b35057f00d5",
+      "gitSha": "71be72242d8af06c04bd7359946efb62e6372f2a",
+      "pid": 22384,
+      "providerKind": "injected_test_provider",
+      "providerHashes": [
+        "d7b5b567e94d8314283009bc73a2461857f668cc6f5f024d0d7f21aca2e295f3",
+        "d7b5b567e94d8314283009bc73a2461857f668cc6f5f024d0d7f21aca2e295f3"
+      ],
+      "failure": null,
+      "startedAt": "2026-09-09T16:43:56.617Z",
+      "finishedAt": "2026-09-09T16:44:12.226Z",
+      "dirtyBuild": false,
+      "faults": [],
+      "items": [
+        {
+          "caseId": "69c3f2ee-83bd-45db-94dd-fc6cc6510d2d",
+          "state": "cancelled",
+          "jobId": "saved_946d068c246cc327bd36019afa2faf3ee5e61f2faaa7a4aace510401ac21f638",
+          "lastError": "source_superseded"
+        }
+      ],
+      "notifications": {
+        "providerKind": "injected_notification_test",
+        "claimPaused": true,
+        "recipientMismatchRefused": false,
+        "accepted": [],
+        "queued": 0,
+        "attemptStates": [],
+        "deliveryConfirmed": false
+      }
+    },
+    {
+      "schema_version": "managed-dev-synthetic-tick-v1",
+      "runId": "6e5068c1-4aef-40c3-9044-8b35057f00d5",
+      "gitSha": "71be72242d8af06c04bd7359946efb62e6372f2a",
+      "pid": 22564,
+      "providerKind": "injected_test_provider",
+      "providerHashes": [],
+      "failure": null,
+      "startedAt": "2026-09-09T16:44:28.130Z",
+      "finishedAt": "2026-09-09T16:44:42.528Z",
+      "dirtyBuild": false,
+      "faults": [],
+      "items": [
+        {
+          "caseId": "69c3f2ee-83bd-45db-94dd-fc6cc6510d2d",
+          "state": "succeeded",
+          "jobId": "saved_666008ea7925cdb37c5d9ddfa7288355513f60fb5d82077a64c41804b241498e",
+          "manifestSha256": "0533e0a24fb60fac03c5de65df77ce41e154cdc68c5bd21a865dd41b42b5909e"
+        }
+      ],
+      "notifications": {
+        "providerKind": "injected_notification_test",
+        "claimPaused": true,
+        "recipientMismatchRefused": false,
+        "accepted": [],
+        "queued": 0,
+        "attemptStates": [],
+        "deliveryConfirmed": false
+      }
+    },
+    {
+      "schema_version": "managed-dev-synthetic-tick-v1",
+      "runId": "6e5068c1-4aef-40c3-9044-8b35057f00d5",
+      "gitSha": "71be72242d8af06c04bd7359946efb62e6372f2a",
+      "pid": 26008,
+      "providerKind": "injected_test_provider",
+      "providerHashes": [],
+      "failure": null,
+      "startedAt": "2026-09-09T16:45:37.337Z",
+      "finishedAt": "2026-09-09T16:45:52.919Z",
+      "dirtyBuild": false,
+      "faults": [],
+      "items": [
+        {
+          "caseId": "69c3f2ee-83bd-45db-94dd-fc6cc6510d2d",
+          "state": "succeeded",
+          "jobId": "saved_e10ee0a64fa77626c40c0a6c89956244af362e858bcd163d7d4a9b535f843e29",
+          "manifestSha256": "603672301a92f02d70660d1c7a4a3f255f27b40669c82d7a984217ab05d3b7a8"
+        }
+      ],
+      "notifications": {
+        "providerKind": "injected_notification_test",
+        "claimPaused": true,
+        "recipientMismatchRefused": true,
+        "accepted": [],
+        "queued": 1,
+        "attemptStates": [],
+        "deliveryConfirmed": false
+      }
+    },
+    {
+      "schema_version": "managed-dev-synthetic-tick-v1",
+      "runId": "6e5068c1-4aef-40c3-9044-8b35057f00d5",
+      "gitSha": "71be72242d8af06c04bd7359946efb62e6372f2a",
+      "pid": 16400,
+      "providerKind": "injected_test_provider",
+      "providerHashes": [],
+      "failure": null,
+      "startedAt": "2026-09-09T16:46:08.879Z",
+      "finishedAt": "2026-09-09T16:46:09.452Z",
+      "dirtyBuild": false,
+      "faults": [],
+      "items": [],
+      "notifications": {
+        "providerKind": "injected_notification_test",
+        "claimPaused": true,
+        "recipientMismatchRefused": false,
+        "accepted": [],
+        "queued": 0,
+        "attemptStates": [],
+        "deliveryConfirmed": false
+      }
+    },
+    {
+      "schema_version": "managed-dev-synthetic-tick-v1",
+      "runId": "6e5068c1-4aef-40c3-9044-8b35057f00d5",
+      "gitSha": "71be72242d8af06c04bd7359946efb62e6372f2a",
+      "pid": 1988,
+      "providerKind": "injected_test_provider",
+      "providerHashes": [],
+      "failure": null,
+      "startedAt": "2026-09-09T16:46:25.265Z",
+      "finishedAt": "2026-09-09T16:46:25.880Z",
+      "dirtyBuild": false,
+      "faults": [],
+      "items": [],
+      "notifications": {
+        "providerKind": "injected_notification_test",
+        "claimPaused": true,
+        "recipientMismatchRefused": false,
+        "accepted": [],
+        "queued": 0,
+        "attemptStates": [],
+        "deliveryConfirmed": false
+      }
+    },
+    {
+      "schema_version": "managed-dev-synthetic-tick-v1",
+      "runId": "6e5068c1-4aef-40c3-9044-8b35057f00d5",
+      "gitSha": "71be72242d8af06c04bd7359946efb62e6372f2a",
+      "pid": 17088,
+      "providerKind": "injected_test_provider",
+      "providerHashes": [],
+      "failure": null,
+      "startedAt": "2026-09-09T16:46:37.319Z",
+      "finishedAt": "2026-09-09T16:46:37.904Z",
+      "dirtyBuild": false,
+      "faults": [],
+      "items": [],
+      "notifications": {
+        "providerKind": "injected_notification_test",
+        "claimPaused": true,
+        "recipientMismatchRefused": false,
+        "accepted": [],
+        "queued": 0,
+        "attemptStates": [],
+        "deliveryConfirmed": false
+      }
+    }
+  ],
+  "failure": null,
+  "cleanupFailure": null,
+  "inputFixtures": [
+    {
+      "name": "synthetic-june-2026-100-hours.pdf",
+      "sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d"
+    },
+    {
+      "name": "synthetic-june-2026-missing-hours.pdf",
+      "sha256": "d7b5b567e94d8314283009bc73a2461857f668cc6f5f024d0d7f21aca2e295f3"
+    }
+  ],
+  "independentExpected": {
+    "month": "2026-06",
+    "regularHours": "100",
+    "baseMinor": 330000,
+    "expectedMinor": 354000,
+    "gapMinor": 24000,
+    "independentCalculation": "100 * 3540 minor units - 330000 minor units = 24000 minor units",
+    "humanLegalApproval": false
+  },
+  "externallyScheduledProcess": true,
+  "replacementWhileLeaseUnexpired": true,
+  "ordinaryCanonicalPublication": "draft_only",
+  "providerKind": "injected_test_provider",
+  "liveOcrProof": false,
+  "providerInFlightInterruptionProof": false,
+  "scope": "Replacement after a real committed running claim, before extraction; no claim of cancelling an in-flight external OCR request.",
+  "actualEmailDelivery": false,
+  "browserProof": false,
+  "humanApprovalsInvented": false,
+  "syntheticCasesRemoved": 1,
+  "identitiesRemoved": 1,
+  "machineSessionsRevoked": 1,
+  "capabilityRevoked": true,
+  "storageObjectsRemoved": 2,
+  "canonicalAndBudgetAuditRetained": true,
+  "productionChanged": false
+}

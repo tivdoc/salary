@@ -1,0 +1,5 @@
+# Preserve reacquired source bytes and the recorded exact UTF-8 extractions.
+# These patterns apply only in this evidence directory.
+*.pdf -text
+*.html -text
+*.txt -text

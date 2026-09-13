@@ -1,0 +1,107 @@
+{
+  "schemaVersion": "june2026-canonical-process-restart-proof-v1",
+  "verdict": "PASS",
+  "phase": "complete",
+  "failure": null,
+  "cleanupFailure": null,
+  "gitSha": "127e82e0acdd1407e18c7306e73f9e2431bc3faa",
+  "priorProofGitSha": "127e82e0acdd1407e18c7306e73f9e2431bc3faa",
+  "priorProofSha256": "4bfffff0a2a014599a04e0d9be018821430b59dec15f225373a987976c74ddd6",
+  "priorProofPath": "output\\release-completion\\june-canonical\\7bf268a0\\proof.json",
+  "processId": 5704,
+  "processStartedAt": "2026-09-10T15:29:52.979Z",
+  "priorProofWrittenAt": "2026-09-10T15:27:51.434Z",
+  "processStartedAfterPriorProof": true,
+  "processRestartProof": true,
+  "caseId": "7bf268a0-48fd-4db9-8c8c-41786dd1ba0c",
+  "orderId": "5678c91f-2e23-42b3-9775-111ecdd25344",
+  "database": "tivdoc_release_replay_20260907",
+  "schema": {
+    "orderedChain": 138,
+    "actualDefinitions": [
+      {
+        "name": "private.june2026_test_assessment",
+        "signature": "uuid,uuid,integer,text",
+        "securityDefiner": true,
+        "emptySearchPath": true,
+        "bodyNormalizedSha256": "778f5e87a8eeeaebe7f92d1abe278762fcaaa213eaa17b5782ce34c0b9e20563",
+        "actualBodyMatched": true
+      },
+      {
+        "name": "private.june2026_canonical_test_save",
+        "signature": "uuid,uuid,integer,text,text,jsonb,jsonb",
+        "securityDefiner": true,
+        "emptySearchPath": true,
+        "bodyNormalizedSha256": "3b6bfd1f80bf755075b07c2e8ce0e74240a005e7ebd20557273bc6e76f61a518",
+        "actualBodyMatched": true
+      },
+      {
+        "name": "public.case_report_june_canonical_test",
+        "signature": "uuid,uuid,uuid",
+        "securityDefiner": false,
+        "emptySearchPath": true,
+        "bodyNormalizedSha256": "b65ca9b435aae2bb7a535ec09f5ad2314c24456fac991f6adc424ac83d5fd5bb",
+        "actualBodyMatched": true
+      },
+      {
+        "name": "private.june2026_canonical_test_customer",
+        "signature": "uuid,uuid,uuid",
+        "securityDefiner": true,
+        "emptySearchPath": true,
+        "bodyNormalizedSha256": "78154c54bb8f44dcc4486b7ad4c126cf6563d18c83397555be05cbb179cfbf88",
+        "actualBodyMatched": true
+      }
+    ],
+    "migrationLedgerAvailable": false
+  },
+  "checks": [
+    "Prior PASS artifacts match the existing current same-run DB completion, source, unexpired assessment and all schema definition hashes.",
+    "A newly started OS process and newly minted scoped machine session reran runSavedWorkerMonth and returned the prior run with byte-identical JSON, HTML, PDF and manifest.",
+    "Analysis/result/report/trace/extraction invocation/checkpoint counts did not increase; the existing completion path performed no result save or report insert."
+  ],
+  "before": {
+    "analyses": 9,
+    "results": 3,
+    "reports": 9,
+    "traces": 3,
+    "extraction_invocations": 0,
+    "extraction_checkpoints": 8
+  },
+  "after": {
+    "analyses": 9,
+    "results": 3,
+    "reports": 9,
+    "traces": 3,
+    "extraction_invocations": 0,
+    "extraction_checkpoints": 8
+  },
+  "replay": {
+    "runId": "ecf9e6e4-05a3-4004-8540-bdc479f1ca23",
+    "resultSha256": "5d9fa03cd361ecaf166df9690fbf41ecb47918622dd18a9fcfa08a42f4ef9454",
+    "reportSha256": "ef290c989218e24ccf704b17979ac2b9ea487befebcf3278f27ca6ac1dd1cd80",
+    "jsonSha256": "228d6b51e2fc29455750554357c6c8e1499b582e0bd42d231530d2605e50de12",
+    "htmlSha256": "cfabc809e2296f53fb016c7fcfe5fe8e7f0b6a518aa9cd8c3c6e33a0ad91d342",
+    "pdfSha256": "dd65db04f587c192cea0882c0d915f6a87323d261b5f9af07eca6e57d2960ead",
+    "manifestSha256": "f99e7fe7fb863dc4b3e1665accf9ff319c6f5549ebd08a6e8d4b8d1b0be4a16d",
+    "comparisonSha256": "1c7b1629d96ffbd283087d493d0c892ad4b93c21cc689214432c3dba930836be",
+    "inputRevision": 94,
+    "inputSha256": "e913c1817c2d9ecad9291f41532e31ca3f64152150a191e5966f4fd11070ea44"
+  },
+  "savedWorkerInvoked": true,
+  "newMachineCreated": true,
+  "newMachineRevoked": true,
+  "oldMachineRevived": false,
+  "providerInvocations": 0,
+  "extractionInvoked": false,
+  "storageRead": false,
+  "assessmentCreated": false,
+  "assessmentRenewed": false,
+  "customerSessionInjected": false,
+  "notificationsSent": false,
+  "finalizerVerified": false,
+  "finalizerReason": "The prior proof cancelled its owned jobs; this verifies saved-month process replay, not lease acknowledgement.",
+  "humanApproval": false,
+  "legalActivation": false,
+  "ordinaryCustomerFindingPublished": false,
+  "productionChanged": false
+}

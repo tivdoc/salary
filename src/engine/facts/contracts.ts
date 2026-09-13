@@ -11,6 +11,7 @@ import {
   uuidSchema,
 } from "../domain/primitives.ts";
 import { factPathSchema } from "./fact-paths.ts";
+import {customerDocumentReadingSchema} from '../extraction/customer-reading.ts';
 
 export const factSourceTypeSchema = z.enum(["documented", "declared", "derived", "inferred"]);
 export const factStatusSchema = z.enum([
@@ -97,6 +98,7 @@ export const evidenceReferenceSchema = z.discriminatedUnion("source_type", [
       // rung a person's reading or a text-verified parameter earns.
       read_by: z.enum(["machine", "person"]).optional(),
       verified: z.boolean().optional(),
+      customer_confirmation:customerDocumentReadingSchema.optional(),
     })
     .strict(),
   z
@@ -116,6 +118,11 @@ export const evidenceReferenceSchema = z.discriminatedUnion("source_type", [
             response_id: uuidSchema,
           })
           .strict(),
+        z.object({
+          kind: z.literal("case_request_answer"),
+          request_id: uuidSchema,
+          answer_revision: z.number().int().positive(),
+        }).strict(),
       ]),
     })
     .strict(),
@@ -241,6 +248,19 @@ function factVariant<TPath extends z.infer<typeof factPathSchema>, TValue extend
 }
 
 const canonicalFactUnionSchema = z.discriminatedUnion("path", [
+  factVariant("employment.start_month", z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/u)),
+  factVariant("employment.still_employed", z.boolean()),
+  factVariant("employment.managerial_or_trust_role_declared", z.boolean()),
+  factVariant("person.birth_year", z.number().int().min(1900).max(2200)),
+  factVariant("person.sex", z.enum(['female','male','unspecified'])),
+  factVariant("work.days_per_week", z.number().int().min(1).max(7)),
+  factVariant("work.typical_hours_per_day", z.number().positive().max(24)),
+  factVariant("work.works_friday", z.boolean()),
+  factVariant("work.works_saturday", z.boolean()),
+  factVariant("pension.fund_at_hire", z.boolean()),
+  factVariant("travel.employer_provides_transport", z.boolean()),
+  factVariant("travel.commute_over_500m", z.boolean()),
+
   factVariant("employment.start_date", isoDateSchema),
   factVariant("employment.end_date", isoDateSchema),
   factVariant("employment.population", employmentPopulationValueSchema),

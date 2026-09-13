@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "worker:saved:build": "node scripts/product-workers/build-saved-draft.mjs",
+    "worker:saved:run": "node output/release-completion/saved-worker/worker.cjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
@@ -176,6 +178,7 @@
   "dependencies": {
     "@phosphor-icons/react": "2.1.10",
     "@supabase/supabase-js": "2.112.3",
+    "@vercel/functions": "3.9.5",
     "next": "16.3.2",
     "openai": "7.8.0",
     "pdf-lib": "1.17.1",
@@ -183,6 +186,7 @@
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "sharp": "0.35.3",
+    "svix": "^2.3.0",
     "zod": "4.4.3"
   },
   "devDependencies": {
@@ -191,6 +195,7 @@
     "@types/pg": "8.23.1",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.4",
+    "esbuild": "0.28.2",
     "eslint": "9.39.5",
     "eslint-config-next": "16.3.2",
     "typescript": "6.0.3",

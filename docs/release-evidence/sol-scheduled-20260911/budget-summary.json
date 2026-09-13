@@ -1,0 +1,13 @@
+{
+  "contentRequests": 6,
+  "generations": 3,
+  "countRequests": 3,
+  "reservedUpperBoundUsd": 2.136,
+  "calculatedGenerationCostUsd": 0.208136,
+  "providerInvoiceCostReturned": false,
+  "countPriceVerified": false,
+  "maxContentRequests": 12,
+  "maxReservedUsd": 5,
+  "unknownOutcomes": 0,
+  "previousLedgerPreserved": true
+}

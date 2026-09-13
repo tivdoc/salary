@@ -1,0 +1,65 @@
+[
+  {
+    "id": "IL_CONVALESCENCE_EXTENSION_ORDER_2026",
+    "url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/order14863/he/workers-rights_order14863.pdf",
+    "sha256": "a6e530b57ffd0f66c27e8f7947d242e73b9baf44ab62e19dfbc9879a8a63dcde",
+    "bytes": 117145,
+    "archived_retrieved_at": "2026-08-29T19:15:10.759Z",
+    "member": "docs/release-evidence/legal-source-pages/IL_CONVALESCENCE_EXTENSION_ORDER_2026.pdf",
+    "fresh_download_verified": false
+  },
+  {
+    "id": "IL_GENERAL_PENSION_EXTENSION_ORDER_2011",
+    "url": "https://www.gov.il/BlobFolder/guide/labor-wage/he/workers-rights_working-conditions_pension_H096.pdf",
+    "sha256": "2f1c4942e0130c55714801cc4a72aba40f77a2391ba72f6bd2d5b2d7094244d9",
+    "bytes": 1942049,
+    "archived_retrieved_at": "2026-08-29T14:33:22.669Z",
+    "member": "docs/release-evidence/legal-source-pages/IL_GENERAL_PENSION_EXTENSION_ORDER_2011.pdf",
+    "fresh_download_verified": false
+  },
+  {
+    "id": "IL_GENERAL_PENSION_INCREASE_EXTENSION_ORDER_2016",
+    "url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/extention-order-pension-insurance-2016/he/extention-order-pension-insurance-2016.pdf",
+    "sha256": "f3e7de9d9b36900e18efa33f0286a1eeddbb8e062d8a19e102af94967921dd70",
+    "bytes": 64285,
+    "archived_retrieved_at": "2026-08-29T19:15:10.658Z",
+    "member": "docs/release-evidence/legal-source-pages/IL_GENERAL_PENSION_INCREASE_EXTENSION_ORDER_2016.pdf",
+    "fresh_download_verified": false
+  },
+  {
+    "id": "IL_GENERAL_TRAVEL_EXTENSION_ORDER_2016",
+    "url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/extention-order-travel-expenses-2016/he/extention-order-travel-expenses-2016.pdf",
+    "sha256": "a38a52224c50e92fef9dcf920b53d697aca42bd923639ded8cc592d5e0c43142",
+    "bytes": 59163,
+    "archived_retrieved_at": "2026-08-29T14:33:22.713Z",
+    "member": "docs/release-evidence/legal-source-pages/IL_GENERAL_TRAVEL_EXTENSION_ORDER_2016.pdf",
+    "fresh_download_verified": false
+  },
+  {
+    "id": "IL_SHORT_WORK_WEEK_EXTENSION_ORDER_2018",
+    "url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/extention-order-short-week-2018/he/extention-order-short-week-2018.pdf",
+    "sha256": "fa27b689656194ef65d207fd6f68ec7c54c2c78d4362b2a5a2a5d3a207831a4b",
+    "bytes": 179205,
+    "archived_retrieved_at": "2026-08-29T18:10:03.468Z",
+    "member": "docs/release-evidence/legal-source-pages/IL_SHORT_WORK_WEEK_EXTENSION_ORDER_2018.pdf",
+    "fresh_download_verified": false
+  },
+  {
+    "id": "IL_SICK_PAY_LAW",
+    "url": "https://www.btl.gov.il/Laws1/00_0098_000000.pdf",
+    "sha256": "3e35b894541d660114e3ac9e85a60c901d769c5a585f408a38e2109cf66aac7e",
+    "bytes": 96700,
+    "archived_retrieved_at": "2026-08-29T14:33:23.337Z",
+    "member": "docs/release-evidence/legal-source-pages/IL_SICK_PAY_LAW.pdf",
+    "fresh_download_verified": false
+  },
+  {
+    "id": "IL_ANNUAL_VACATION_LAW_AMENDMENT_15_2016",
+    "url": "https://fs.knesset.gov.il/20/law/20_lsr_321785.pdf",
+    "sha256": "ed2b522eec191c2a6d4b86967936762d4ce43598fd055c15fce98af6191ddeeb",
+    "bytes": 81858,
+    "archived_retrieved_at": "2026-09-04T03:30:10.491Z",
+    "member": "docs/release-evidence/legal-source-pages/IL_ANNUAL_VACATION_LAW_AMENDMENT_15_2016.pdf",
+    "fresh_download_verified": false
+  }
+]

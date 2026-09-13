@@ -1,0 +1,76 @@
+{
+  "checkedAt": "2026-09-11T02:08:00Z",
+  "applicationCommit": "506548866dc6543a4406135e146af7ff61cb8971",
+  "schemaAtPositiveRun": 155,
+  "schemaAtFinalReportRead": 156,
+  "preview": "https://salary-44j74nffg-tivdoccom-5042s-projects.vercel.app",
+  "casePublicId": "TV-9187C6A6",
+  "analysisRunId": "56173811-23c5-4174-8289-2da9d083374a",
+  "projectionId": "4cf4d2f6-b3e1-4746-aaa7-58acaaaeeb48",
+  "otp": {
+    "providerAccepted": true,
+    "mailboxObserved": "Gmail owner spam folder",
+    "at": "2026-09-11T01:35:10.266Z",
+    "providerMessageId": "d79e301e-93c2-4d43-9190-0407113970c3",
+    "browserLogin": true,
+    "customerSessionInjected": false,
+    "otpValueRetained": false
+  },
+  "completionMail": {
+    "providerAccepted": true,
+    "mailboxObserved": true,
+    "folder": "spam",
+    "threadCount": 14,
+    "webhookConfirmed": false
+  },
+  "reportMail": {
+    "providerAccepted": true,
+    "mailboxObserved": true,
+    "folder": "spam",
+    "at": "2026-09-11T02:00:00Z",
+    "projectionLinkMatches": true,
+    "webhookConfirmed": false,
+    "historicalEmailHadGenericAiWording": true
+  },
+  "download": {
+    "client": "Chrome via Playwright CLI",
+    "downloadEvent": true,
+    "path": "output/playwright/sol-scheduled-browser-download-5065488.pdf",
+    "sha256": "e1e75b6ca667610d618a6236133835564743c966ec3db7baa90ca2c3908cf340",
+    "sameSavedBytes": true
+  },
+  "html": {
+    "status": 200,
+    "bytes": 2413,
+    "sha256": "931410fd9eff31816d2f82be1affdd16d0183d1be93737bc3b3f2ce316489d0a",
+    "sameSavedRun": true
+  },
+  "access": [
+    {
+      "probe": "foreign actual synthetic source version",
+      "status": 404,
+      "body": ""
+    },
+    {
+      "probe": "nonexistent source version",
+      "status": 404,
+      "body": ""
+    },
+    {
+      "probe": "foreign synthetic case reports",
+      "status": 404,
+      "body": ""
+    }
+  ],
+  "toolFailures": [
+    {
+      "kind": "UI automation",
+      "detail": "sticky navigation intercepted checkbox; ordinary scroll to center resolved without forced click or guard change"
+    },
+    {
+      "kind": "browser sandbox",
+      "detail": "report HTML CSP correctly forbids fetch; access probes executed from ordinary authenticated case page instead"
+    }
+  ],
+  "productionChanged": false
+}

@@ -28,6 +28,7 @@ export async function POST(request: Request) {
     if (result.outcome === "not_verified") {
       return NextResponse.json({ error: "התשלום עדיין לא אומת", code: "case_status_unavailable" }, { status: 409, headers: { "Cache-Control": "no-store" } });
     }
+    if(result.outcome === "queued")return NextResponse.json({ok:true,outcome:"queued"},{status:202,headers:{"Cache-Control":"no-store"}});
     if (result.outcome !== "sent") {
       return NextResponse.json({ error: "לא הצלחנו לשלוח את ההודעה עכשיו", code: "access_send_failed", outcome: result.outcome }, { status: 503, headers: { "Cache-Control": "no-store" } });
     }

@@ -59,6 +59,7 @@ export const ruleSpecNodeSchema = z.discriminatedUnion("operation", [
   z.object({ ...nodeBase, operation: z.literal("constant.integer"), value: z.number().int().safe(), unit: legalOperationsIdSchema }).strict(),
   z.object({ ...nodeBase, operation: z.literal("subtract"), left_ref: legalOperationsIdSchema, right_ref: legalOperationsIdSchema }).strict(),
   z.object({ ...nodeBase, operation: z.literal("divide"), left_ref: legalOperationsIdSchema, right_ref: legalOperationsIdSchema }).strict(),
+  z.object({ ...nodeBase, operation: z.literal("rational.floor"), input_ref: legalOperationsIdSchema }).strict(),
   z.object({ ...nodeBase, operation: z.literal("band.lookup"), input_ref: legalOperationsIdSchema, bands: z.array(bandSchema).min(1).max(32).readonly() }).strict(),
   z.object({ ...nodeBase, operation: z.literal("tiered.rate"), input_ref: legalOperationsIdSchema, base_ref: legalOperationsIdSchema, tiers: z.array(tierSchema).min(1).max(32).readonly(), rounding: z.enum(["exact", "toward_zero", "half_up", "half_even"]) }).strict(),
 ]).readonly();
@@ -71,7 +72,7 @@ export const ruleSpecNodeSchema = z.discriminatedUnion("operation", [
  * `min`.
  */
 export const RULE_SPEC_OPERATIONS = Object.freeze([
-  "constant.rational", "constant.integer", "add", "subtract", "multiply", "divide", "money.scale", "compare.gte",
+  "constant.rational", "constant.integer", "add", "subtract", "multiply", "divide", "rational.floor", "money.scale", "compare.gte",
   "select", "min", "max", "aggregate.bounded", "band.lookup", "tiered.rate",
 ] as const);
 
@@ -99,10 +100,10 @@ function rangeAt<T extends Readonly<{ from_inclusive: number; to_exclusive: numb
 }
 
 const ruleSpecDraftObjectSchema = z.object({
-  schema_version: z.literal("tivdoc-rulespec-v0.6.0"),
+  schema_version: z.enum(["tivdoc-rulespec-v0.6.0","tivdoc-rulespec-v0.6.1"]),
   rule_spec_id: legalOperationsIdSchema,
   rule_spec_version: z.string().regex(/^[1-9]\d*(?:\.\d+){0,2}$/),
-  topic: z.enum(WAVE3_TOPICS),
+  topic: z.enum([...WAVE3_TOPICS,"contract","bonuses"]),
   catalog_boundary: z.enum(["synthetic_test_only", "real_inactive"]),
   source_version_ids: z.array(legalOperationsIdSchema).min(1).readonly(),
   effective_period: z.object({ from: z.iso.date(), to: z.iso.date().nullable() }).strict(),
@@ -117,11 +118,14 @@ const ruleSpecDraftObjectSchema = z.object({
 }).strict().superRefine((value, context) => {
   if (value.effective_period.to !== null && value.effective_period.to < value.effective_period.from) context.addIssue({ code: "custom", message: "rulespec_interval_inverted" });
 });
-const ruleSpecDraftSchema = ruleSpecDraftObjectSchema.readonly();
+const topicVersionFence=(v:{schema_version:string;topic:string},ctx:z.RefinementCtx)=>{
+  if(v.schema_version==='tivdoc-rulespec-v0.6.0'&&(v.topic==='contract'||v.topic==='bonuses'))ctx.addIssue({code:'custom',message:'RULESPEC_TOPIC_REQUIRES_V061'});
+};
+const ruleSpecDraftSchema = ruleSpecDraftObjectSchema.superRefine(topicVersionFence).readonly();
 
-export const ruleSpecPackageSchema = ruleSpecDraftObjectSchema.extend({ content_sha256: legalOperationsSha256Schema }).strict().readonly();
+export const ruleSpecPackageSchema = ruleSpecDraftObjectSchema.extend({ content_sha256: legalOperationsSha256Schema }).strict().superRefine(topicVersionFence).readonly();
 
-const ruleSpecValueSchema = z.discriminatedUnion("kind", [
+export const ruleSpecValueSchema = z.discriminatedUnion("kind", [
   exactRationalSchema,
   z.object({ kind: z.literal("money"), currency: z.string().regex(/^[A-Z]{3}$/), minor_units: z.number().int().safe() }).strict(),
   z.object({ kind: z.literal("integer"), value: z.number().int().safe(), unit: legalOperationsIdSchema }).strict(),
@@ -241,6 +245,7 @@ export function refs(node: RuleSpecPackage["nodes"][number]): readonly string[] 
     case "add": case "min": case "max": case "aggregate.bounded": return node.refs;
     case "multiply": case "subtract": case "divide": case "compare.gte": return [node.left_ref, node.right_ref];
     case "money.scale": return [node.money_ref, node.rational_ref];
+    case "rational.floor": return [node.input_ref];
     case "select": return [node.condition_ref, node.when_true_ref, node.when_false_ref];
     case "band.lookup": return [node.input_ref, ...node.bands.map((band) => band.value_ref)];
     case "tiered.rate": return [node.input_ref, node.base_ref, ...node.tiers.map((tier) => tier.rate_ref)];
@@ -300,6 +305,9 @@ export function validateRuleSpecPackage(candidate: unknown): RuleSpecPackage {
     else if (node.operation === "select") {
       if (inputs[0].kind !== "boolean" || inputs[1].kind !== inputs[2].kind || inputs[1].unit !== inputs[2].unit) throw new Error("RULESPEC_SELECT_TYPE_MISMATCH");
       [kind, unit] = [inputs[1].kind, inputs[1].unit];
+    } else if (node.operation === "rational.floor") {
+      if (inputs[0].kind !== "rational") throw new Error("RULESPEC_FLOOR_REQUIRES_RATIONAL");
+      [kind, unit] = ["integer", inputs[0].unit];
     } else if (node.operation === "money.scale") {
       if (inputs[0].kind !== "money" || inputs[1].kind !== "rational" || inputs[1].unit !== "ratio") throw new Error("RULESPEC_MONEY_SCALE_UNIT_MISMATCH");
       [kind, unit] = ["money", inputs[0].unit];
@@ -497,6 +505,12 @@ export function executeRuleSpec(candidate: Readonly<{
           ? rational(a.numerator * b.numerator, a.denominator * b.denominator, derived.unit)
           : rational(a.numerator * b.denominator * (b.numerator < BigInt(0) ? BigInt(-1) : BigInt(1)), a.denominator * (b.numerator < BigInt(0) ? -b.numerator : b.numerator), derived.unit);
       }
+    } else if (node.operation === "rational.floor") {
+      const value = get(node.input_ref);
+      if (value.kind !== "rational") throw new Error("RULESPEC_FLOOR_REQUIRES_RATIONAL");
+      const quotient = value.numerator / value.denominator;
+      const fractionalNegative = value.numerator < BigInt(0) && value.numerator % value.denominator !== BigInt(0);
+      result = frozen({kind:"integer",value:quotient - (fractionalNegative ? BigInt(1) : BigInt(0)),unit:value.unit});
     } else if (node.operation === "money.scale") {
       const money = get(node.money_ref); const ratio = get(node.rational_ref);
       if (money.kind !== "money" || ratio.kind !== "rational" || ratio.unit !== "ratio") throw new Error("RULESPEC_MONEY_SCALE_TYPE_MISMATCH");

@@ -1,0 +1,93 @@
+{
+  "origin": "https://salary-l3do4s4eq-tivdoccom-5042s-projects.vercel.app",
+  "deployedSha": "115a2dde81e9a2a537590588e400cb2994965926",
+  "checks": [
+    {
+      "name": "customer opens case support with saved server state",
+      "passed": true
+    },
+    {
+      "name": "unsent support draft survives reload without creating a server thread",
+      "passed": true
+    },
+    {
+      "name": "lost completion response survives full reload and retries the same saved question without duplication",
+      "passed": true
+    },
+    {
+      "name": "an operations DB reply is visible after customer reload and customer can reopen it",
+      "passed": true
+    },
+    {
+      "name": "concurrent HTTP retries persist once and cross-case or foreign-origin requests are refused",
+      "passed": true
+    },
+    {
+      "name": "persisted support is readable in RTL at 360px",
+      "passed": true
+    },
+    {
+      "name": "persisted support is readable in RTL at 390px",
+      "passed": true
+    },
+    {
+      "name": "persisted support is readable in RTL at 768px",
+      "passed": true
+    },
+    {
+      "name": "persisted support is readable in RTL at 1440px",
+      "passed": true
+    },
+    {
+      "name": "two deliberate identical new messages receive distinct IDs after confirmed saves",
+      "passed": true
+    },
+    {
+      "name": "support leaves case and payment status unchanged",
+      "passed": true
+    },
+    {
+      "name": "logout revokes the real session and removes only tab-local support recovery",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "skipLinkStates": [
+    {
+      "width": 360,
+      "focused": false,
+      "y": -56.390625,
+      "bottom": -10.796875,
+      "scrollY": 746,
+      "transform": "matrix(1, 0, 0, 1, 0, -68.3906)"
+    },
+    {
+      "width": 390,
+      "focused": false,
+      "y": -56.390625,
+      "bottom": -10.796875,
+      "scrollY": 0,
+      "transform": "matrix(1, 0, 0, 1, 0, -68.3906)"
+    },
+    {
+      "width": 768,
+      "focused": false,
+      "y": -56.390625,
+      "bottom": -10.796875,
+      "scrollY": 0,
+      "transform": "matrix(1, 0, 0, 1, 0, -68.3906)"
+    },
+    {
+      "width": 1440,
+      "focused": false,
+      "y": -58.78125,
+      "bottom": -11.59375,
+      "scrollY": 0,
+      "transform": "matrix(1, 0, 0, 1, 0, -70.7812)"
+    }
+  ],
+  "syntheticCasesRemoved": 2,
+  "scope": "Seeded QA session; hosted customer browser/API and DEV database. Owner response injected through actual operations DB role; no owner HTTP/UI, OTP, provider, real payment or professional approval proof.",
+  "productionChanged": false,
+  "secretsIncluded": false
+}

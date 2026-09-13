@@ -1,0 +1,73 @@
+{
+  "schema_version": "managed-dev-supervisor-receipt-v1",
+  "control_id": "abf1d07f-ea93-421b-8be0-4fec78bb13cc",
+  "run_id": "ddba62f3-2b3b-4ac0-bf8b-9231cf01c1a7",
+  "pid": 5368,
+  "child_pid": 4488,
+  "started_at": "2026-09-11T01:59:55.968Z",
+  "finished_at": "2026-09-11T02:00:19.267Z",
+  "build_sha": "506548866dc6543a4406135e146af7ff61cb8971",
+  "bundle_sha256": "7eb7d2d215a7485262789c4711aa1d413ec116733494d420ebfdbe84ee5555bb",
+  "tick": 29,
+  "state": "finished",
+  "stop_reason": null,
+  "exit_code": 0,
+  "stdout_sha256": "b1f345ec58836da84e940fd0c78c69dc39a96656b7f28dbce63ada4ca99146d2",
+  "stdout_bytes": 1822,
+  "stderr_bytes": 0,
+  "summary": {
+    "state": "finished",
+    "code": null,
+    "buildSha": "506548866dc6543a4406135e146af7ff61cb8971",
+    "items": [
+      {
+        "caseId": "33f41e2f-56b5-420c-8ee2-310201813d35",
+        "state": "succeeded",
+        "lastError": null,
+        "jobId": "saved_8b5b0fd1bba12bdb16ded376c71781d70e962b7030f4cb722d77dfce37a3a9d9"
+      }
+    ],
+    "budget": {
+      "contentRequests": 6,
+      "generations": 3,
+      "countRequests": 3,
+      "reservedUpperBoundUsd": 2.136,
+      "unknownOutcomes": 0
+    },
+    "notifications": {
+      "state": "finished",
+      "code": null,
+      "queued": 1,
+      "deliveryConfirmed": false,
+      "attempts": [
+        {
+          "state": "provider_accepted",
+          "provider": "resend",
+          "provider_message_id": "9adbc12a-fabd-4549-936b-f04a921ab679",
+          "error_code": null
+        }
+      ]
+    },
+    "health": {
+      "state": "available",
+      "code": null,
+      "data": {
+        "checked_at": "2026-09-11T02:00:19.858Z",
+        "last_activity_at": "2026-09-11T02:00:17.603Z",
+        "capability_expires_at": "2026-09-11T04:10:00.000Z",
+        "daily_claims": 7,
+        "total_claims": 7,
+        "daily_limit": 20,
+        "total_limit": 20,
+        "cases": [
+          {
+            "case_id": "33f41e2f-56b5-420c-8ee2-310201813d35",
+            "pending_requests": 0,
+            "authority_state": "record_present",
+            "authority_expires_at": "2026-09-11T03:59:18.791Z"
+          }
+        ]
+      }
+    }
+  }
+}

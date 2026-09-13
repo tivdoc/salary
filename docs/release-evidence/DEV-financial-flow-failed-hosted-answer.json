@@ -1,0 +1,119 @@
+{
+  "verdict": "FAIL",
+  "gitSha": "fc510b48b6280549547f46497aa7be39db909be6",
+  "gitWorktreeDirty": false,
+  "migration": "20260909043527_dev_financial_analysis_flow.sql",
+  "migrationSha256": "4c850becd0cb7dbcf86b1552ecdb390088a190280cd5ec51cb9867bd0f3ce1b8",
+  "schemaTail": "20260909050400_document_metadata_readings.sql",
+  "schemaTailSha256": "eca5224233af913111f7d8a62ed782943796cf993573751d6e61972cc7ae67d6",
+  "schemaMigrationCount": 124,
+  "checks": [
+    "actual web reservation, non-upsert signed Storage transfer, byte validation and commit feed the actual durable V2 extraction adapter and saved receipt; provider output is explicitly injected",
+    "the actual SQL write boundary refuses a missing-hours question when the persisted extraction already contains regular hours",
+    "raw V2 high-confidence candidates remain unconfirmed and cannot produce a financial run; the original canonical confirmation gate refuses them",
+    "failure immediately before financial save rolls back parent analysis, financial result and finding while the committed source and extraction receipt remain available",
+    "a hand-set independent 100-hour and 3300-ILS fixture produces 3540 ILS expected and 240 ILS difference from its actual canonical parent and exact saved document version; no finding or report was seeded",
+    "concurrent retries and a newly opened independent worker connection return the identical committed report without duplicate findings or another provider pass; this is connection restart, not process restart",
+    "a foreign customer cannot obtain the report payload or its source reference; the worker cannot use the customer RPC, web cannot read private rows, and the case worker cannot analyze another case",
+    "explicit upload replacement preserves old bytes and history but immediately makes the old result non-current and refuses old-job publication",
+    "the second actual uploaded PDF has explicitly missing hours; the injected adapter preserves absence, and analysis opens one focused identified-answer request with no monetary finding, including concurrent replay without duplicate questions"
+  ],
+  "confirmationChecks": [
+    {
+      "versionId": "34c0757f-7e65-48aa-8512-7ab37e93afb6",
+      "fields": [
+        "base_monthly_salary",
+        "gross_salary",
+        "hourly_rate",
+        "net_salary",
+        "regular_hours",
+        "salary_period",
+        "salary_type"
+      ],
+      "actor": "automated_known_synthetic_fixture_identity",
+      "humanReview": false,
+      "ocrConfidenceModified": false,
+      "receiptReused": true
+    },
+    {
+      "versionId": "1fb98e5a-e480-4fd7-aca9-cb89361dd060",
+      "fields": [
+        "base_monthly_salary",
+        "gross_salary",
+        "hourly_rate",
+        "net_salary",
+        "salary_period",
+        "salary_type"
+      ],
+      "actor": "automated_known_synthetic_fixture_identity",
+      "humanReview": false,
+      "ocrConfidenceModified": false,
+      "receiptReused": true
+    }
+  ],
+  "processChecks": [
+    {
+      "receipt": {
+        "state": "replayed",
+        "runId": "e13fedc0-c668-4eac-827b-d4ed882afb74",
+        "runSha256": "860c722a0dc06ae5fc81994fc4a27c97b3a60157129ba4cf27052e190dc3c3d2",
+        "htmlSha256": "390d64e1a66cff3255210ed0af7e09f63edda023d41b4de4f20bce08a7d4bc37",
+        "pdfSha256": "4526961308e886e9a73ec321f4219c2dda90990ebd38dde9257e1691f75ba91e"
+      },
+      "bundleSha256": "260e44cc1d2015f9a8f2f6237d4d646dbc0bdd42e8a1038558c812cdeedc7ae0",
+      "scope": "New Node process with independent DB connection; same saved report and no provider/Storage port"
+    }
+  ],
+  "previewChecks": [],
+  "failure": "locator.waitFor: Timeout 20000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('.thread-answered__answer').getByText('100', { exact: true }) to be visible\u001b[22m\n",
+  "cleanupFailure": null,
+  "runs": [
+    {
+      "runId": "e13fedc0-c668-4eac-827b-d4ed882afb74",
+      "inputRevision": 16,
+      "state": "calculated"
+    },
+    {
+      "runId": "9adf31ea-6466-4510-86ef-d18454148e40",
+      "inputRevision": 29,
+      "state": "missing_input"
+    }
+  ],
+  "providerKind": "injected V2 transport; no network OCR",
+  "providerPasses": 3,
+  "distinctProviderInputs": [
+    "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+    "d7b5b567e94d8314283009bc73a2461857f668cc6f5f024d0d7f21aca2e295f3"
+  ],
+  "independentExpected": {
+    "month": "2026-06",
+    "regularHours": "100",
+    "baseMinor": 330000,
+    "expectedMinor": 354000,
+    "gapMinor": 24000,
+    "independentCalculation": "100 * 3540 minor units - 330000 minor units = 24000 minor units",
+    "humanLegalApproval": false
+  },
+  "syntheticCasesRemoved": 2,
+  "syntheticIdentitiesRemoved": 2,
+  "machineSessionsRevoked": 2,
+  "storageObjectsRemoved": 2,
+  "sourceFiles": [
+    {
+      "name": "synthetic-june-2026-100-hours.pdf",
+      "sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d"
+    },
+    {
+      "name": "synthetic-june-2026-missing-hours.pdf",
+      "sha256": "d7b5b567e94d8314283009bc73a2461857f668cc6f5f024d0d7f21aca2e295f3"
+    }
+  ],
+  "canonicalAuditRetained": true,
+  "uploadProof": "Actual web-role reserve/commit and signed private Storage bytes; no browser HTTP upload route in this proof",
+  "browserProofRequested": true,
+  "processRestartProofRequested": true,
+  "browserProof": false,
+  "processRestartProof": true,
+  "liveOcrProof": false,
+  "productionChanged": false
+}

@@ -1,0 +1,140 @@
+{
+  "tool": "supabase-cli@2.117.0 db advisors",
+  "database": "tivdoc_release_replay_20260907",
+  "scope": "After cancellation/checkout freshness migrations, verified TLS",
+  "errors": 0,
+  "warnings": 12,
+  "findings": [
+    {
+      "name": "multiple_permissive_policies",
+      "level": "WARN",
+      "metadata": {
+        "name": "documents",
+        "type": "table",
+        "schema": "public"
+      },
+      "detail": "Table `public.documents` has multiple permissive policies for role `tivdoc_dev_migrator` for action `SELECT`. Policies include `{report_source_current_owner_read,tivdoc_owner_access}`"
+    },
+    {
+      "name": "multiple_permissive_policies",
+      "level": "WARN",
+      "metadata": {
+        "name": "documents",
+        "type": "table",
+        "schema": "public"
+      },
+      "detail": "Table `public.documents` has multiple permissive policies for role `tivdoc_web_runtime` for action `DELETE`. Policies include `{document_upload_product,tivdoc_runtime_verified_tenant}`"
+    },
+    {
+      "name": "multiple_permissive_policies",
+      "level": "WARN",
+      "metadata": {
+        "name": "documents",
+        "type": "table",
+        "schema": "public"
+      },
+      "detail": "Table `public.documents` has multiple permissive policies for role `tivdoc_web_runtime` for action `INSERT`. Policies include `{document_upload_product,tivdoc_runtime_verified_tenant}`"
+    },
+    {
+      "name": "multiple_permissive_policies",
+      "level": "WARN",
+      "metadata": {
+        "name": "documents",
+        "type": "table",
+        "schema": "public"
+      },
+      "detail": "Table `public.documents` has multiple permissive policies for role `tivdoc_web_runtime` for action `SELECT`. Policies include `{document_upload_product,tivdoc_runtime_verified_tenant}`"
+    },
+    {
+      "name": "multiple_permissive_policies",
+      "level": "WARN",
+      "metadata": {
+        "name": "documents",
+        "type": "table",
+        "schema": "public"
+      },
+      "detail": "Table `public.documents` has multiple permissive policies for role `tivdoc_web_runtime` for action `UPDATE`. Policies include `{document_upload_product,tivdoc_runtime_verified_tenant}`"
+    },
+    {
+      "name": "multiple_permissive_policies",
+      "level": "WARN",
+      "metadata": {
+        "name": "documents",
+        "type": "table",
+        "schema": "public"
+      },
+      "detail": "Table `public.documents` has multiple permissive policies for role `tivdoc_worker_runtime` for action `SELECT`. Policies include `{saved_worker_product_document_read,tivdoc_runtime_verified_tenant}`"
+    },
+    {
+      "name": "multiple_permissive_policies",
+      "level": "WARN",
+      "metadata": {
+        "name": "engine_durable_jobs",
+        "type": "table",
+        "schema": "public"
+      },
+      "detail": "Table `public.engine_durable_jobs` has multiple permissive policies for role `tivdoc_dev_migrator` for action `SELECT`. Policies include `{monitor_owner_jobs,tivdoc_owner_access}`"
+    },
+    {
+      "name": "multiple_permissive_policies",
+      "level": "WARN",
+      "metadata": {
+        "name": "product_identity_sessions",
+        "type": "table",
+        "schema": "public"
+      },
+      "detail": "Table `public.product_identity_sessions` has multiple permissive policies for role `tivdoc_governance_owner` for action `DELETE`. Policies include `{product_identity_sessions_owner_access,tivdoc_runtime_context_session_lookup}`"
+    },
+    {
+      "name": "multiple_permissive_policies",
+      "level": "WARN",
+      "metadata": {
+        "name": "product_identity_sessions",
+        "type": "table",
+        "schema": "public"
+      },
+      "detail": "Table `public.product_identity_sessions` has multiple permissive policies for role `tivdoc_governance_owner` for action `INSERT`. Policies include `{product_identity_sessions_owner_access,tivdoc_runtime_context_session_lookup}`"
+    },
+    {
+      "name": "multiple_permissive_policies",
+      "level": "WARN",
+      "metadata": {
+        "name": "product_identity_sessions",
+        "type": "table",
+        "schema": "public"
+      },
+      "detail": "Table `public.product_identity_sessions` has multiple permissive policies for role `tivdoc_governance_owner` for action `SELECT`. Policies include `{product_identity_sessions_owner_access,tivdoc_runtime_context_session_lookup}`"
+    },
+    {
+      "name": "multiple_permissive_policies",
+      "level": "WARN",
+      "metadata": {
+        "name": "product_identity_sessions",
+        "type": "table",
+        "schema": "public"
+      },
+      "detail": "Table `public.product_identity_sessions` has multiple permissive policies for role `tivdoc_governance_owner` for action `UPDATE`. Policies include `{product_identity_sessions_owner_access,tivdoc_runtime_context_session_lookup}`"
+    },
+    {
+      "name": "extension_in_public",
+      "level": "WARN",
+      "metadata": {
+        "name": "pgcrypto",
+        "type": "extension",
+        "schema": "public"
+      },
+      "detail": "Extension `pgcrypto` is installed in the public schema. Move it to another schema."
+    }
+  ],
+  "migrations": [
+    {
+      "file": "20260908153942_quote_unstarted_cancellation.sql",
+      "sha256": "1eb0f99dcc5143fa27d288d2664413aa6d20fccb4d284d1293dfc7c62bd6f822"
+    },
+    {
+      "file": "20260908154530_quoted_checkout_retry_freshness.sql",
+      "sha256": "469183ae41d4d783e11c81437c43d5db3fd6d8ff04af30e6388ddb7fa02795f8"
+    }
+  ],
+  "productionChanged": false
+}

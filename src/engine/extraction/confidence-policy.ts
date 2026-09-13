@@ -4,20 +4,21 @@ import { payslipFieldKeySchema, type PayslipFieldKey } from "./contracts.ts";
 import { normalizedPayslipExtractionSchema, type NormalizedPayslipExtraction } from "./payslip.ts";
 import { gate0ValidationSchema, type Gate0Validation } from "./validation.ts";
 
+// Release P03: acceptance threshold, not a claim of calibrated model accuracy.
 export const criticalFieldThresholds = {
-  salary_period: 0.9,
-  salary_type: 0.85,
-  gross_salary: 0.9,
-  total_deductions: 0.9,
-  net_salary: 0.9,
-  hourly_rate: 0.9,
-  regular_hours: 0.85,
-  pension_base: 0.92,
-  pension_employee_contribution: 0.9,
-  pension_employer_contribution: 0.9,
-  severance_contribution: 0.9,
-  overtime_125_hours: 0.85,
-  overtime_150_hours: 0.85,
+  salary_period: 0.95,
+  salary_type: 0.95,
+  gross_salary: 0.95,
+  total_deductions: 0.95,
+  net_salary: 0.95,
+  hourly_rate: 0.95,
+  regular_hours: 0.95,
+  pension_base: 0.95,
+  pension_employee_contribution: 0.95,
+  pension_employer_contribution: 0.95,
+  severance_contribution: 0.95,
+  overtime_125_hours: 0.95,
+  overtime_150_hours: 0.95,
 } as const satisfies Partial<Record<PayslipFieldKey, number>>;
 
 export const criticalFieldDecisionSchema = z
@@ -42,9 +43,17 @@ function normalizedKey(value: unknown) {
   return JSON.stringify(value);
 }
 
-function applicableCriticalFields(extraction: NormalizedPayslipExtraction) {
+function applicableCriticalFields(extraction: NormalizedPayslipExtraction, validation: Gate0Validation) {
   const result = new Set<PayslipFieldKey>(["salary_period", "gross_salary", "net_salary"]);
   const presentFields = new Set(extraction.fields.map((candidate) => candidate.field));
+  // Applicability here means a transcribed/required cell needs an accuracy
+  // decision, not that a legal rule applies. A missing salary-type reading must
+  // not hide observed hours, or a Gate0 requirement, behind "not_applicable".
+  // Include failed normalization too: an unreadable observation is not absence.
+  for (const field of presentFields) if (field in criticalFieldThresholds) result.add(field);
+  for (const issue of validation.issues) {
+    for (const field of issue.field_keys) if (field in criticalFieldThresholds) result.add(field);
+  }
   if (presentFields.has("salary_type")) result.add("salary_type");
   const salaryTypes = extraction.fields
     .filter((candidate) => candidate.field === "salary_type")
@@ -88,7 +97,7 @@ export function assessExtractionConfidence(
 ) {
   const extraction = normalizedPayslipExtractionSchema.parse(extractionInput);
   const validation = gate0ValidationSchema.parse(validationInput);
-  const applicable = applicableCriticalFields(extraction);
+  const applicable = applicableCriticalFields(extraction, validation);
   const assessmentByCandidate = new Map(
     validation.field_assessments.map((assessment) => [assessment.candidate_id, assessment]),
   );

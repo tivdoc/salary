@@ -1,4 +1,5 @@
 import type { PostgresTransactionContext } from "../persistence/postgres/contracts.ts";
+import { isDisposableCanonicalDatabase } from "../persistence/postgres/runtime/disposable-target.ts";
 import { statement } from "../persistence/postgres/contracts.ts";
 import { CanonicalPostgresError } from "../persistence/postgres/runtime/errors.ts";
 import { PostgresIdempotencyRepository } from "../persistence/postgres/runtime/idempotency.ts";
@@ -240,7 +241,7 @@ function validateTarget(target: CanonicalPostgresTarget | undefined): void {
   }
   if (!target.disposable
       || (target.validation !== "LOOPBACK_DISPOSABLE_VALIDATED" && !remoteAllowlisted)
-      || !/^tivdoc_v09_[a-z0-9_]{8,48}$/u.test(target.database)) {
+        || !isDisposableCanonicalDatabase(target.database)) {
     throw new CanonicalPostgresError("POSTGRES_TARGET_NOT_DISPOSABLE");
   }
   // A remote target still has to name a host; an empty one would slip past the
@@ -275,7 +276,7 @@ function createTransactionBundle<TIntake, TAnalysis, TMemoryTestOnly>(
   });
 }
 
-function assertVerifiedTransactionInput(input: CanonicalVerifiedTransactionInput): void {
+export function assertVerifiedTransactionInput(input: CanonicalVerifiedTransactionInput): void {
   const opaque = /^[A-Za-z0-9][A-Za-z0-9:._-]{2,159}$/u;
   if (!opaque.test(input.identity.session_id) || !opaque.test(input.identity.token_id)
       || !opaque.test(input.identity.tenant_id) || !opaque.test(input.identity.actor_id)
@@ -290,10 +291,11 @@ function assertVerifiedTransactionInput(input: CanonicalVerifiedTransactionInput
   }
 }
 
-async function installVerifiedRuntimeContext(
+export async function installVerifiedRuntimeContext(
   context: PostgresTransactionContext,
   input: CanonicalVerifiedTransactionInput,
 ): Promise<CanonicalVerifiedRuntimeIdentity & Readonly<{ runtime_role: CanonicalPostgresRuntimeRole }>> {
+  assertVerifiedTransactionInput(input);
   const result = await context.client.query(statement("runtime_verified_context_install", VERIFIED_RUNTIME_CONTEXT, [
     input.identity.session_id,
     input.identity.token_id,

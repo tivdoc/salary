@@ -1,0 +1,28 @@
+{
+  "base": "4d1a91b42b0daa91f6334f068bbbaf9de57af3e9",
+  "fullSuite": {
+    "passedTests": 2991,
+    "skippedTests": 37,
+    "passedFiles": 383,
+    "skippedFiles": 16,
+    "seconds": 295.94
+  },
+  "focusedFieldChecks": 142,
+  "focusedGuardAndScannerChecks": 22,
+  "typecheck": "PASS",
+  "changedSourceLint": "PASS",
+  "firstRun": {
+    "passed": 2988,
+    "failed": 2,
+    "failures": [
+      "Static CEP-105 GET guard expects double quotes",
+      "Legacy artifact scanner classified reviewed legal PDFs and integrated brand images as customer artifacts"
+    ]
+  },
+  "repairs": [
+    "Existing GET guard uses its expected source convention",
+    "Reviewed public assets pinned by exact path and SHA; substitution/new path/customer directory still refused"
+  ],
+  "browserForNewFieldFlow": "NOT_RUN",
+  "productionChanged": false
+}

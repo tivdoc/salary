@@ -1,6 +1,5 @@
 import { AddDocumentButton } from "@/components/case/add-document-button";
 import type { CaseDocument } from "@/server/product/reports/case-documents";
-import { freePayslipSlots } from "@/server/product/reports/case-documents";
 
 // Site S2.3 / S3.4. The documents on a case, and the way to add another after
 // payment. Adding one goes to the same review screen the funnel uses — a
@@ -18,7 +17,6 @@ function formatSize(size: number): string {
 }
 
 export function CaseDocuments({ publicId, documents }: { publicId: string; documents: readonly CaseDocument[] }) {
-  const free = freePayslipSlots(documents);
   return (
     <div className="case-documents">
       <div className="received-card">
@@ -48,15 +46,9 @@ export function CaseDocuments({ publicId, documents }: { publicId: string; docum
       ) : null}
 
       <div className="received-card">
-        <h2>להוסיף מסמך</h2>
-        {free.length === 0 ? (
-          <p>התיק מכיל כבר את המספר המרבי של תלושים.</p>
-        ) : (
-          <>
-            <p>אפשר לצרף עוד תלוש — הבדיקה תכסה אותו בדוח המלא.</p>
-            <AddDocumentButton publicId={publicId} label="הוספת מסמך" />
-          </>
-        )}
+        <h2>הוספה או החלפה של מסמך</h2>
+        <p>אפשר להשלים חוזה, לצרף תלוש לפי היקף התיק או לבחור מסמך מסוים להחלפה. הגרסה הקודמת נשמרת עד להשלמת ההחלפה.</p>
+        <AddDocumentButton publicId={publicId} label="ניהול המסמכים" />
       </div>
     </div>
   );

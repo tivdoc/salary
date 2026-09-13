@@ -1,0 +1,32 @@
+{
+  "observer": "Codex through Chrome plugin; manual UI observations, not an automated test receipt",
+  "observedAt": "2026-09-10T05:13:29.685Z",
+  "applicationGitSha": "d85c2f7d83a1b8da3d849648271771846de68d3e",
+  "deploymentId": "dpl_HrFPQ4xegLtUzVdwrmnViP9RVYLg",
+  "preview": "https://salary-68fkwyftq-tivdoccom-5042s-projects.vercel.app",
+  "casePublicId": "TV-73299C08",
+  "currentRun": "b4d823c8-dafc-41ee-80ef-3f1ce48124e2",
+  "inputRevision": 29,
+  "realOwnerOtpLogin": true,
+  "sessionInjected": false,
+  "hoursAnswerViaUi": 100,
+  "sourceAnswersViaUi": true,
+  "firstFourAnswersApplication": "6da3413829cece5f458997d9f6c7fd6d094ebdaf",
+  "finalHoursAnswerAndWorkerApplication": "d85c2f7d83a1b8da3d849648271771846de68d3e",
+  "reportMailOpened": true,
+  "reportMailLinkOpenedProtectedCurrentReport": true,
+  "refreshPreservedReportAndHistory": true,
+  "amountsILS": {
+    "expected": "3540.00",
+    "recorded": "3300.00",
+    "gap": "240.00"
+  },
+  "pdfBrowserDownload": {
+    "status": "BLOCKED_BY_CLIENT",
+    "serverResponse": 200,
+    "downloadSucceeded": false
+  },
+  "foreignAccessProof": "actual web-role RPC in proof.json, not a second browser login",
+  "noNewOcrCallThisResume": true,
+  "canonicalReady": false
+}

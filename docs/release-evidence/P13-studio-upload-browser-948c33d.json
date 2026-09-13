@@ -1,0 +1,513 @@
+{
+  "origin": "https://salary-hr5ztifiq-tivdoccom-5042s-projects.vercel.app",
+  "deployedSha": "948c33da5b8a3b317d88e4473cdcea5acda05cd0",
+  "resumedPrefixFromRun": null,
+  "resumedPhase": null,
+  "checks": [
+    {
+      "name": "owner session reaches the isolated hosted upload screen",
+      "passed": true
+    },
+    {
+      "name": "initial payslip and contract are uploaded through UI, Storage and completion",
+      "passed": true
+    },
+    {
+      "name": "returning to upload renders the saved first payslip and contract",
+      "passed": true
+    },
+    {
+      "name": "adding a second payslip preserves both original document identities and versions",
+      "passed": true
+    },
+    {
+      "name": "connection failure before completion leaves the original replacement target saved",
+      "passed": true
+    },
+    {
+      "name": "reload retry completes the exact prior replacement and changes only the selected version",
+      "passed": true
+    },
+    {
+      "name": "duplicate completion returns the same saved versions without extra rows",
+      "passed": true
+    },
+    {
+      "name": "two real tabs add payslips concurrently and preserve the prior three documents",
+      "passed": true
+    },
+    {
+      "name": "another owner starts with one payslip and two independent completion requests",
+      "passed": true
+    },
+    {
+      "name": "contract-only completion answers its chosen request and preserves status and unrelated request",
+      "passed": true
+    },
+    {
+      "name": "foreign case upload-session, addition, replacement, completion and request linkage are refused",
+      "passed": true
+    },
+    {
+      "name": "saved protected pages fit mobile and desktop without client exceptions",
+      "passed": true
+    }
+  ],
+  "snapshots": {
+    "initial": {
+      "caseId": "7935fb76-8714-4f1d-a8b5-de6bba3fedb9",
+      "status": "under_review",
+      "capacity": {
+        "paidMonths": [],
+        "maxPayslips": 12,
+        "maxCaseBytes": 26214400,
+        "maxBatchBytes": 26214400,
+        "maxBatchFiles": 14
+      },
+      "publicId": "TV-FC258807",
+      "requests": [],
+      "documents": [
+        {
+          "id": "8b180f33-1ddf-44ff-b61e-f17506ec536d",
+          "size": 889,
+          "slot": "contract",
+          "mime_type": "application/pdf",
+          "version_id": "1ea52625-b9d2-4735-bfe4-d033bbfb4746",
+          "period_month": null,
+          "document_type": "contract",
+          "original_filename": "qa-contract.pdf"
+        },
+        {
+          "id": "35b59ad1-9a79-4372-ba5c-b76bc7c8f2a9",
+          "size": 885,
+          "slot": "payslip-01",
+          "mime_type": "application/pdf",
+          "version_id": "0dea5462-7ebb-4c2b-9786-4390c07f99da",
+          "period_month": "2026-08",
+          "document_type": "payslip",
+          "original_filename": "qa-first.pdf"
+        }
+      ],
+      "paymentStatus": "verified",
+      "checkPeriodMonth": "2026-08",
+      "next": "/case/TV-FC258807/documents"
+    },
+    "added": {
+      "caseId": "7935fb76-8714-4f1d-a8b5-de6bba3fedb9",
+      "status": "under_review",
+      "capacity": {
+        "paidMonths": [],
+        "maxPayslips": 12,
+        "maxCaseBytes": 26214400,
+        "maxBatchBytes": 26214400,
+        "maxBatchFiles": 14
+      },
+      "publicId": "TV-FC258807",
+      "requests": [],
+      "documents": [
+        {
+          "id": "8b180f33-1ddf-44ff-b61e-f17506ec536d",
+          "size": 889,
+          "slot": "contract",
+          "mime_type": "application/pdf",
+          "version_id": "1ea52625-b9d2-4735-bfe4-d033bbfb4746",
+          "period_month": null,
+          "document_type": "contract",
+          "original_filename": "qa-contract.pdf"
+        },
+        {
+          "id": "35b59ad1-9a79-4372-ba5c-b76bc7c8f2a9",
+          "size": 885,
+          "slot": "payslip-01",
+          "mime_type": "application/pdf",
+          "version_id": "0dea5462-7ebb-4c2b-9786-4390c07f99da",
+          "period_month": "2026-08",
+          "document_type": "payslip",
+          "original_filename": "qa-first.pdf"
+        },
+        {
+          "id": "b445d7ab-7bc4-43d7-9536-c8e1b89673f1",
+          "size": 887,
+          "slot": "payslip-02",
+          "mime_type": "application/pdf",
+          "version_id": "d08fabcf-f0cb-482f-9162-4ad42518cc8a",
+          "period_month": "2026-08",
+          "document_type": "payslip",
+          "original_filename": "qa-second.pdf"
+        }
+      ],
+      "paymentStatus": "verified",
+      "checkPeriodMonth": "2026-08",
+      "next": "/case/TV-FC258807/documents"
+    },
+    "replaced": {
+      "caseId": "7935fb76-8714-4f1d-a8b5-de6bba3fedb9",
+      "status": "under_review",
+      "capacity": {
+        "paidMonths": [],
+        "maxPayslips": 12,
+        "maxCaseBytes": 26214400,
+        "maxBatchBytes": 26214400,
+        "maxBatchFiles": 14
+      },
+      "publicId": "TV-FC258807",
+      "requests": [],
+      "documents": [
+        {
+          "id": "8b180f33-1ddf-44ff-b61e-f17506ec536d",
+          "size": 889,
+          "slot": "contract",
+          "mime_type": "application/pdf",
+          "version_id": "1ea52625-b9d2-4735-bfe4-d033bbfb4746",
+          "period_month": null,
+          "document_type": "contract",
+          "original_filename": "qa-contract.pdf"
+        },
+        {
+          "id": "35b59ad1-9a79-4372-ba5c-b76bc7c8f2a9",
+          "size": 888,
+          "slot": "payslip-01",
+          "mime_type": "application/pdf",
+          "version_id": "282f9282-dbbf-441b-8b7b-df58637c5f23",
+          "period_month": "2026-08",
+          "document_type": "payslip",
+          "original_filename": "qa-replaced.pdf"
+        },
+        {
+          "id": "b445d7ab-7bc4-43d7-9536-c8e1b89673f1",
+          "size": 887,
+          "slot": "payslip-02",
+          "mime_type": "application/pdf",
+          "version_id": "d08fabcf-f0cb-482f-9162-4ad42518cc8a",
+          "period_month": "2026-08",
+          "document_type": "payslip",
+          "original_filename": "qa-second.pdf"
+        }
+      ],
+      "paymentStatus": "verified",
+      "checkPeriodMonth": "2026-08",
+      "next": "/case/TV-FC258807/documents"
+    },
+    "concurrent": {
+      "caseId": "7935fb76-8714-4f1d-a8b5-de6bba3fedb9",
+      "status": "under_review",
+      "capacity": {
+        "paidMonths": [],
+        "maxPayslips": 12,
+        "maxCaseBytes": 26214400,
+        "maxBatchBytes": 26214400,
+        "maxBatchFiles": 14
+      },
+      "publicId": "TV-FC258807",
+      "requests": [],
+      "documents": [
+        {
+          "id": "8b180f33-1ddf-44ff-b61e-f17506ec536d",
+          "size": 889,
+          "slot": "contract",
+          "mime_type": "application/pdf",
+          "version_id": "1ea52625-b9d2-4735-bfe4-d033bbfb4746",
+          "period_month": null,
+          "document_type": "contract",
+          "original_filename": "qa-contract.pdf"
+        },
+        {
+          "id": "35b59ad1-9a79-4372-ba5c-b76bc7c8f2a9",
+          "size": 888,
+          "slot": "payslip-01",
+          "mime_type": "application/pdf",
+          "version_id": "282f9282-dbbf-441b-8b7b-df58637c5f23",
+          "period_month": "2026-08",
+          "document_type": "payslip",
+          "original_filename": "qa-replaced.pdf"
+        },
+        {
+          "id": "b445d7ab-7bc4-43d7-9536-c8e1b89673f1",
+          "size": 887,
+          "slot": "payslip-02",
+          "mime_type": "application/pdf",
+          "version_id": "d08fabcf-f0cb-482f-9162-4ad42518cc8a",
+          "period_month": "2026-08",
+          "document_type": "payslip",
+          "original_filename": "qa-second.pdf"
+        },
+        {
+          "id": "f70c4906-6e33-4902-89f1-9ebd1874b1e2",
+          "size": 891,
+          "slot": "payslip-03",
+          "mime_type": "application/pdf",
+          "version_id": "8a2de483-1f39-46fa-814a-0d38778184ba",
+          "period_month": "2026-08",
+          "document_type": "payslip",
+          "original_filename": "qa-parallel-b.pdf"
+        },
+        {
+          "id": "98dd6f07-682c-40fc-a12d-75861eb7a1df",
+          "size": 891,
+          "slot": "payslip-04",
+          "mime_type": "application/pdf",
+          "version_id": "219ced48-e150-4361-9065-b310f4e3b6ed",
+          "period_month": "2026-08",
+          "document_type": "payslip",
+          "original_filename": "qa-parallel-a.pdf"
+        }
+      ],
+      "paymentStatus": "verified",
+      "checkPeriodMonth": "2026-08",
+      "next": "/case/TV-FC258807/documents"
+    },
+    "lateBefore": {
+      "caseId": "93dfe4bc-b78e-4fd4-9f1d-2526c3016e7f",
+      "status": "under_review",
+      "capacity": {
+        "paidMonths": [],
+        "maxPayslips": 12,
+        "maxCaseBytes": 26214400,
+        "maxBatchBytes": 26214400,
+        "maxBatchFiles": 14
+      },
+      "publicId": "TV-45993480",
+      "requests": [
+        {
+          "id": "b14ac493-66e5-4100-bac0-5e3dc2f2fdc2",
+          "code": "contract_missing",
+          "question": "השלמת חוזה סינתטי",
+          "documentType": "contract"
+        },
+        {
+          "id": "701e1fb5-d0ba-4d18-866c-76d7aa648ebf",
+          "code": "attendance_missing",
+          "question": "השלמת דוח נוכחות סינתטי",
+          "documentType": "attendance"
+        }
+      ],
+      "documents": [
+        {
+          "id": "3d8c0022-db33-4abc-921a-02e3cd5c8e07",
+          "size": 891,
+          "slot": "payslip-01",
+          "mime_type": "application/pdf",
+          "version_id": "369b6bd8-3643-421a-8789-febf09766ff6",
+          "period_month": "2026-08",
+          "document_type": "payslip",
+          "original_filename": "qa-late-first.pdf"
+        }
+      ],
+      "paymentStatus": "verified",
+      "checkPeriodMonth": "2026-08",
+      "next": "/case/TV-45993480/documents"
+    },
+    "lateAfter": {
+      "caseId": "93dfe4bc-b78e-4fd4-9f1d-2526c3016e7f",
+      "status": "under_review",
+      "capacity": {
+        "paidMonths": [],
+        "maxPayslips": 12,
+        "maxCaseBytes": 26214400,
+        "maxBatchBytes": 26214400,
+        "maxBatchFiles": 14
+      },
+      "publicId": "TV-45993480",
+      "requests": [
+        {
+          "id": "701e1fb5-d0ba-4d18-866c-76d7aa648ebf",
+          "code": "attendance_missing",
+          "question": "השלמת דוח נוכחות סינתטי",
+          "documentType": "attendance"
+        }
+      ],
+      "documents": [
+        {
+          "id": "6f01abb9-ac0a-40de-9e9a-30896f0ec480",
+          "size": 894,
+          "slot": "contract",
+          "mime_type": "application/pdf",
+          "version_id": "b5978e77-6f77-46f8-a905-81f10560885e",
+          "period_month": null,
+          "document_type": "contract",
+          "original_filename": "qa-late-contract.pdf"
+        },
+        {
+          "id": "3d8c0022-db33-4abc-921a-02e3cd5c8e07",
+          "size": 891,
+          "slot": "payslip-01",
+          "mime_type": "application/pdf",
+          "version_id": "369b6bd8-3643-421a-8789-febf09766ff6",
+          "period_month": "2026-08",
+          "document_type": "payslip",
+          "original_filename": "qa-late-first.pdf"
+        }
+      ],
+      "paymentStatus": "verified",
+      "checkPeriodMonth": "2026-08",
+      "next": "/case/TV-45993480/documents"
+    }
+  },
+  "expectedFiles": [
+    {
+      "name": "qa-first.pdf",
+      "sha256": "5fa4b074663c6bf5ec80552e5c346a66a9fdfca4f53e2b139032cb4bcadef82f",
+      "size": 885
+    },
+    {
+      "name": "qa-contract.pdf",
+      "sha256": "a521a26e9078db046e7935cff8cbd60dfe38b1df9e7582ed598e8fe84867eb1e",
+      "size": 889
+    },
+    {
+      "name": "qa-second.pdf",
+      "sha256": "8ddc357ad6c1474fe9c0f2c41eb103e9368349db2c95d389e3e8e1208347776d",
+      "size": 887
+    },
+    {
+      "name": "qa-replaced.pdf",
+      "sha256": "c994e8a3418d12222d4c5625980843ccb309f8ef2fdc505da6194e065319e6b0",
+      "size": 888
+    },
+    {
+      "name": "qa-parallel-a.pdf",
+      "sha256": "a4820e7b43fe5938e219d964625c208e577085a1e1f81f86b7b99d64df2b7005",
+      "size": 891
+    },
+    {
+      "name": "qa-parallel-b.pdf",
+      "sha256": "fd9e45d3118f56acde0149429b0f7983c25e4e8ec1b8ae66d3a25937b06e31a7",
+      "size": 891
+    },
+    {
+      "name": "qa-late-first.pdf",
+      "sha256": "87d10a906aae6b8087f6ca7c138e7db4604dff6b54a8ad77ab4fe82e9de346c1",
+      "size": 891
+    },
+    {
+      "name": "qa-late-contract.pdf",
+      "sha256": "9a75858ffb2974b739802d935c74a38db4f3eec056d26ba181a780482f1da91d",
+      "size": 894
+    },
+    {
+      "name": "qa-forbidden.pdf",
+      "sha256": "7eb8314aab806a061339e41bd610c511ab63127296b8c8792053e2bdb2a3fc4e",
+      "size": 889
+    }
+  ],
+  "errors": [],
+  "network": [
+    {
+      "kind": "/api/documents/sign",
+      "status": 200,
+      "code": null
+    },
+    {
+      "kind": "DEV Storage PUT",
+      "status": 200
+    },
+    {
+      "kind": "DEV Storage PUT",
+      "status": 200
+    },
+    {
+      "kind": "/api/documents/complete",
+      "status": 200,
+      "code": null
+    },
+    {
+      "kind": "/api/documents/sign",
+      "status": 200,
+      "code": null
+    },
+    {
+      "kind": "DEV Storage PUT",
+      "status": 200
+    },
+    {
+      "kind": "/api/documents/complete",
+      "status": 200,
+      "code": null
+    },
+    {
+      "kind": "/api/documents/sign",
+      "status": 200,
+      "code": null
+    },
+    {
+      "kind": "DEV Storage PUT",
+      "status": 200
+    },
+    {
+      "kind": "/api/documents/complete failed"
+    },
+    {
+      "kind": "/api/documents/complete",
+      "status": 200,
+      "code": null
+    },
+    {
+      "kind": "/api/documents/sign",
+      "status": 200,
+      "code": null
+    },
+    {
+      "kind": "DEV Storage PUT",
+      "status": 200
+    },
+    {
+      "kind": "/api/documents/sign",
+      "status": 200,
+      "code": null
+    },
+    {
+      "kind": "DEV Storage PUT",
+      "status": 200
+    },
+    {
+      "kind": "/api/documents/complete",
+      "status": 200,
+      "code": null
+    },
+    {
+      "kind": "/api/documents/complete",
+      "status": 200,
+      "code": null
+    },
+    {
+      "kind": "/api/documents/sign",
+      "status": 200,
+      "code": null
+    },
+    {
+      "kind": "DEV Storage PUT",
+      "status": 200
+    },
+    {
+      "kind": "/api/documents/complete",
+      "status": 200,
+      "code": null
+    },
+    {
+      "kind": "/api/documents/sign",
+      "status": 200,
+      "code": null
+    },
+    {
+      "kind": "DEV Storage PUT",
+      "status": 200
+    },
+    {
+      "kind": "/api/documents/complete",
+      "status": 200,
+      "code": null
+    }
+  ],
+  "sourceProofs": [
+    {
+      "batchId": "e52202a3-fe7f-476e-b46b-e57fbf45ad41",
+      "clientId": "60327ffb-2fe2-417c-926a-8f5262c5e781",
+      "size": 888,
+      "sha256": "c994e8a3418d12222d4c5625980843ccb309f8ef2fdc505da6194e065319e6b0",
+      "beforeFault": true
+    }
+  ],
+  "scope": "Two seeded synthetic QA identities; actual hosted pages, HTTP upload APIs, DEV Storage PUT and isolated web-role DB RPC. No OTP delivery or real payment/provider verification.",
+  "productionChanged": false,
+  "secretsIncluded": false
+}

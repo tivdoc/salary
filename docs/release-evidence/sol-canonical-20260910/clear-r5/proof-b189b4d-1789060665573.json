@@ -1,0 +1,70 @@
+{
+  "gitSha": "b189b4d33f1427791d02abafae15410392caba64",
+  "caseId": "9544dc6f-1aed-4924-921f-bc9a1cac5232",
+  "publicId": "TV-6E4694F8",
+  "orderId": "1257cbbf-3aa5-4c80-8f25-ba18d2d0549f",
+  "kind": "clear",
+  "phase": "resume-signed-canonical-execution",
+  "state": "PASS",
+  "error": null,
+  "checks": [
+    "ordinary_published_source_bound_and_foreign_source_denied",
+    "resumed_existing_live_checkpoint_without_provider_call",
+    "live_provider_to_canonical_finding_and_published_report",
+    "parallel_retry_same_report_no_duplicates",
+    "owned_job_lease_released_with_fence"
+  ],
+  "runs": [
+    {
+      "label": "report",
+      "runId": "033347b8-1b83-4f27-8e69-f711c16fee03",
+      "projectionId": "44020ee5-3416-426d-a873-359369e702cf",
+      "pdfSha256": "ab1c0827917eb93af1d2a68d35f0aabae77798a345e91edcaf4384bcb39de8e5",
+      "htmlSha256": "c9aed6a92b368bfbef4a4c077890cfcd58fe20e00630cb19cc2ed872c1cf13fc",
+      "revision": 33,
+      "sourceSha256": "ba5286b3f907249b251e9b7caca193f1b1d303d77255c20eb83c55f1431f7197",
+      "hoursOrigin": "documented",
+      "expectedMinor": 354058,
+      "recordedMinor": 330000,
+      "gapMinor": 24058
+    }
+  ],
+  "answers": [],
+  "sourceSha256": "ba5286b3f907249b251e9b7caca193f1b1d303d77255c20eb83c55f1431f7197",
+  "budget": {
+    "policy": {
+      "version": "tivdoc-sol-comparison-budget-v1",
+      "model": "gpt-5.6-sol",
+      "executionProfile": "sol-medium-comparison-v1",
+      "reasoningEffort": "medium",
+      "serviceTier": "default",
+      "pricingSource": "https://developers.openai.com/api/docs/models/gpt-5.6-sol",
+      "pricingCheckedAt": "2026-09-10",
+      "pricingValidUntil": "2026-09-17T00:00:00Z",
+      "inputUsdPerMillion": 4,
+      "outputUsdPerMillion": 20,
+      "inputTokenCeiling": 64000,
+      "outputTokenCeiling": 10000,
+      "maxRequests": 12,
+      "maxReservedMicroUsd": 5000000,
+      "countReservedMicroUsd": 256000,
+      "generationReservedMicroUsd": 456000,
+      "sdkRetries": 0
+    },
+    "contentRequests": 8,
+    "generations": 4,
+    "countRequests": 4,
+    "reservedUpperBoundUsd": 2.848,
+    "unknownOutcomes": 1,
+    "supplierReturnedCost": {
+      "status": "not_returned_by_provider",
+      "amountUsd": null
+    },
+    "countEndpointTariff": "not_separately_documented_reserved_at_full_input_price",
+    "instanceGenerations": 0
+  },
+  "payment": "synthetic_paid_full_offer_no_payment_provider",
+  "authority": "isolated_test_only",
+  "humanApproval": false,
+  "productionChanged": false
+}

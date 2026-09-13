@@ -19,14 +19,21 @@ const durationSchema = z.object({
 }).strict();
 
 export const productOfferSchema = z.object({
-  schema_version: z.literal("tivdoc-product-offer-v1"),
+  schema_version: z.literal("tivdoc-product-offer-v2"),
   note: z.string(),
   currency: z.literal("ILS"),
   initial_check: z.object({
     price: moneySchema,
     delivery: z.object({ automatic: durationSchema, human: durationSchema }).strict(),
   }).strict(),
-  full_report: z.object({ price: moneySchema, delivery: durationSchema }).strict(),
+  full_report: z.object({
+    pricing: z.object({
+      version: z.string().min(1), quote_valid_days: z.number().int().positive().max(30),
+      tiers: z.array(z.object({minimum_basis_minor:z.number().int().positive().safe(),total_minor:z.number().int().positive().safe()}).strict()).min(1),
+    }).strict().superRefine((pricing,ctx)=>{
+      for(let i=1;i<pricing.tiers.length;i++)if(pricing.tiers[i].minimum_basis_minor<=pricing.tiers[i-1].minimum_basis_minor||pricing.tiers[i].total_minor<=pricing.tiers[i-1].total_minor)ctx.addIssue({code:'custom',message:'pricing_tiers_must_increase'});
+    }), delivery: durationSchema,
+  }).strict(),
   second_product_sentence: z.string().min(20),
   access: z.object({
     // External review #1, finding 8: the path token lives hours, not days; the session keeps its thirty days.
@@ -74,6 +81,11 @@ export function initialCheckPriceNumber(): number {
 export function formatPrice(money: Readonly<{ amount: string; currency: string }>): string {
   const amount = money.amount.endsWith(".00") ? money.amount.slice(0, -3) : money.amount;
   return `${amount} ₪`;
+}
+
+/** Public totals; an individual quote is computed only by the server. */
+export function formatFullPrices(): string {
+  return productOffer().full_report.pricing.tiers.map(tier=>formatPrice({amount:(tier.total_minor/100).toFixed(2),currency:'ILS'})).join(' / ');
 }
 
 /** "15 דקות" / "יום עסקים אחד" / "3 ימי עסקים" — the delivery estimate in Hebrew. */

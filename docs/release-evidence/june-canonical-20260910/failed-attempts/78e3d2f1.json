@@ -1,0 +1,177 @@
+{
+  "schemaVersion": "june2026-canonical-db-proof-v1",
+  "verdict": "FAIL",
+  "gitSha": "010fe9fd7dbd37a24c4b6c8c87f21cdd595f57c3",
+  "phase": "canonical-positive",
+  "failure": "Cannot read properties of null (reading 'current')",
+  "cleanupFailure": null,
+  "caseId": "78e3d2f1-4107-4103-a817-0cbe5f1c8df2",
+  "publicId": "TV-6DA49820",
+  "orderId": "e9300e99-6531-4935-b831-1dab46d5ad86",
+  "ownerIdentity": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+  "database": "tivdoc_release_replay_20260907",
+  "schema": {
+    "orderedChain": 137,
+    "tail": "20260910144517_june2026_comparison_stage_binding.sql",
+    "sha256": "772407f18c0f39036a850606504443258868074a489d2d70ef8c8c468f37743b",
+    "actualDefinitions": [
+      {
+        "name": "private.june2026_test_assessment",
+        "signature": "uuid,uuid,integer,text",
+        "securityDefiner": true,
+        "emptySearchPath": true,
+        "bodyNormalizedSha256": "778f5e87a8eeeaebe7f92d1abe278762fcaaa213eaa17b5782ce34c0b9e20563"
+      },
+      {
+        "name": "private.june2026_canonical_test_save",
+        "signature": "uuid,uuid,integer,text,text,jsonb,jsonb",
+        "securityDefiner": true,
+        "emptySearchPath": true,
+        "bodyNormalizedSha256": "3b6bfd1f80bf755075b07c2e8ce0e74240a005e7ebd20557273bc6e76f61a518"
+      },
+      {
+        "name": "public.case_report_june_canonical_test",
+        "signature": "uuid,uuid,uuid",
+        "securityDefiner": false,
+        "emptySearchPath": true,
+        "bodyNormalizedSha256": "b65ca9b435aae2bb7a535ec09f5ad2314c24456fac991f6adc424ac83d5fd5bb"
+      }
+    ],
+    "migrationLedgerAvailable": false
+  },
+  "checks": [
+    "Actual private Storage bytes and web-role reservation/commit feed durable injected extraction; seven exact P06 readings and eight identified June declarations are answered and checkpoint reuse makes no provider call.",
+    "Without registry authority the actual REAL run remains blocked; the two-hour test record binds its saved packet, all eight declaration hashes, source, current input, policy and candidate. Failure immediately before test-result save rolls back the new canonical run and report."
+  ],
+  "runs": [],
+  "assessments": [
+    {
+      "id": "6f81a342-5fb6-4f65-a749-ccaefcdf9776",
+      "sha256": "ed7e5944b53921f41590abf49b6677d6c0dba1f060474aca12ba85a429f3d5e9",
+      "packetSha256": "9a4fff3557b0c347da0007de94232d70e3df92fb1d3e740d4d810f45aaa8ecce",
+      "blockedRealRunId": "4fb2eb5e-0fc3-4705-837d-5b7582380a5d",
+      "inputRevision": 32,
+      "expiresAt": "2026-09-10T16:49:40.777Z",
+      "authority": "isolated_dev_test_assumptions",
+      "humanApproval": false
+    }
+  ],
+  "confirmationReceipts": [
+    {
+      "versionId": "f840a2f4-3a4c-457b-8c79-d311ce5cc1fd",
+      "checkpointSha256": "62def6cdf4568f8072222deebd623a5567b7a2af49b459192b6e7da0941754f1",
+      "fields": [
+        "base_monthly_salary",
+        "gross_salary",
+        "hourly_rate",
+        "net_salary",
+        "regular_hours",
+        "salary_period",
+        "salary_type"
+      ],
+      "juneTargets": [
+        {
+          "requestId": "01cf4294-e0ab-4457-9957-dfc4bbaf4020",
+          "targetSha256": "0b4e5cde9904bed3719e306a54d2c39d959fa4a062d19814d136db61f905ee33"
+        },
+        {
+          "requestId": "05e0bcb6-7b1c-4e33-9038-7a53765e15dc",
+          "targetSha256": "2c28300f31b105decea28d65f08d1f42d5147d19b459fca3c04819ab9240c20c"
+        },
+        {
+          "requestId": "11ebb0ad-1479-447a-845c-740432dfdef8",
+          "targetSha256": "4057d444cb0f0c7f0d63f450f4e64065105586d450e99dd0a48f4c1a8c5849e3"
+        },
+        {
+          "requestId": "611ac5e1-022f-41a9-af57-e22cdb9473cb",
+          "targetSha256": "4c4b90e3f0cb332bdb08d83efa098df59b8a5a8fb39dcd37ef10253e8a7056f8"
+        },
+        {
+          "requestId": "73010c80-65f5-40be-8084-2b2a13ef7aaf",
+          "targetSha256": "93513326fba992c28934d24023c690054c4ab1f0587adf571fcc5dffe55f0cd2"
+        },
+        {
+          "requestId": "7bd06b2d-dacc-4fed-aa1b-68f100f31c06",
+          "targetSha256": "a82d78a82214300c0654be1af40608aaa8190c0774e940ca26ebf70fce8f24dc"
+        },
+        {
+          "requestId": "609ed5e9-56cc-4bca-8a3e-a255c7c1d4ec",
+          "targetSha256": "c39380af8293f38b4f56ef99109d564ab47e6c9f09d56a6391c905c8e7448532"
+        },
+        {
+          "requestId": "050f37da-b2a0-499b-8a1b-3bba9010a3e5",
+          "targetSha256": "e1c9dc536cd3a16ad8b66b78235c35af5ddcdaba1189f35975447f2869452a58"
+        }
+      ],
+      "identity": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+      "actor": "automated_synthetic_fixture_actions",
+      "humanApproval": false,
+      "checkpointReused": true
+    }
+  ],
+  "providerCalls": [
+    {
+      "sourceSha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+      "responseId": "synthetic-june-canonical-da4d615d-19b0-434e-ad68-fcb9ceeac73a"
+    }
+  ],
+  "sources": [
+    {
+      "path": "output/release-completion/june-canonical/78e3d2f1/input.pdf",
+      "sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+      "bytes": 1409
+    },
+    {
+      "path": "output/release-completion/june-canonical/78e3d2f1/no-gap-input.pdf",
+      "sha256": "06f1eefe271910ee61e794a92cec88a2978f1bf3f6b98a05358be0aee9a7bcb8",
+      "bytes": 1490
+    }
+  ],
+  "independentOracle": {
+    "month": "2026-06",
+    "hours": "100",
+    "rateMinor": 3300,
+    "monthlyMinor": 644385,
+    "divisor": 182,
+    "expectedMinor": 354058,
+    "recordedMinor": 330000,
+    "gapMinor": 24058,
+    "publishedHourlyGapMinor": 24000,
+    "rounding": "half_up_only_at_final_minor_unit",
+    "humanApproval": false
+  },
+  "noGapOracle": {
+    "month": "2026-06",
+    "hours": "182",
+    "rateMinor": null,
+    "monthlyMinor": 644385,
+    "divisor": 182,
+    "expectedMinor": 644385,
+    "recordedMinor": 644385,
+    "gapMinor": 0,
+    "publishedHourlyGapMinor": 24000,
+    "rounding": "half_up_only_at_final_minor_unit",
+    "humanApproval": false
+  },
+  "retainedPrimaryCase": true,
+  "retainedStoragePaths": [
+    "cases/78e3d2f1-4107-4103-a817-0cbe5f1c8df2/versions/f840a2f4-3a4c-457b-8c79-d311ce5cc1fd.pdf"
+  ],
+  "sourceHashesByPath": {
+    "cases/78e3d2f1-4107-4103-a817-0cbe5f1c8df2/versions/f840a2f4-3a4c-457b-8c79-d311ce5cc1fd.pdf": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d"
+  },
+  "machineRevoked": true,
+  "foreignFixtureRemoved": true,
+  "customerSessionInjected": false,
+  "liveOcr": false,
+  "provider": "injected_synthetic_transport",
+  "realPayment": false,
+  "notificationsSent": false,
+  "humanApproval": false,
+  "legalActivation": false,
+  "ordinaryCustomerFindingPublished": false,
+  "processRestartProof": false,
+  "newConnectionRestartProof": false,
+  "productionChanged": false,
+  "browserProof": false
+}

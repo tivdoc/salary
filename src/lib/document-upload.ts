@@ -2,30 +2,48 @@ import { z } from "zod";
 import { acceptedDocumentMimeTypes, documentTypes, MAX_FILE_SIZE, MAX_PAYSLIPS, MAX_UPLOAD_SIZE } from "./validation";
 
 const month = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/u);
+export const documentUploadTypes = [...documentTypes, "other"] as const;
+export type DocumentUploadType = typeof documentUploadTypes[number];
+export const MAX_TRAVEL_TARIFF_DOCUMENTS = 12;
+export const travelTariffEvidencePurposeSchema = z.object({
+  kind: z.literal("travel_tariff"),
+  month: z.string().regex(/^2026-(05|06|07)$/u),
+  page: z.number().int().min(1).max(100),
+  locator: z.string().trim().min(1).max(120),
+}).strict();
+export type TravelTariffEvidencePurpose = z.infer<typeof travelTariffEvidencePurposeSchema>;
+export const sourceIntakeUploadSelectionSchema=z.object({policy:z.literal('legacy-source-intake-v1'),target_sha256:z.string().regex(/^[a-f0-9]{64}$/u)}).strict();
+export type SourceIntakeUploadSelection=z.infer<typeof sourceIntakeUploadSelectionSchema>;
 export const documentUploadSchema = z.object({
   caseId: z.uuid(),
   batchId: z.uuid(),
   requestId: z.uuid().optional(),
+  sourceIntake: sourceIntakeUploadSelectionSchema.optional(),
   checkPeriodMonth: month.optional(),
   files: z.array(z.object({
     clientId: z.uuid(),
-    documentType: z.enum(documentTypes),
+    documentType: z.enum(documentUploadTypes),
     name: z.string().trim().min(1).max(240),
     type: z.enum(acceptedDocumentMimeTypes),
     size: z.number().int().positive().max(MAX_FILE_SIZE),
     sha256: z.string().regex(/^[a-f0-9]{64}$/u),
     periodMonth: month.optional(),
+    evidencePurpose: travelTariffEvidencePurposeSchema.optional(),
     replace: z.object({ documentId: z.uuid(), versionId: z.uuid() }).strict().optional(),
   }).strict()).min(1).max(MAX_PAYSLIPS + 2),
-}).strict().superRefine(({ files }, ctx) => {
+}).strict().superRefine(({ files,sourceIntake,requestId,checkPeriodMonth }, ctx) => {
+  if(sourceIntake&&(!requestId||checkPeriodMonth!==undefined||files.some(f=>f.periodMonth!==undefined||f.documentType==='other'||f.evidencePurpose!==undefined)))ctx.addIssue({code:'custom',message:'קליטת מקור ללא תקופה דורשת בקשה מזוהה ואינה כוללת בחירת חודש'});
   if (new Set(files.map((file) => file.clientId)).size !== files.length) ctx.addIssue({ code: "custom", message: "קובץ מופיע פעמיים" });
   const targets = files.flatMap((file) => file.replace ? [file.replace.documentId] : []);
   if (new Set(targets).size !== targets.length) ctx.addIssue({ code: "custom", message: "אפשר להחליף מסמך פעם אחת בכל העלאה" });
   if (files.reduce((sum, file) => sum + file.size, 0) > MAX_UPLOAD_SIZE) ctx.addIssue({ code: "custom", message: "סך הקבצים גדול מ-25MB" });
   for (const file of files) {
-    if (file.documentType === "payslip" && !file.periodMonth) ctx.addIssue({ code: "custom", message: "יש לבחור חודש לתלוש" });
+    if (file.documentType === "payslip" && !file.periodMonth&&!sourceIntake) ctx.addIssue({ code: "custom", message: "יש לבחור חודש לתלוש" });
     if (file.documentType !== "payslip" && file.periodMonth) ctx.addIssue({ code: "custom", message: "חודש נרשם לתלוש בלבד" });
+    if (file.documentType === "other" && (file.type !== "application/pdf" || !file.evidencePurpose)) ctx.addIssue({ code: "custom", message: "מסמך תעריפי נסיעה חייב להיות PDF עם חודש, עמוד ומיקום במקור" });
+    if (file.documentType !== "other" && file.evidencePurpose) ctx.addIssue({ code: "custom", message: "תעריפי נסיעה מצורפים כמסמך נוסף בלבד" });
   }
+  if (files.filter(file => file.documentType === "other").length > MAX_TRAVEL_TARIFF_DOCUMENTS) ctx.addIssue({ code: "custom", message: "אפשר לצרף עד 12 מסמכי תעריפי נסיעה" });
 });
 
 export const documentCompletionSchema = z.object({
@@ -33,14 +51,22 @@ export const documentCompletionSchema = z.object({
 }).strict();
 export type DocumentUpload = z.infer<typeof documentUploadSchema>;
 export type SavedDocument = {
-  id: string; version_id: string; document_type: "payslip" | "contract" | "attendance";
+  id: string; version_id: string; document_type: DocumentUploadType;
   slot: string; original_filename: string; mime_type: string; size: number; period_month: string | null;
+  evidence_purpose?: (TravelTariffEvidencePurpose & { page_count: number }) | null;
 };
 export type UploadSnapshot = {
   caseId: string; publicId: string; status: string; paymentStatus: string;
   checkPeriodMonth: string | null; documents: SavedDocument[];
-  requests: { id: string; code: string; question: string; documentType: string }[];
+  capacity?: import("./document-capacity").DocumentCapacity;
+  sourceIntakeReceipts?:{batch_id:string}[];
+  requests: { id: string; code: string; question: string; documentType: string;sourceIntake?:SourceIntakeUploadSelection&{month:string|null} }[];
 };
+export function selectedSourceIntakeUpload(snapshot:Pick<UploadSnapshot,'requests'>,requestId:string|undefined):SourceIntakeUploadSelection|null{
+ const request=snapshot.requests.find(r=>r.id===requestId);if(!request?.code.startsWith('legacy.source.document:'))return null;
+ if(!request.sourceIntake||!month.nullable().safeParse(request.sourceIntake.month).success)throw Error('UPLOAD_REQUEST_CONFLICT');
+ return sourceIntakeUploadSelectionSchema.parse({policy:request.sourceIntake.policy,target_sha256:request.sourceIntake.target_sha256});
+}
 
 /** File type is checked from bytes at completion, as well as the storage metadata. */
 export function matchesDocumentSignature(bytes: Uint8Array, mime: string): boolean {
@@ -52,7 +78,8 @@ export function matchesDocumentSignature(bytes: Uint8Array, mime: string): boole
   return signatures[mime]?.every((byte, index) => bytes[index] === byte) ?? false;
 }
 
-export function uploadNextPath(snapshot: Pick<UploadSnapshot, "status" | "paymentStatus" | "publicId">): string {
+export function uploadNextPath(snapshot: Pick<UploadSnapshot, "status" | "paymentStatus" | "publicId">,sourceIntake=false): string {
+  if(sourceIntake)return `/case/${snapshot.publicId}/thread`;
   return ["payment_pending", "paid", "under_review", "completed"].includes(snapshot.status)
     || ["pending", "paid", "verified", "refunded"].includes(snapshot.paymentStatus)
     ? `/case/${snapshot.publicId}/documents` : "/check/payment";

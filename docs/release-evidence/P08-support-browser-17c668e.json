@@ -1,0 +1,51 @@
+{
+  "origin": "https://salary-sy8byvdz5-tivdoccom-5042s-projects.vercel.app",
+  "deployedSha": "17c668ef480f1b70e612d8906a9b81d79073f121",
+  "checks": [
+    {
+      "name": "customer opens case support with saved server state",
+      "passed": true
+    },
+    {
+      "name": "lost completion response retries the same saved question without duplication",
+      "passed": true
+    },
+    {
+      "name": "an operations DB reply is visible after customer reload and customer can reopen it",
+      "passed": true
+    },
+    {
+      "name": "concurrent HTTP retries persist once and cross-case or foreign-origin requests are refused",
+      "passed": true
+    },
+    {
+      "name": "persisted support is readable in RTL at 360px",
+      "passed": true
+    },
+    {
+      "name": "persisted support is readable in RTL at 390px",
+      "passed": true
+    },
+    {
+      "name": "persisted support is readable in RTL at 768px",
+      "passed": true
+    },
+    {
+      "name": "persisted support is readable in RTL at 1440px",
+      "passed": true
+    },
+    {
+      "name": "two deliberate identical new messages receive distinct IDs after confirmed saves",
+      "passed": true
+    },
+    {
+      "name": "support leaves case and payment status unchanged",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "syntheticCasesRemoved": 2,
+  "scope": "Seeded QA session; hosted customer browser/API and DEV database. Owner response injected through actual operations DB role; no owner HTTP/UI, OTP, provider, real payment or professional approval proof.",
+  "productionChanged": false,
+  "secretsIncluded": false
+}

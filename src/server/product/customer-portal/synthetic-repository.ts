@@ -35,6 +35,19 @@ type Invite = Readonly<{
 type IdempotencyRecord<T> = Readonly<{ command_sha256: string; result: T }>;
 
 const PROMPTS_HE: Readonly<Record<FactPath, string>> = Object.freeze({
+  "employment.start_month": "באיזה חודש התחלת לעבוד?",
+  "employment.still_employed": "האם עדיין עבדת במקום בתקופה שנבדקת?",
+  "employment.managerial_or_trust_role_declared": "האם תפקידך הוגדר ניהולי או דורש אמון אישי מיוחד?",
+  "person.birth_year": "באיזו שנה נולדת?",
+  "person.sex": "מהו המין שנמסר לצורך הבדיקה?",
+  "work.days_per_week": "כמה ימים בשבוע עבדת בתקופה שנבדקת?",
+  "work.typical_hours_per_day": "כמה שעות נמשך בדרך כלל יום העבודה בתקופה שנבדקת?",
+  "work.works_friday": "האם עבדת בימי שישי בתקופה שנבדקת?",
+  "work.works_saturday": "האם עבדת בשבת בתקופה שנבדקת?",
+  "pension.fund_at_hire": "האם הייתה לך קרן פנסיה פעילה עם תחילת העבודה?",
+  "travel.employer_provides_transport": "האם המעסיק סיפק הסעה לעבודה?",
+  "travel.commute_over_500m": "האם המרחק מהבית לעבודה היה יותר מ־500 מטר?",
+
   "employment.start_date": "מהו תאריך תחילת העבודה לפי ידיעתך?",
   "employment.end_date": "האם העבודה הסתיימה, ואם כן באיזה תאריך?",
   "employment.population": "האם את/ה עובד/ת בוגר/ת, נער/ה עובד/ת (ואם כן, באיזה גיל) או חניך/ה?",

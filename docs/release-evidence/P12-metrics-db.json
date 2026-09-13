@@ -1,0 +1,15 @@
+{
+  "checks": [
+    "customer web role cannot read operational metrics",
+    "published findings and verified payments come from actual rows while QA is excluded",
+    "visible report opening is scoped and idempotent",
+    "another case report cannot be linked as an opening",
+    "full purchase count is read from a paid scoped order instead of default zero",
+    "invalid reporting windows are refused"
+  ],
+  "database": "tivdoc_release_replay_20260907",
+  "fixtures": "synthetic: one explicitly non-QA classification control and one QA control; both removed",
+  "providerVerified": false,
+  "browserOpeningProven": false,
+  "production": "untouched"
+}

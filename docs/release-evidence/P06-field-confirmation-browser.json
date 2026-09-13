@@ -1,0 +1,67 @@
+{
+  "origin": "https://salary-249wckccu-tivdoccom-5042s-projects.vercel.app",
+  "deployedSha": "ea0875a5eb633acbb4435c04217a0d13dbffcecb",
+  "deploymentId": "dpl_6xrS9bt6xNLkUaKbnSKSVGrnHjHs",
+  "checks": [
+    {
+      "name": "exact stored field, normalized value and purchased February question opens with reading-only disclosure",
+      "passed": true
+    },
+    {
+      "name": "protected source link returns the exact actual Storage PDF with no-store",
+      "passed": true
+    },
+    {
+      "name": "another actual customer cannot read or answer this bound question",
+      "passed": true
+    },
+    {
+      "name": "saved source question reloads with operable choices in RTL at 360px",
+      "passed": true
+    },
+    {
+      "name": "saved source question reloads with operable choices in RTL at 390px",
+      "passed": true
+    },
+    {
+      "name": "saved source question reloads with operable choices in RTL at 768px",
+      "passed": true
+    },
+    {
+      "name": "saved source question reloads with operable choices in RTL at 1440px",
+      "passed": true
+    },
+    {
+      "name": "changed document month presents unanswered history without a stale confirmation form",
+      "passed": true
+    },
+    {
+      "name": "saved affirmative reading survives response loss, exact retry and full reload",
+      "passed": true
+    },
+    {
+      "name": "negative reading correction persists as a new answer without inventing a replacement amount",
+      "passed": true
+    },
+    {
+      "name": "source replacement navigation refuses foreign identity and cross-origin requests",
+      "passed": true
+    },
+    {
+      "name": "negative source answer opens only its exact stored document for explicit replacement",
+      "passed": true
+    },
+    {
+      "name": "explicit file replacement commits through signed Storage upload and returns saved case documents",
+      "passed": true
+    },
+    {
+      "name": "replacement keeps answered history with explicit stale-source explanation and refuses the old source endpoint",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "scope": "Owned synthetic source PDF, stored extraction, paid order and seeded authenticated sessions; hosted source/reading/history journey. No live OCR, OTP, legal activation, monetary calculation or production.",
+  "productionChanged": false,
+  "secretsIncluded": false
+}

@@ -1,0 +1,71 @@
+{
+  "at": "2026-09-10T17:27:49.057Z",
+  "productionChanged": false,
+  "migrations": [
+    {
+      "path": "supabase/migrations/20260910172700_june2026_regular_current_authority.sql",
+      "sha256": "98ebc3fb9a88849b6677138a30130d3fcbd419aacc9cd420224ecbe9dfd9579c"
+    }
+  ],
+  "target": {
+    "db": "tivdoc_release_replay_20260907",
+    "principal": "tivdoc_dev_migrator"
+  },
+  "rollbackPreflight": "PASS",
+  "applied": true,
+  "privileges": [
+    {
+      "role": "anon",
+      "can_register_authority": false,
+      "can_assess": false,
+      "can_seed_result": false,
+      "can_read_worker_authority": false
+    },
+    {
+      "role": "authenticated",
+      "can_register_authority": false,
+      "can_assess": false,
+      "can_seed_result": false,
+      "can_read_worker_authority": false
+    },
+    {
+      "role": "service_role",
+      "can_register_authority": false,
+      "can_assess": false,
+      "can_seed_result": false,
+      "can_read_worker_authority": false
+    },
+    {
+      "role": "tivdoc_web_runtime",
+      "can_register_authority": false,
+      "can_assess": false,
+      "can_seed_result": false,
+      "can_read_worker_authority": false
+    },
+    {
+      "role": "tivdoc_worker_runtime",
+      "can_register_authority": false,
+      "can_assess": false,
+      "can_seed_result": false,
+      "can_read_worker_authority": true
+    }
+  ],
+  "rls": [
+    {
+      "relname": "june2026_authority_registries",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "june2026_regular_assessments",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "june2026_hours_targets",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "june2026_regular_results",
+      "relrowsecurity": true
+    }
+  ]
+}

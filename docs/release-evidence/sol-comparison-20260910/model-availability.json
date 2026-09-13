@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "tivdoc-sol-model-availability-v1",
+  "endpoint": "https://api.openai.com/v1/models",
+  "method": "GET",
+  "httpStatus": 200,
+  "checkedAt": "2026-09-10T15:50:54.3936715Z",
+  "requestedModel": "gpt-5.6-sol",
+  "exactModelAvailable": true,
+  "matchingModel": {
+    "id": "gpt-5.6-sol",
+    "object": "model",
+    "owned_by": "system"
+  },
+  "generationRequested": false,
+  "officialModelPage": "https://developers.openai.com/api/docs/models/gpt-5.6-sol",
+  "pricingPage": "https://developers.openai.com/api/docs/pricing",
+  "inputUsdPerMillion": 4,
+  "outputUsdPerMillion": 20,
+  "reasoningEffort": "medium",
+  "pricingCheckedAt": "2026-09-10"
+}

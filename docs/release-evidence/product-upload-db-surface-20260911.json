@@ -1,0 +1,774 @@
+{
+  "at": "2026-09-11T17:58:09.522Z",
+  "scope": "isolated DEV only; current ACL and source headers, no customer data",
+  "migration_count": 166,
+  "migrations": [
+    {
+      "name": "20260911164033_identified_cell_reading_v2.sql",
+      "sha256": "b1b1228dc7c8aca1c1c30eb90ab4fbeaf6b16a5c881c383cc5190b40cd25423f"
+    },
+    {
+      "name": "20260911164425_private_document_review_artifacts.sql",
+      "sha256": "2644eb89e67ef4b764493cfe53cfceeead4477879523a62c4eb3ea238d6baf2e"
+    },
+    {
+      "name": "20260911165540_legacy_paid_review_upload_flow.sql",
+      "sha256": "b2b1b483db95bddec926e7e9730a64da29ec075adf0476ef52e08f6f99581077"
+    },
+    {
+      "name": "20260911171000_document_review_source_revisions.sql",
+      "sha256": "71123894acb30581052cb5c121e84078f540e1044641d68bf9b77c0d57cffd4e"
+    },
+    {
+      "name": "20260911171700_private_review_canonical_case_binding.sql",
+      "sha256": "9fb8c8cace745a7d8339057636826fd8d5fde8288c478ab07f2b4341b2062434"
+    },
+    {
+      "name": "20260911173000_legacy_scope_period_variable.sql",
+      "sha256": "55b2de9d6307d8a6eb6f563217173a78a1064d4ee04815011ee20cceeb50d41d"
+    },
+    {
+      "name": "20260911173500_scoped_financial_source_completion.sql",
+      "sha256": "c8311a60795241a56b54910d14a87e6938d2e38b685d485a6a406d14dd57f5ca"
+    }
+  ],
+  "functions": [
+    {
+      "name": "private.capture_case_input",
+      "arguments": "target_case uuid, change_reason text",
+      "security_definer": true,
+      "configuration": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false,
+      "web": false,
+      "worker": false,
+      "operations": false
+    },
+    {
+      "name": "private.document_field_answer_v2_valid",
+      "arguments": "answer_text text",
+      "security_definer": false,
+      "configuration": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "anon": false,
+      "authenticated": false,
+      "service_role": true,
+      "web": true,
+      "worker": false,
+      "operations": false
+    },
+    {
+      "name": "private.document_field_question_fields_v3",
+      "arguments": "purchased_topics text[]",
+      "security_definer": false,
+      "configuration": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false,
+      "web": false,
+      "worker": true,
+      "operations": false
+    },
+    {
+      "name": "private.document_field_request_open",
+      "arguments": "target_case uuid, expected_revision integer, expected_input_sha256 text, target_payload jsonb, target_question text",
+      "security_definer": true,
+      "configuration": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false,
+      "web": false,
+      "worker": true,
+      "operations": false
+    },
+    {
+      "name": "private.document_review_financial_inventory_covered",
+      "arguments": "target jsonb, dependencies jsonb, review jsonb, pins jsonb",
+      "security_definer": false,
+      "configuration": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false,
+      "web": false,
+      "worker": false,
+      "operations": false
+    },
+    {
+      "name": "private.document_review_gap_sources_bound",
+      "arguments": "review jsonb",
+      "security_definer": false,
+      "configuration": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false,
+      "web": false,
+      "worker": false,
+      "operations": false
+    },
+    {
+      "name": "private.document_review_information_satisfied_for_sweep",
+      "arguments": "target_case uuid, target_request uuid",
+      "security_definer": true,
+      "configuration": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false,
+      "web": false,
+      "worker": true,
+      "operations": false
+    },
+    {
+      "name": "private.document_review_paid_scope_current",
+      "arguments": "target_case uuid, target_order uuid, target_origin text, target_receipt text, target_topics jsonb, target_month date",
+      "security_definer": true,
+      "configuration": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false,
+      "web": false,
+      "worker": false,
+      "operations": false
+    },
+    {
+      "name": "private.document_review_pinned_public_law",
+      "arguments": "target_case uuid, candidate jsonb",
+      "security_definer": false,
+      "configuration": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false,
+      "web": false,
+      "worker": false,
+      "operations": false
+    },
+    {
+      "name": "private.document_review_request_current",
+      "arguments": "target_case uuid, target_request uuid",
+      "security_definer": true,
+      "configuration": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false,
+      "web": false,
+      "worker": false,
+      "operations": false
+    },
+    {
+      "name": "private.document_review_request_open",
+      "arguments": "target_case uuid, expected_revision integer, expected_input_sha256 text, target_run text, target_hash text, expected_dependency_sha256 text",
+      "security_definer": true,
+      "configuration": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false,
+      "web": false,
+      "worker": true,
+      "operations": false
+    },
+    {
+      "name": "private.document_review_scope_insert_guard",
+      "arguments": "",
+      "security_definer": true,
+      "configuration": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false,
+      "web": false,
+      "worker": false,
+      "operations": false
+    },
+    {
+      "name": "private.document_review_source_admit",
+      "arguments": "target_case uuid, expected_revision integer, expected_input_sha256 text, target_order uuid, target_month date, target_review_sha256 text, target_input jsonb, expected_dependency_sha256 text",
+      "security_definer": true,
+      "configuration": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false,
+      "web": false,
+      "worker": true,
+      "operations": false
+    },
+    {
+      "name": "private.document_review_source_is_law",
+      "arguments": "target_case uuid, document jsonb",
+      "security_definer": false,
+      "configuration": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false,
+      "web": false,
+      "worker": false,
+      "operations": false
+    },
+    {
+      "name": "private.document_review_source_read",
+      "arguments": "target_case uuid, expected_revision integer, expected_input_sha256 text, target_order uuid, target_month date, expected_dependency_sha256 text",
+      "security_definer": true,
+      "configuration": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false,
+      "web": false,
+      "worker": true,
+      "operations": false
+    },
+    {
+      "name": "private.document_review_source_refs",
+      "arguments": "target_case uuid",
+      "security_definer": true,
+      "configuration": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false,
+      "web": false,
+      "worker": false,
+      "operations": false
+    },
+    {
+      "name": "private.document_review_upload_assess",
+      "arguments": "target_case uuid, expected_revision integer, expected_input_sha256 text, target_batch uuid, target_run text, expected_dependency_sha256 text",
+      "security_definer": true,
+      "configuration": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false,
+      "web": false,
+      "worker": true,
+      "operations": false
+    },
+    {
+      "name": "private.document_review_upload_assessment_inputs",
+      "arguments": "target_case uuid, expected_revision integer, expected_input_sha256 text, target_run text, expected_dependency_sha256 text",
+      "security_definer": true,
+      "configuration": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false,
+      "web": false,
+      "worker": true,
+      "operations": false
+    },
+    {
+      "name": "private.document_review_upload_batch_scope",
+      "arguments": "target_case uuid, target_batch uuid",
+      "security_definer": true,
+      "configuration": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "anon": false,
+      "authenticated": false,
+      "service_role": true,
+      "web": true,
+      "worker": false,
+      "operations": false
+    },
+    {
+      "name": "private.document_review_upload_bind",
+      "arguments": "target_case uuid, target_batch uuid",
+      "security_definer": true,
+      "configuration": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "anon": false,
+      "authenticated": false,
+      "service_role": true,
+      "web": true,
+      "worker": false,
+      "operations": false
+    },
+    {
+      "name": "private.document_review_upload_capture",
+      "arguments": "target_case uuid, target_batch uuid",
+      "security_definer": true,
+      "configuration": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "anon": false,
+      "authenticated": false,
+      "service_role": true,
+      "web": true,
+      "worker": false,
+      "operations": false
+    },
+    {
+      "name": "private.document_review_upload_commit_guard",
+      "arguments": "target_case uuid, target_batch uuid",
+      "security_definer": true,
+      "configuration": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "anon": false,
+      "authenticated": false,
+      "service_role": true,
+      "web": true,
+      "worker": false,
+      "operations": false
+    },
+    {
+      "name": "private.document_review_upload_journal",
+      "arguments": "target_case uuid",
+      "security_definer": true,
+      "configuration": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false,
+      "web": false,
+      "worker": false,
+      "operations": false
+    },
+    {
+      "name": "private.document_review_upload_pin_current",
+      "arguments": "target_case uuid, target_request uuid, pin jsonb",
+      "security_definer": true,
+      "configuration": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false,
+      "web": false,
+      "worker": false,
+      "operations": false
+    },
+    {
+      "name": "private.document_review_upload_received",
+      "arguments": "target_case uuid, target_batch uuid, target_checks jsonb",
+      "security_definer": true,
+      "configuration": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "anon": false,
+      "authenticated": false,
+      "service_role": true,
+      "web": true,
+      "worker": false,
+      "operations": false
+    },
+    {
+      "name": "private.document_review_upload_snapshot",
+      "arguments": "target_case uuid, base jsonb",
+      "security_definer": true,
+      "configuration": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "anon": false,
+      "authenticated": false,
+      "service_role": true,
+      "web": true,
+      "worker": false,
+      "operations": false
+    },
+    {
+      "name": "private.document_review_upload_state",
+      "arguments": "target_case uuid, target_request uuid",
+      "security_definer": true,
+      "configuration": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false,
+      "web": false,
+      "worker": false,
+      "operations": false
+    },
+    {
+      "name": "private.document_review_upload_validate",
+      "arguments": "target_case uuid, target_request uuid, allocated jsonb",
+      "security_definer": true,
+      "configuration": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "anon": false,
+      "authenticated": false,
+      "service_role": true,
+      "web": true,
+      "worker": false,
+      "operations": false
+    },
+    {
+      "name": "private.guard_document_cell_decision",
+      "arguments": "",
+      "security_definer": true,
+      "configuration": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false,
+      "web": false,
+      "worker": false,
+      "operations": false
+    },
+    {
+      "name": "private.legacy_paid_period_register",
+      "arguments": "target_case uuid, target_evidence jsonb",
+      "security_definer": true,
+      "configuration": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false,
+      "web": false,
+      "worker": false,
+      "operations": true
+    },
+    {
+      "name": "private.legacy_paid_scope_register",
+      "arguments": "target_case uuid, snapshot_bytes bytea, target_scope jsonb",
+      "security_definer": true,
+      "configuration": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false,
+      "web": false,
+      "worker": false,
+      "operations": true
+    },
+    {
+      "name": "private.legacy_paid_scope_revoke",
+      "arguments": "target_case uuid, target_payment uuid, target_receipt text, reason text",
+      "security_definer": true,
+      "configuration": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false,
+      "web": false,
+      "worker": false,
+      "operations": true
+    },
+    {
+      "name": "private.legacy_paid_scopes",
+      "arguments": "target_case uuid",
+      "security_definer": true,
+      "configuration": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false,
+      "web": false,
+      "worker": true,
+      "operations": false
+    },
+    {
+      "name": "private.legacy_paid_scopes_internal",
+      "arguments": "target_case uuid",
+      "security_definer": true,
+      "configuration": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false,
+      "web": false,
+      "worker": false,
+      "operations": false
+    },
+    {
+      "name": "private.legacy_scope_covers_month",
+      "arguments": "scope jsonb, target_month date",
+      "security_definer": false,
+      "configuration": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false,
+      "web": false,
+      "worker": false,
+      "operations": false
+    },
+    {
+      "name": "private.managed_dev_notification_event_current",
+      "arguments": "target_case uuid, target_event text",
+      "security_definer": true,
+      "configuration": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false,
+      "web": false,
+      "worker": false,
+      "operations": false
+    },
+    {
+      "name": "public.case_documents_batch",
+      "arguments": "target_case uuid, target_batch uuid",
+      "security_definer": false,
+      "configuration": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "anon": false,
+      "authenticated": false,
+      "service_role": true,
+      "web": true,
+      "worker": false,
+      "operations": false
+    },
+    {
+      "name": "public.case_documents_commit",
+      "arguments": "target_case uuid, target_batch uuid, target_checks jsonb",
+      "security_definer": false,
+      "configuration": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "anon": false,
+      "authenticated": false,
+      "service_role": true,
+      "web": true,
+      "worker": false,
+      "operations": false
+    },
+    {
+      "name": "public.case_documents_reserve",
+      "arguments": "target_case uuid, target_batch uuid, target_manifest jsonb",
+      "security_definer": false,
+      "configuration": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "anon": false,
+      "authenticated": false,
+      "service_role": true,
+      "web": true,
+      "worker": false,
+      "operations": false
+    },
+    {
+      "name": "public.case_documents_snapshot",
+      "arguments": "target_case uuid",
+      "security_definer": false,
+      "configuration": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "anon": false,
+      "authenticated": false,
+      "service_role": true,
+      "web": true,
+      "worker": false,
+      "operations": false
+    },
+    {
+      "name": "public.case_notification_outbox_claim",
+      "arguments": "target_worker uuid",
+      "security_definer": true,
+      "configuration": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false,
+      "web": false,
+      "worker": true,
+      "operations": false
+    },
+    {
+      "name": "public.case_notification_reminder_enqueue",
+      "arguments": "target_request uuid, target_kind text, target_id text, target_case uuid, target_identity uuid, target_recipient text, target_payload jsonb, target_expires timestamp with time zone",
+      "security_definer": true,
+      "configuration": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false,
+      "web": false,
+      "worker": true,
+      "operations": false
+    },
+    {
+      "name": "public.case_notification_request_reminders",
+      "arguments": "target_limit integer",
+      "security_definer": true,
+      "configuration": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false,
+      "web": false,
+      "worker": true,
+      "operations": false
+    },
+    {
+      "name": "public.case_order_legacy_receipts",
+      "arguments": "target_case uuid, target_identity uuid",
+      "security_definer": true,
+      "configuration": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "anon": false,
+      "authenticated": false,
+      "service_role": true,
+      "web": true,
+      "worker": false,
+      "operations": false
+    },
+    {
+      "name": "public.case_report_private_review_artifact",
+      "arguments": "target_case uuid, target_identity uuid, target_report uuid",
+      "security_definer": true,
+      "configuration": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false,
+      "web": true,
+      "worker": false,
+      "operations": false
+    },
+    {
+      "name": "public.case_report_private_review_list",
+      "arguments": "target_case uuid, target_identity uuid",
+      "security_definer": true,
+      "configuration": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false,
+      "web": true,
+      "worker": false,
+      "operations": false
+    },
+    {
+      "name": "public.case_request_field_reading_targets",
+      "arguments": "target_case uuid, target_identity uuid",
+      "security_definer": true,
+      "configuration": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "anon": false,
+      "authenticated": false,
+      "service_role": true,
+      "web": true,
+      "worker": false,
+      "operations": false
+    },
+    {
+      "name": "public.case_request_review_upload_states",
+      "arguments": "target_case uuid, target_identity uuid",
+      "security_definer": true,
+      "configuration": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "anon": false,
+      "authenticated": false,
+      "service_role": true,
+      "web": true,
+      "worker": false,
+      "operations": false
+    },
+    {
+      "name": "public.case_request_sweep",
+      "arguments": "observed_now timestamp with time zone, batch_limit integer",
+      "security_definer": false,
+      "configuration": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false,
+      "web": false,
+      "worker": true,
+      "operations": false
+    }
+  ],
+  "allDefinersPinned": true,
+  "noPublicRoleExecute": true
+}

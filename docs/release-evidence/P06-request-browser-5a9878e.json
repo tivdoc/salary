@@ -1,0 +1,59 @@
+{
+  "origin": "https://salary-c2vg0ac5j-tivdoccom-5042s-projects.vercel.app",
+  "deployedSha": "5a9878e37dfc288715031f1a83a191fc87a1787c",
+  "checks": [
+    {
+      "name": "saved request opens with its exact question and no draft",
+      "passed": true
+    },
+    {
+      "name": "draft response loss retries once and reload shows the persisted value",
+      "passed": true
+    },
+    {
+      "name": "saved initial answer with lost HTTP response remains retryable and clears only its draft",
+      "passed": true
+    },
+    {
+      "name": "correction response loss retries the same immutable version and survives reload",
+      "passed": true
+    },
+    {
+      "name": "stale HTTP draft, foreign case and foreign origin cannot overwrite the saved answer",
+      "passed": true
+    },
+    {
+      "name": "two independent HTTP clients retry one correction without duplicate versions",
+      "passed": true
+    },
+    {
+      "name": "saved corrected request readable at 360px",
+      "passed": true
+    },
+    {
+      "name": "saved corrected request readable at 390px",
+      "passed": true
+    },
+    {
+      "name": "saved corrected request readable at 768px",
+      "passed": true
+    },
+    {
+      "name": "saved corrected request readable at 1440px",
+      "passed": true
+    },
+    {
+      "name": "an open request expires in the displayed thread without manual reload or hydration errors",
+      "passed": true
+    },
+    {
+      "name": "request retries preserve case/payment and all three original/corrected versions",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "syntheticCasesRemoved": 2,
+  "scope": "Seeded QA sessions; hosted request draft/answer/correction UI, HTTP and isolated DEV DB. No OTP, provider, real payment or canonical correction application proof.",
+  "productionChanged": false,
+  "secretsIncluded": false
+}

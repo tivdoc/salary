@@ -1,0 +1,23 @@
+{
+  "verdict": "PASS",
+  "checks": [
+    "actual worker and fresh peer replay exactly one stored policy/price/credit snapshot without rereading the injected basis",
+    "conflicting idempotency payload, foreign identity/case and actual web-role ledger access are refused",
+    "missing trusted basis produces no quote or amount and persists no phantom price",
+    "expired unpaid quotes cannot reserve credit; runtime cannot rewrite snapshots and actual non-worker ACLs expose no quote data or mutation functions",
+    "failure before transaction completion rolls back the credit reservation and its order event",
+    "two real concurrent worker connections reserve the initial credit exactly once; retry preserves one reservation and one event",
+    "a later quote reads the existing reservation and cannot promise the initial credit a second time",
+    "mismatched order and changed input refuse unpaid use while historical quote bytes remain unchanged",
+    "an exact synthetic paid-order replay preserves its original credit reservation after input changes, without a second event or repricing"
+  ],
+  "failure": null,
+  "cleanupFailure": null,
+  "database": "tivdoc_release_replay_20260907",
+  "migration": "20260908145315_order_quote_ledger.sql",
+  "migration_sha256": "159e1aeb98df89187583ca46c0662025ed142f51c85dc23f195a493fb51a4a8a",
+  "syntheticCasesRemoved": 2,
+  "machineSessionRevoked": true,
+  "scope": "Actual worker/peer/web roles; injected synthetic monetary basis and synthetic verified payment row. No canonical monetary proof, provider payment, customer checkout or production change.",
+  "productionChanged": false
+}

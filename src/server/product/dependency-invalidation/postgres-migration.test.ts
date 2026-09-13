@@ -9,7 +9,7 @@ const MIGRATION = resolve(
 );
 
 describe("global dependency invalidation PostgreSQL migration", () => {
-  const sql = readFileSync(MIGRATION, "utf8");
+  const sql = readFileSync(MIGRATION, "utf8").replaceAll("\r\n", "\n");
 
   it("adds currentness plus append-only invalidation history without deleting evidence", () => {
     expect(sql).toContain("create table public.engine_global_dependency_state");

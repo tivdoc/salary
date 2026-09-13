@@ -1,19 +1,23 @@
 import Link from "next/link";
-
+import { BrandLogo } from "@/components/brand-logo";
+import { productOffer } from "@/config/product-offer";
 export function SiteFooter() {
   return (
     <footer className="site-footer">
       <div className="shell site-footer__inner">
         <div>
-          <div className="wordmark wordmark--footer">
-            <span className="wordmark__mark" aria-hidden="true">T</span>
-            Tivdoc
-          </div>
-          <p>בדיקה ראשונית של תלוש, שכר וזכויות בעבודה.</p>
+          <Link className="footer-brand" href="/" aria-label="תבדוק, עמוד הבית">
+            <BrandLogo />
+          </Link>
+          <p>המסמכים שלך. התמונה המלאה.</p>
+          <p>מופעל על ידי תקראלוקס · ח״פ 317067916 · אורן 4, נשר</p>
         </div>
-        <nav aria-label="קישורים משפטיים">
+        <nav aria-label="שירות ומידע">
+          <a href={"mailto:" + productOffer.supportEmail}>יצירת קשר</a>
           <Link href="/privacy">פרטיות</Link>
           <Link href="/terms">תנאי שימוש</Link>
+          <Link href="/accessibility">נגישות</Link>
+          <Link href="/#faq">שאלות ותשובות</Link>
         </nav>
       </div>
     </footer>

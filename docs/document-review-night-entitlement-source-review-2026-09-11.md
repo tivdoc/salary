@@ -1,0 +1,31 @@
+# Night-work entitlement candidate — source and applicability review
+
+Reviewed 11 September 2026 by AI source research. This record is not a human signature, a professional approval, or an active REAL catalog entry. It contains no customer source files or case results.
+
+The selected candidate calculates a complete night's daily pay from working time, rather than checking a printed subtotal. It compares that requirement with pay allocated from the document's disjoint quantities and rates. A separate unresolved-rest scenario is explicitly counterfactual. Its original unknown/missing decisions remain in the result and in the trace binding; neither presence nor the hypothetical becomes a confirmed working-time fact.
+
+## Primary evidence and researched period
+
+The [official Knesset original promulgation](https://fs.knesset.gov.il/1/law/1_lsr_209133.PDF) was fetched directly on 11 September 2026. The six-page file is preserved as `docs/release-evidence/legal-source-pages/IL_HOURS_WORK_REST_LAW_1951.pdf`; its SHA-256 is `ca770f73436663094f546e53bed93aeca867bbed7124991fecfa1a8d750fdcd9`, identical to the existing source manifest. Pages 1, 4 and 5 were rendered and visually inspected. Page 1 distinguishes working time from presence, defines night work by at least two working hours in the 22:00–06:00 window, and gives the seven-hour night day in section 2(b). Page 4, section 16(a), shows the first two overtime hours at 1¼ of regular wage and subsequent hours at 1½. Those mixed fractions were read visually, not from ambiguous OCR `11/4`/`11/2`. Section 18 addresses components of regular wage. Section 20(c) distinguishes a freely usable break from required presence at the workplace. These are different questions from permission to schedule a long shift.
+
+This is the **original publication**, not a newly obtained official consolidated statute. The repository's `hours-law-section-amendment-index.v1.json` preserves the later publications separately. Its section 16/17/18 review records no substantive rate change and a 2014 terminology change. A search hit for “section 2” within the 2018 amendment's gazette file concerns another law; it is not an amendment of this daily threshold. The 2009 amendment adds toilet breaks to working time; no contrary exclusion is inferred from the original 1951 wording. The index is research evidence and has not been converted into authenticated legal approval.
+
+The [Ministry's permit guidance](https://www.gov.il/he/service/request-for-employment-during-weekend-or-extra-hours) was re-searched on 11 September 2026 and corroborates the distinction between ordinary hours and employment ceilings. Direct text-tool opens of the Ministry and Knesset landing pages failed; the direct Knesset PDF fetch succeeded. The guidance's current September portal update is not applied retrospectively to the May–June payroll period. No workplace-specific permit, sector exemption or collective arrangement was acquired or presumed applicable.
+
+The versioned candidate is deliberately restricted to work dates **1 May–31 July 2026**, the period investigated for these inputs. This restriction is a research boundary, not a claim that the law first took effect in May. The existing legal source status and all REAL trust/activation requirements remain unchanged.
+
+## Exact interpretation and remaining conditions
+
+For a supported ordinary night workday, the interpreter derives ordinary hours as `min(worked,7)`, the first overtime band as `min(max(worked−7,0),2)`, and the remainder as `max(worked−9,0)`. It prices the weighted total at the actual sourced regular hourly wage. The interpreter also reconstructs document allocation by its sourced bands and rates, then subtracts allocation from the expected amount. A negative difference is preserved. No total debt, actual payment or remittance is established.
+
+Inputs must identify the dates, both clock cells and the source's printed duration. Rollover is accepted only when those cells reconcile; an asterisk or an end clock earlier than a start clock does not suffice. Disjoint intervals and no more than one bounded workday are required. Night overlap derives from eligible working intervals; an unclassified rest interval counts only in an expressly named scenario. Monthly payroll hours without dated attendance produce a focused missing-source dependency.
+
+Each result retains decisions concerning law/role coverage and special rules, a single workday, break classification, ordinary day versus weekly rest/holiday, regular-wage components, overlap with weekly overtime, complete disjoint allocation, and rounding. Missing or unknown applicability can be explored only through a named, sourced conditional assumption. Conflicted, stale or expired decisions cannot be assumed. Missing wage, quantity, money or source evidence is never supplied by an assumption.
+
+The arithmetic candidate rounds half up once for the daily statutory weighted amount and once per group of allocated hours sharing the same sourced rate. This avoids introducing an agorah merely by splitting identical-rate bands. It does not assert that a particular employer uses that rounding policy or that a per-day allocation appears as a paid amount in a monthly slip. That precision limitation stays explicit.
+
+## Independent synthetic acceptance vectors
+
+At a synthetic hourly wage of ₪40, ten working hours starting at 22:00 require `(7 + 2×1.25 + 1×1.5)×40 = ₪440`. Allocating all ten hours at ordinary pay gives ₪400 and a conditional difference of ₪40. Allocating the actual 7/2/1 bands gives ₪440 and no gap. A 10-hour-1-minute interval requires ₪441; allocating ordinary pay yields ₪400.67 and a ₪40.33 difference under the stated rounding candidate. These expected values were specified independently of the RuleSpec output.
+
+The implementation adds a review-only descriptor and constructor consumed through ordinary document-review input. It uses the existing `executeRuleSpec`, source manifests, calculation receipts and replay validation. It does not write a completed finding/report, create an alternate arithmetic engine, or create a legal authority. Historical candidates without the optional comparison/assumption fields keep their old bytes and semantics.

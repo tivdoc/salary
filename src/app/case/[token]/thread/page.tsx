@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { CaseShell } from "@/components/case/case-shell";
+import {SupportThreadView} from "@/components/case/support-thread";
+import {customerSupport} from "@/server/product/reports/support";
 import { ThreadView } from "@/components/case/thread-view";
 import { listCaseRequests } from "@/server/product/reports/case-requests";
 import { listIdentityCases, resolveIdentitySession } from "@/server/product/case-access/service";
@@ -26,16 +28,21 @@ export default async function CaseThreadPage({ params }: { params: Promise<{ tok
   await guardStableAppEntrypoint("CEP-102");
   const { token } = await params;
   if (!/^TV-[A-Z0-9]{8}$/u.test(token)) notFound();
-  const session = await resolveIdentitySession(await readCaseSessionCookie());
+  const sessionToken = await readCaseSessionCookie();
+  const session = await resolveIdentitySession(sessionToken);
   if (!session) redirect("/login");
   const cases = await listIdentityCases(session.identity_id);
   const item = cases.find((candidate) => candidate.public_id === token);
   if (!item) notFound();
 
-  const requests = await listCaseRequests(item.case_id);
+  const [requests,support] = await Promise.all([listCaseRequests(item.case_id,undefined,session.identity_id,sessionToken),customerSupport(item.case_id,session.identity_id)]);
+  // This authenticated server snapshot is serialized once for client hydration.
+  // eslint-disable-next-line react-hooks/purity -- request-time server clock, after awaited data access
+  const renderedAt = Date.now();
   return (
-    <CaseShell eyebrow={`תיק ${item.public_id}`}>
-      <ThreadView publicId={item.public_id} requests={requests} />
+    <CaseShell publicId={item.public_id} eyebrow={`תיק ${item.public_id}`}>
+      <ThreadView publicId={item.public_id} requests={requests} renderedAt={renderedAt} />
+      <SupportThreadView publicId={item.public_id} threads={support}/>
       <p className="case-back">
         <Link href={`/case/${item.public_id}`}>חזרה לתיק</Link>
       </p>

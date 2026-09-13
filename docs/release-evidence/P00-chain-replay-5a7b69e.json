@@ -1,0 +1,871 @@
+{
+  "schema_version": "tivdoc-supabase-chain-replay-v0.10.9",
+  "project_ref_verified": true,
+  "files_discovered": 114,
+  "files": [
+    {
+      "name": "202608220001_salary_mvp.sql",
+      "sha256_raw": "bd8e8a66ccf583a962c5fe28cb23335c16cda6616ca6ef12d258f2e8aed78141",
+      "sha256_lf": "c9e60fa50a4bec0f4df997d9207484e316317d54c789ee0ed18972629ebac15e",
+      "byte_count": 5212,
+      "applied_order": 1
+    },
+    {
+      "name": "202608220002_invoice4u_verification.sql",
+      "sha256_raw": "b69cdeb7a6b768408f115487be76af6e69a955f1d10699f06fb9cda68085e56d",
+      "sha256_lf": "a7bb7cfd3f50bd2c33bc61aff3b6fd86b3f784dbdd75b4016bfb1aed8693041d",
+      "byte_count": 5595,
+      "applied_order": 2
+    },
+    {
+      "name": "202608220003_invoice4u_checkout_expiry.sql",
+      "sha256_raw": "681108245c1b62c79dc330498810be1316405c4842d873109cfb9e7d29e7c212",
+      "sha256_lf": "1d11227f949fc32182eafb262568ccf6d43a460406bd670a7ee8ee48c01b9c8b",
+      "byte_count": 258,
+      "applied_order": 3
+    },
+    {
+      "name": "202608220004_payment_return_recovery.sql",
+      "sha256_raw": "f78c5b32317055c8748ef47a891e58b9b9351547d2f594228a6ccf45e4afe35a",
+      "sha256_lf": "9c74d7824d6c55d89813414ac9f96280ee68114eb753c37619acb06dee880b2d",
+      "byte_count": 549,
+      "applied_order": 4
+    },
+    {
+      "name": "202608220005_meta_measurement.sql",
+      "sha256_raw": "456781cac1d54dc1be1f191ce4232904b56a0b8863bc6dd48faa22fa6a1b9a5c",
+      "sha256_lf": "14601ac8dfbbe8901d80cf45f52b7e7507a67ecd417ebd4805cac0caaaeb0090",
+      "byte_count": 4437,
+      "applied_order": 5
+    },
+    {
+      "name": "202608270001_reconciliation_attribution.sql",
+      "sha256_raw": "a3803d56fa0ba9b8e14cfc0420ec858a965537ac47533ac604ee31f2490a01a6",
+      "sha256_lf": "d3da5610d2978f740192a8352ca81fc120f06ef441e78dafc427a876eccb3d06",
+      "byte_count": 8904,
+      "applied_order": 6
+    },
+    {
+      "name": "202608280001_ga4_measurement_protocol.sql",
+      "sha256_raw": "8f18399f804b465d796d1828b852738745dc266aa8f202e265f64028e78b4bed",
+      "sha256_lf": "97636b671494b7d76fedcacef56ac32ad0be89d25b01f492a2086db7829a1989",
+      "byte_count": 2271,
+      "applied_order": 7
+    },
+    {
+      "name": "202608290001_engine_persistence_foundation.sql",
+      "sha256_raw": "0dd5d93d113a7c4ed68515af30d9927bd320255f88593fc04e6015a429db36e5",
+      "sha256_lf": "e4e036fd3c01134a7e449cf50d586d4bf6790c0e00a4f62ad0a898acfec31373",
+      "byte_count": 32915,
+      "applied_order": 8
+    },
+    {
+      "name": "202608300001_canonical_upgrade_compatibility.sql",
+      "sha256_raw": "7ec2cad5d3d6f6890fbf8ec3bfa0916176b515f804d497ee1359c9938b83d304",
+      "sha256_lf": "d68cd784b8c56a6fcdbcf36e3ba141f28f6e74f7e1569c6a884d2ca9aad46ab8",
+      "byte_count": 6256,
+      "applied_order": 9
+    },
+    {
+      "name": "202608310001_engine_platform_persistence.sql",
+      "sha256_raw": "74e0615c6375b8cb87da5a09c6a8a29d4e27fe503793b14d767a2199d92c4460",
+      "sha256_lf": "3174a97ef2b13ca705d8a620f686b470649e6b768421b0a0347816088941cc25",
+      "byte_count": 24507,
+      "applied_order": 10
+    },
+    {
+      "name": "202608310002_canonical_postgresql_composition.sql",
+      "sha256_raw": "27e6163ff8e4caf6512925c96bcb8ead398f47da85e152a52beadcbcaad132a2",
+      "sha256_lf": "bf9100dc11d3f0a73afa93274be72debf348f97dcff122a2237df28c69c759e9",
+      "byte_count": 21142,
+      "applied_order": 11
+    },
+    {
+      "name": "202608310003_canonical_postgresql_dynamic_hardening.sql",
+      "sha256_raw": "5a270a03e234794213a4c4fd68706c53b86e9e4501688a77bf628f346e2690da",
+      "sha256_lf": "fc3300e9a41ba9de8bcfa9bd38af456785b67b24e0e594cf44a990904a3fc02a",
+      "byte_count": 14844,
+      "applied_order": 12
+    },
+    {
+      "name": "202609010001_controlled_import_ledger.sql",
+      "sha256_raw": "11472f7074ec6d27dde2ba18f7ed7f31b69f088c32273c2d573b94ea1baf661f",
+      "sha256_lf": "3e51b4c1cd06c4f654566937c486856c78c192c1923fc287da29f8c0a1463e34",
+      "byte_count": 20129,
+      "applied_order": 13
+    },
+    {
+      "name": "202609010002_durable_product_boundaries.sql",
+      "sha256_raw": "d8ff47c5b93a513e3798eb0b66eecb46228bd21fcfb54732e8c469284ba2c422",
+      "sha256_lf": "455e8789de89bef18fb1041e009ab87d7a7e005a294209df3b83456d42ff3e6f",
+      "byte_count": 29896,
+      "applied_order": 14
+    },
+    {
+      "name": "202609010003_durable_product_integrity_hardening.sql",
+      "sha256_raw": "25d7dc235343933916b9f409fc72b56b8190c895f3ac5ca8db6a4f511dd2c6d8",
+      "sha256_lf": "2882adc09d5faccbee2f96cf9f1c75b1b40b586f206408795bde189914501029",
+      "byte_count": 17849,
+      "applied_order": 15
+    },
+    {
+      "name": "202609010004_durable_governance_workflows.sql",
+      "sha256_raw": "d709e6238e3a40b8f573e247f19e7507cf2ae6e70015b8b69e0b5c8362a0534b",
+      "sha256_lf": "343f72ff7ee9d15c1007261c382223e4aac59e1f0227fad7c32fc05e230ed012",
+      "byte_count": 162663,
+      "applied_order": 16
+    },
+    {
+      "name": "202609010005_governance_runtime_security.sql",
+      "sha256_raw": "220e77c8ec95674daeb8e50570d3b15df2bd3e132717c135c88b609193e43908",
+      "sha256_lf": "3632b1a8d6b8a08360e3f1d99aadb591d42fa577677ce87f77c114e89f41c63e",
+      "byte_count": 50930,
+      "applied_order": 17
+    },
+    {
+      "name": "202609010006_durable_portal_runtime_security.sql",
+      "sha256_raw": "885127c3d8d3101b88e181a5f157bc313bcc770163a9f9d2d4bb15182530e9fa",
+      "sha256_lf": "994bb2a3f14dd58e002f4e605bc8e03c5422a1904b9ec1f733ca1d1e21f9635d",
+      "byte_count": 34847,
+      "applied_order": 18
+    },
+    {
+      "name": "202609010007_global_dependency_invalidation.sql",
+      "sha256_raw": "f3fb854bc6287b052287848b1764de97004658d9abf37fab3d2b20574a99ebf6",
+      "sha256_lf": "6d57e778a95d8e0988d4cf986a30577ec841847f189c225abdb29b9441eb45af",
+      "byte_count": 12415,
+      "applied_order": 19
+    },
+    {
+      "name": "202609010008_runtime_product_forward_repair.sql",
+      "sha256_raw": "8455aca5a4d8bea36080ac20f767c38cf16ecb4897236fa91f77bca585bf53eb",
+      "sha256_lf": "2271602fc133a4552d813278697138634b9ebb4327c941c3e373e2c99cbfacbe",
+      "byte_count": 2918,
+      "applied_order": 20
+    },
+    {
+      "name": "202609010009_governance_owner_schema_usage_repair.sql",
+      "sha256_raw": "a837e5fb34dd9363c924d559ce09d269f4f366988d72e898bb7fb31f070ddced",
+      "sha256_lf": "806480d5d6ff7a807bd7154909aab9711a613c25e0afe35651de2a1b77016ba9",
+      "byte_count": 891,
+      "applied_order": 21
+    },
+    {
+      "name": "202609010010_runtime_canonical_helper_acl_repair.sql",
+      "sha256_raw": "03436d848623b1db5e18f86e986e963b066cc94d4b6053c7cb18a211b6b0bada",
+      "sha256_lf": "4aaa964b7288d38fa209df3058d76bba67bdf9031d7067410c8fa6073b96e1c2",
+      "byte_count": 1763,
+      "applied_order": 22
+    },
+    {
+      "name": "202609010011_durable_legal_review.sql",
+      "sha256_raw": "d79291f5e275300c12e3bcf368be0953427208d0b2766225c11d8e5f01fb95f2",
+      "sha256_lf": "4cf07944e87cd2ae8da631167610d39abdfc6b252db2d595434e9485ff7df882",
+      "byte_count": 18678,
+      "applied_order": 23
+    },
+    {
+      "name": "202609020001_legal_review_runtime_execute_grants.sql",
+      "sha256_raw": "2b1a690e330df4db1363445abe06adffe197e05b31417525e52ae49b9ad408f1",
+      "sha256_lf": "642c9b72fcd6471eb821158f756550e832d9dfd653ecfad986f6af5a8ddb0450",
+      "byte_count": 2926,
+      "applied_order": 24
+    },
+    {
+      "name": "202609020002_legal_review_observation_blocks.sql",
+      "sha256_raw": "35c8748fe95ec562c31ac68f2c3c611d0db0ab75abd8d8d6316831dbfd6d584e",
+      "sha256_lf": "339b574e18d50d8a93f62c282c9becc2e64388cc0b29e6098a382e26b7a85c11",
+      "byte_count": 9333,
+      "applied_order": 25
+    },
+    {
+      "name": "202609020003_governance_import_operations_grants.sql",
+      "sha256_raw": "694d19c1b210a5449d2e7bcf2d96b82ffe9752ff4d189b5e057d3d8811a60aab",
+      "sha256_lf": "f27e3fce0e5b98374428ddb6125df6812901e37540eef59ee38fa82d4ccc35af",
+      "byte_count": 2398,
+      "applied_order": 26
+    },
+    {
+      "name": "202609020004_identity_session_tenant_enforcement.sql",
+      "sha256_raw": "8e375bb75aa566dbbf8ef669ecdc973dd644edc7267f44be6e8c36f962dc2791",
+      "sha256_lf": "5c05212bf6e57faafaf81aa57cbc5348628fe90158410150085c80469ccd640e",
+      "byte_count": 13015,
+      "applied_order": 27
+    },
+    {
+      "name": "202609020005_controlled_import_reserved_execute_revoke.sql",
+      "sha256_raw": "3a66a7316c5813b1535c4758438c81dc646346e00b737a18ed3e751dd42ffbdc",
+      "sha256_lf": "2a771010004a5c856ef29b57724e1120bcca97284075ac12a7696ceb09c12a8b",
+      "byte_count": 2398,
+      "applied_order": 28
+    },
+    {
+      "name": "202609020006_controlled_import_service_role_execute_restore.sql",
+      "sha256_raw": "8a793db08ffc8489cd8fa0fc4512cb6b87e07aff381883f1e0bcca9309e85d73",
+      "sha256_lf": "a9f6b96c78b743984a1cf88f6520e9cad86351fbc4e0aa14cece08148fe48d31",
+      "byte_count": 3294,
+      "applied_order": 29
+    },
+    {
+      "name": "202609020007_force_rls_owner_writer_clean_tables.sql",
+      "sha256_raw": "ef2d8a080c124388090d105f46604a5b20e1339de61460f09a63edc2e09b74fe",
+      "sha256_lf": "7bfb7da15449b3b8c330fb92bce4b7990afa4a54ffecdee1c8a090714ac2327b",
+      "byte_count": 2916,
+      "applied_order": 30
+    },
+    {
+      "name": "202609020008_legal_review_observation_supersessions.sql",
+      "sha256_raw": "979d0360095b764e204316907ffc86c70abd7c565f0a3362e880ddbde4fc2eca",
+      "sha256_lf": "37cf0c78d9468c93df4c73d0d275f1885ef18e38f92d611876d3dcaa26fdbe79",
+      "byte_count": 8192,
+      "applied_order": 31
+    },
+    {
+      "name": "202609020009_owner_access_policy_force_remaining.sql",
+      "sha256_raw": "8d0cac2e4254df5cccdcd939e8271252d0d6638e9c57c642865cd46b60d26601",
+      "sha256_lf": "f87ff804c1db299087b24cdeb6e28213173aa5c0a412672cebaa2f272f0668e8",
+      "byte_count": 3352,
+      "applied_order": 32
+    },
+    {
+      "name": "202609020010_drop_service_tenant_scope_policy.sql",
+      "sha256_raw": "e0feca23286bd16a4e208b914e19ad262272a57e2a2325c82eef0f43ae30f6bc",
+      "sha256_lf": "3d92820d04052dacada1aaeabd80b06481cffd1c9fdddf10f3a308d91c0b91bb",
+      "byte_count": 3276,
+      "applied_order": 33
+    },
+    {
+      "name": "202609020011_projection_accounting_v2_projected_excludes_superseded.sql",
+      "sha256_raw": "79651516ce6bbe123caa7a808deeafde23b0b90408a15402f4e68e211fe9f653",
+      "sha256_lf": "2629854756d63e4cec295bd8eeff369371e4cb11d62965d8b75338022e930b2c",
+      "byte_count": 3431,
+      "applied_order": 34
+    },
+    {
+      "name": "202609020012_projection_accounting_v1_delegates_to_v2.sql",
+      "sha256_raw": "2a625645f1edf130af87b9879fea3c14a6e13f8a9a614576622183ed6d96ca4d",
+      "sha256_lf": "a1f691627b3700951788d0e9de9b63f01ebb80940ff20674ceec42e4180c2763",
+      "byte_count": 1937,
+      "applied_order": 35
+    },
+    {
+      "name": "202609020013_gt_appends_gate_on_verified_tenant.sql",
+      "sha256_raw": "832f4d10c4b2890158d2bdc8728fd7a85f180b548c6ea74831aa687c53798a39",
+      "sha256_lf": "1c081c3ce6c25c4a2fdd35c0e2a871096ed2aa28e2f8fb0bf4ec9c0205cf26c7",
+      "byte_count": 21529,
+      "applied_order": 36
+    },
+    {
+      "name": "202609020014_trust_policy_append_unambiguous_organization_version.sql",
+      "sha256_raw": "fb0aaadb63b389297f1b38ba774213e5a323940d7dea62a3e29cf00ecc2dff8d",
+      "sha256_lf": "be243f22b164bc2d4560511b4effffdc72c07f57e9d1e4d4c430cf7849d19c0b",
+      "byte_count": 4581,
+      "applied_order": 37
+    },
+    {
+      "name": "202609020015_gt_manifest_history_read.sql",
+      "sha256_raw": "2dea5e94e7ed311dd3e869c619f08bae14329946d9f634b8aa1cf8c48b3da7d9",
+      "sha256_lf": "76e3e9b8addf479e5bd40f53f211803403b8c45d5b3df2b2eabd30e836c9dd28",
+      "byte_count": 2254,
+      "applied_order": 38
+    },
+    {
+      "name": "202609020016_gt_manifest_append_unambiguous_document_sha256.sql",
+      "sha256_raw": "fe8c8a69b0b0009dc61162479a36e44dff8cfc4be25126d6820f60a59f8dea95",
+      "sha256_lf": "284637487c269ef5adb5e3f3ea5104d63c30dcbafa5ed8ef2bd93dbbba946244",
+      "byte_count": 17131,
+      "applied_order": 39
+    },
+    {
+      "name": "202609020017_governance_work_queue_list.sql",
+      "sha256_raw": "2608131dcea2e27411638aaac3b4f5877977536230cb8710290d484228a1e6f4",
+      "sha256_lf": "49d324e4a831a71c622aa059dffae671c0ac3dc1f15ae20fcadc4f9977d0b339",
+      "byte_count": 3712,
+      "applied_order": 40
+    },
+    {
+      "name": "202609020018_parameter_draft_state_and_open_decisions.sql",
+      "sha256_raw": "20a2ec89347d45f613efab7211532d5499ab947352c1ad631a704bee07d2d3b9",
+      "sha256_lf": "7ab87704989fd62a8bb144e4131439a1a7cd81326da3599713965f0f95e85cd9",
+      "byte_count": 25347,
+      "applied_order": 41
+    },
+    {
+      "name": "202609020019_legal_open_decision_guard_revoke_default_grant.sql",
+      "sha256_raw": "31a1eb5e1882e340b617a3c0d1bcb98f50928e711663a5e18e611d7031064848",
+      "sha256_lf": "85f75a34d7047abd2430a4b8a9012169a05b0cc0803acfc35daa16c9627de01a",
+      "byte_count": 709,
+      "applied_order": 42
+    },
+    {
+      "name": "202609020020_parameter_attestation_decision_cascade_writes_snapshot.sql",
+      "sha256_raw": "e0d27474962c698b38b3281e62fcbec7dd24aa7b8c93d79107a8bd644a4150e6",
+      "sha256_lf": "caf3c8df51ba23f8429dbc4198b3ce6d151f40f32874da25183d914270496000",
+      "byte_count": 12525,
+      "applied_order": 43
+    },
+    {
+      "name": "202609020021_legal_reference_tenant_guards.sql",
+      "sha256_raw": "c48cfe1573d9af59e35a1ea1a89430c16ef11b0cf1c2669cd73e40abfb455b3e",
+      "sha256_lf": "3317edb7d326d2a2961e0d0d6df587d229f65bed5f6cdede51b207d2319c971b",
+      "byte_count": 7000,
+      "applied_order": 44
+    },
+    {
+      "name": "202609020022_legal_open_decision_withdrawal.sql",
+      "sha256_raw": "456b15ca942cfa2872adffaab81c697ab2cea166179a0e0f17affe8c4d3d9eb2",
+      "sha256_lf": "9d1887d1d7fa7a10e35c6428ed95a35e4bcb4d9aa020e25c73b05b804acacd84",
+      "byte_count": 9098,
+      "applied_order": 45
+    },
+    {
+      "name": "202609020023_legal_operations_execution_trace.sql",
+      "sha256_raw": "274e964dddd84a8a8b7d7e35bb6b9931e993eb774a0a7f7bf5ef6c97e4df7ed9",
+      "sha256_lf": "cbc8ae71d980252babbe8955e7c5f398c8e4f28f3743315144526757d1ddfad2",
+      "byte_count": 12140,
+      "applied_order": 46
+    },
+    {
+      "name": "202609020024_legal_open_decision_read.sql",
+      "sha256_raw": "0143926f30b9d854913747091d4c1568c9580158844f31206b89f3cf5e8b04cd",
+      "sha256_lf": "69ac1188e953823f390ef5364e86e97ee4399462fceea57017b8b5c6c8bb196e",
+      "byte_count": 2472,
+      "applied_order": 47
+    },
+    {
+      "name": "202609020025_legal_operations_execution_trace_guard_revoke_default_grant.sql",
+      "sha256_raw": "75ecbac631df89e4e09be9f3c2cffc7ceab0e7502b90e697f4a9da9c05640ac7",
+      "sha256_lf": "7faeb91df398708b5f227bdbd9e677a78ca9a15f236ce76c81760a7c8740e8d7",
+      "byte_count": 1084,
+      "applied_order": 48
+    },
+    {
+      "name": "202609020026_parameter_supersession_and_synthetic_segregation.sql",
+      "sha256_raw": "b25f166c6e633e80d36452b5439431f474c6e9b1b3e02ba315940c6edce65e4a",
+      "sha256_lf": "45edd87bbe20482fdf277c8180c6f3b77e9f96101416d1f6add6f8d9b5e99d6e",
+      "byte_count": 15982,
+      "applied_order": 49
+    },
+    {
+      "name": "202609020027_trigger_guard_tg_op_repair.sql",
+      "sha256_raw": "7431078c2c76b1d819093c8b6eeafa9865241f8f262c8128df3db332ee0d5cf6",
+      "sha256_lf": "89ff493408c50ed527b83ee5b3a47e87c16ae6f87ab7de4fc8be32abf7785eb9",
+      "byte_count": 4812,
+      "applied_order": 50
+    },
+    {
+      "name": "202609020028_legal_open_decision_annotate.sql",
+      "sha256_raw": "de6d8d25cb19e52ef4171edf24dcc451a3d9d3278ed097775f001d6800700e2e",
+      "sha256_lf": "c8b5ed718309f47df1b01cf69565e75ffb929e857e4cafd3d703b71cb7b2c9d9",
+      "byte_count": 3926,
+      "applied_order": 51
+    },
+    {
+      "name": "202609020029_legal_instrument_selection.sql",
+      "sha256_raw": "d936a2ab6ee84aed1a9fc600e59b67bc0c14b9df3a81c823a4cd81a2a75aabc9",
+      "sha256_lf": "3b5d5373ca184809db12272ac1dc4170c1c70b69f17d6f68b49a8a4c185e54e8",
+      "byte_count": 15936,
+      "applied_order": 52
+    },
+    {
+      "name": "202609020030_parameter_attestation_visual_confirmation.sql",
+      "sha256_raw": "7c527dac34c4e04a7e831b73a2cfe2c2681c9246b8caa553c7028a35704ea160",
+      "sha256_lf": "4472cd19ae16608b62cff3ab002a0e1edb7732fd5adf428d99a935c0f1fd3843",
+      "byte_count": 13741,
+      "applied_order": 53
+    },
+    {
+      "name": "202609020031_legal_decision_resolutions.sql",
+      "sha256_raw": "0aeacc58d1fa45b10cf340f0ca2b9e3a4aa76e9486bdbf6d467418728d1f6cb8",
+      "sha256_lf": "091c5bda8eff87f36ffd1fad07741dacb52542b2ab3f4b1a1998b533aa0011d4",
+      "byte_count": 14322,
+      "applied_order": 54
+    },
+    {
+      "name": "202609020032_legal_decision_resolution_actor_repair.sql",
+      "sha256_raw": "70c52aa94744ccd145ade5ddbd87b32935cd1d762503a9fe506762e02466abd2",
+      "sha256_lf": "04902fe6e675a4b07b76b2066a24b7b79d98250f2367b28d7793cf8b809b9077",
+      "byte_count": 6939,
+      "applied_order": 55
+    },
+    {
+      "name": "202609050001_case_access_identity.sql",
+      "sha256_raw": "aab95b1deddc34c1a5e4571108d7fce11662281b7f7e89c312716e7df2c81d81",
+      "sha256_lf": "b64b3ba59c2e168164971d1e91385bbd2d7204532bf52c426e376ebd860468ea",
+      "byte_count": 24040,
+      "applied_order": 56
+    },
+    {
+      "name": "202609050002_case_access_request_ledger.sql",
+      "sha256_raw": "647710e5b66acaf5e69532bfd60c045baac6e7467ff1deb79ef2b36efd0f5c12",
+      "sha256_lf": "b4c9ec72cda4390feb9066c1684c83569c9d64c5b651f12aa3270faecd9c13b6",
+      "byte_count": 4468,
+      "applied_order": 57
+    },
+    {
+      "name": "202609050003_contact_verification_and_challenge.sql",
+      "sha256_raw": "1b8386b113237a1f64b397ea18c02b2bcf610ee085d53e9b45fc17c0ce62a168",
+      "sha256_lf": "41ff635d3575afc39185ca35f0791a92e389cc084ae5eb281fe88586593f1279",
+      "byte_count": 9461,
+      "applied_order": 58
+    },
+    {
+      "name": "202609050004_legal_decision_resolution_revisions.sql",
+      "sha256_raw": "2e685dbc4f7dd0a2782b5d808fdd51d4883dbf3710923905f981b23bcd587301",
+      "sha256_lf": "de69bf5f0529a6e89ff8405e22cf700a1fd892e917990b20bb28c1f3487413f4",
+      "byte_count": 12674,
+      "applied_order": 59
+    },
+    {
+      "name": "202609050005_legal_decision_resolution_revisions_actor_repair.sql",
+      "sha256_raw": "b99897b6d77f6664ab272ac67f06bc30c7b928a5fbf3ef17c32a1d2dac9872dc",
+      "sha256_lf": "3ec8850aae1fb633a656555a522657affb1643cb7a65c6cfdcc41795ab812a53",
+      "byte_count": 9063,
+      "applied_order": 60
+    },
+    {
+      "name": "202609060001_delivery_recipient_allowlist.sql",
+      "sha256_raw": "91704f3b7bccaf97e92a11d7026eecb18d9872d6eb3f01c6cf0a8a4fb992bd9d",
+      "sha256_lf": "6dbcde79b1d0f54549e8c3bbaac790f4696ec955cea80b6899a185fa9cd845d3",
+      "byte_count": 2497,
+      "applied_order": 61
+    },
+    {
+      "name": "202609060002_document_slots_and_check_month.sql",
+      "sha256_raw": "b5572d82d09c1b6710b53d8a823aaef4c39e2989f17dbb1219f1b997d495d03e",
+      "sha256_lf": "a010bf719e11be04c240185a02b86759559cd50891aeb654f84a9de38bed2f24",
+      "byte_count": 3002,
+      "applied_order": 62
+    },
+    {
+      "name": "202609060003_case_report_projection.sql",
+      "sha256_raw": "82c2a7bf15ce0622a6abe46fb242a3b568412d9960b2298e51b83d66b6fe810f",
+      "sha256_lf": "f682353e97ce57b82fd228600ab384173daff180ecdb10ffad5ff24c518ca22c",
+      "byte_count": 4293,
+      "applied_order": 63
+    },
+    {
+      "name": "202609060004_case_requests.sql",
+      "sha256_raw": "68f04894c895012d08b10870724aa3990e96c0443d699cd6eaf41572b0a1c7d1",
+      "sha256_lf": "4033043e077c8069410efc16b33a678ac71435d7c6653024fd67357bde23c008",
+      "byte_count": 5930,
+      "applied_order": 64
+    },
+    {
+      "name": "202609060005_case_documents_list.sql",
+      "sha256_raw": "e7be8d996b8e3974ea2048b69babd740f400792e637c3628760a9341bf347010",
+      "sha256_lf": "a06e3ac1416249edd335dd4938f9345d8b0bed28f167f5ce3c3baa5730d7b2a7",
+      "byte_count": 767,
+      "applied_order": 65
+    },
+    {
+      "name": "202609060006_awaiting_document_state.sql",
+      "sha256_raw": "04ce4af45c1444fb54bd25f0ab02bcc1f0737a72faba3d193ea135e5da330e3d",
+      "sha256_lf": "ff364d4f79dba8363638599537c233112ffbc0514d5c959a825278faa9703f50",
+      "byte_count": 1685,
+      "applied_order": 66
+    },
+    {
+      "name": "202609060007_document_request_link.sql",
+      "sha256_raw": "51477053b40a91fadd498ff0346b48f63af7c20af04dc1c9704261c26d3d614e",
+      "sha256_lf": "e1d8788e1669e543594b0a8da4aae1d3048a9c7672574990d19259c750df980d",
+      "byte_count": 1333,
+      "applied_order": 67
+    },
+    {
+      "name": "202609060008_awaiting_document_functions.sql",
+      "sha256_raw": "3c373ba94ef6bfcc21ea3b7f79f8aeb36967db70c15bcbfff0fbf35da502e512",
+      "sha256_lf": "4c53030d24286295bb3a0cbdb153d17ce16903b3c60f8d29e2de8a93f32d2e3e",
+      "byte_count": 2968,
+      "applied_order": 68
+    },
+    {
+      "name": "202609060009_case_report_qa.sql",
+      "sha256_raw": "b0f9cb57a4171e48784d89c67a0a47cce53fb6f7854028e68a1c6a2e94b65845",
+      "sha256_lf": "3404faef83195fa32674d7467d960c1ede8330ce66fdbb21297239cd64b07fd1",
+      "byte_count": 12081,
+      "applied_order": 69
+    },
+    {
+      "name": "202609060010_report_qa_automatic_rows.sql",
+      "sha256_raw": "d3c275a1e8ea8dfed1177e3d5d089ccd7d26a0fe90eb21dbd3cf6a3c0a9a2651",
+      "sha256_lf": "e5958fa0b9474bd32601f616b96ef9d4fd6e6c809ff9f5856d5e3d4248d83b4e",
+      "byte_count": 3843,
+      "applied_order": 70
+    },
+    {
+      "name": "202609070001_terms_consent.sql",
+      "sha256_raw": "23a67882bf0e8fbeade47750bc71331a5bfa521082c506860e84a1c6ba09e49d",
+      "sha256_lf": "cf07c8cca7ec4449e23e42eaa036bf4964c9c9ce4c73b67d308ce8a9ed88b6be",
+      "byte_count": 1796,
+      "applied_order": 71
+    },
+    {
+      "name": "202609070002_abandonment_reminder.sql",
+      "sha256_raw": "67b268a843b6df05e6f4cb169df3d45fc42a218f2315c28fb3d850f7f9ff3f9f",
+      "sha256_lf": "99730f066c89f2a4bb9d5a1e1c6eb4941aeae064f11c494606b34dcc3250912e",
+      "byte_count": 5918,
+      "applied_order": 72
+    },
+    {
+      "name": "202609070003_funnel_event_counts.sql",
+      "sha256_raw": "3f64a6bdfa46ebc9a34c828bc5a5883a6a80f79f539396caaf54b5236317f91d",
+      "sha256_lf": "cd5d2b4ae48ee5ca1f5a2ffba1e6a25d3ff185c78b2824a9eebe1ba47b8d26fa",
+      "byte_count": 1787,
+      "applied_order": 73
+    },
+    {
+      "name": "202609070004_funnel_counts_readable.sql",
+      "sha256_raw": "156a083e72db25abeafcbc4384f5283f60690e7e0d4dcb44dd86f5490661e0ed",
+      "sha256_lf": "656e1c65ffff7e07903b07c354ca3a0d7b782bb2a75d3573f8e29803e1d44954",
+      "byte_count": 2040,
+      "applied_order": 74
+    },
+    {
+      "name": "20260907040711_document_upload_integrity.sql",
+      "sha256_raw": "b3697d93b147a11c421b40c6a4b50edab2260b0ae814c7f4784ee90dee568bd0",
+      "sha256_lf": "b3697d93b147a11c421b40c6a4b50edab2260b0ae814c7f4784ee90dee568bd0",
+      "byte_count": 21600,
+      "applied_order": 75
+    },
+    {
+      "name": "20260907053658_release_report_contract.sql",
+      "sha256_raw": "4b3bf6d5fef5180f76bebd497fbb9a5e2f7fe478430cb4705695b9b46a1136ba",
+      "sha256_lf": "266517e5a89093a00b0ba006fcbaf13791282249ee8129486b895987a150e753",
+      "byte_count": 4660,
+      "applied_order": 76
+    },
+    {
+      "name": "20260907070000_case_input_outbox.sql",
+      "sha256_raw": "dfb9829c4d16728003789ed0281a79b4a0f503243ae4526620fb3f68f991c39e",
+      "sha256_lf": "d6acb662f9d12b437b4ae0742c8bc059ceb24e7a41ec38fd232a9ba65b078719",
+      "byte_count": 7078,
+      "applied_order": 77
+    },
+    {
+      "name": "20260907080000_request_lifecycle.sql",
+      "sha256_raw": "3033606187ff5efcc49af3467b27d18c9454dc5aa37be8465fddae2b3a901907",
+      "sha256_lf": "d78c60d1a9bbc16d57928677a8b71a59b82b2eacbb54aea0877368db10c4d735",
+      "byte_count": 5185,
+      "applied_order": 78
+    },
+    {
+      "name": "20260907083000_request_revisions.sql",
+      "sha256_raw": "36230f6b5cd017b04e20f36aa1be90eab55e22f319c46a6982602c24ec73c857",
+      "sha256_lf": "c5f54f30bbb0bd284cc6657af9de95ea3ca5d8549ada6e7e76981fa623e6cb6a",
+      "byte_count": 7601,
+      "applied_order": 79
+    },
+    {
+      "name": "20260907084500_request_resume_guards.sql",
+      "sha256_raw": "a3c530fd3379c771a302664a46a35fd3ca0186f6b0bd461fe2b316987ca50af5",
+      "sha256_lf": "f617fe5bdb139a034d324b5dba0750c20f2cb7dd5aeb46209672341552a9a6f6",
+      "byte_count": 977,
+      "applied_order": 80
+    },
+    {
+      "name": "20260907090000_session_revocation_fence.sql",
+      "sha256_raw": "ef27046ae0b1e2b903d2de59972fd1b758d40164323419c7359f549ada80cc41",
+      "sha256_lf": "e8f476993ef6fb655141ba2b979636d35d057835bf2bdac460fe7fe020e6a72b",
+      "byte_count": 585,
+      "applied_order": 81
+    },
+    {
+      "name": "20260907093000_notification_outbox.sql",
+      "sha256_raw": "6cadf87b50e71b764acb36b734142a3a361cc67a751b7327c3934cc1adef37a0",
+      "sha256_lf": "715d25a0ace2f715d443f21b4895fc74f2862a32b7cd12a1c4f8284ab69ba475",
+      "byte_count": 8452,
+      "applied_order": 82
+    },
+    {
+      "name": "20260907095000_notification_product_bridge.sql",
+      "sha256_raw": "e1fca65a77741bb8278a474a556e5a0eef1a99043aa784d90fde9cf25b8c45e8",
+      "sha256_lf": "549db4204a71a13426522b14c802ef27472e5583880f3b94cfd8fe0d50f0ec8a",
+      "byte_count": 6421,
+      "applied_order": 83
+    },
+    {
+      "name": "20260907100000_notification_reminders.sql",
+      "sha256_raw": "ece4a531f56f27621df69c2cc363f401572ae5ef156e966117cf772d32aa5588",
+      "sha256_lf": "424080df8e356444363fe3183d689237bd41a5b17df45cf8064010b18157e6e4",
+      "byte_count": 5033,
+      "applied_order": 84
+    },
+    {
+      "name": "20260907100500_webhook_worker_grant.sql",
+      "sha256_raw": "0e8a853efcc353564a241ccc658d5fe2c2e39590b77e553cc8162f43396b082f",
+      "sha256_lf": "305eb66d2a23d40e75b26bb82defbafa551aaa3178a5bfec9bbe55a246115cb3",
+      "byte_count": 275,
+      "applied_order": 85
+    },
+    {
+      "name": "20260907101000_notification_race_guards.sql",
+      "sha256_raw": "70533f3aef1dd6a9c78ae14d77816a7175fc00e1f7127ed9c43ef7d8c2df5153",
+      "sha256_lf": "9236518e27ab1ce4440e7dc76bd5089a74e7b2bd9256dd853fa1d523dcb9f95a",
+      "byte_count": 2742,
+      "applied_order": 86
+    },
+    {
+      "name": "20260907103000_report_review_binding.sql",
+      "sha256_raw": "a446318b1a78b5b865f9930710cbf854bab1e0ad7aac03e84bc43564ab864a17",
+      "sha256_lf": "bd7c9b173457a38853e592458f7014622ebb49c806784a6ccdd2a4c93059370f",
+      "byte_count": 9122,
+      "applied_order": 87
+    },
+    {
+      "name": "20260907104500_report_customer_artifacts.sql",
+      "sha256_raw": "0b697bbb81d799afd853e39923b181e7d3f3015f28d0b762c98cafa1b7c92c58",
+      "sha256_lf": "c0da13718d4a7fe6848de775a4bc6200d72e2bbaeafa5366435286b2e7ba7cbd",
+      "byte_count": 4649,
+      "applied_order": 88
+    },
+    {
+      "name": "20260907105500_report_delivery_intentions.sql",
+      "sha256_raw": "ae559ac3481446e9f631a951e7b138a1a89668dbe8077d31670fb975ec15ff84",
+      "sha256_lf": "b7906fc3b60dd9075677d8e8213bb0070c35fb3f379f0383dc5493397058b41f",
+      "byte_count": 4107,
+      "applied_order": 89
+    },
+    {
+      "name": "20260907110000_report_review_sources.sql",
+      "sha256_raw": "0c957d117dad478ac65593baf20e4cf14a55db08fe6f8616f2444853f11181b9",
+      "sha256_lf": "41110fc68857c1663db86026946096764fd11e28fe9eec2585c9136cf5daf42a",
+      "byte_count": 1751,
+      "applied_order": 90
+    },
+    {
+      "name": "20260907111000_report_provenance_publication.sql",
+      "sha256_raw": "b3c50088cc91cc351931616eb3c32f4586bd03725f45dbd6b89af1839a55f041",
+      "sha256_lf": "6f4aa1ab20535837dc24650817ee6d03a86275a377a6a81cb45fe806c3d41307",
+      "byte_count": 2175,
+      "applied_order": 91
+    },
+    {
+      "name": "20260907120000_product_orders.sql",
+      "sha256_raw": "eb482474834a7d9634389557d964b40414460e7c24c5854984005dc34f30a19d",
+      "sha256_lf": "300484fe1d0b7cdba25aea9462970f12952c68c0e8bd61ba9e6862e66b45ea46",
+      "byte_count": 16239,
+      "applied_order": 92
+    },
+    {
+      "name": "20260907121000_order_lifecycle_guards.sql",
+      "sha256_raw": "57a1a07ebb6eb857e4b6dd6a81cedd38c69ed680e06a4db7718768d13f4b7fb1",
+      "sha256_lf": "9c24a123d5d8104bb7dd5ba9096fcc0d3e39436db7768abfa2c1cd7b17c0dd07",
+      "byte_count": 7357,
+      "applied_order": 93
+    },
+    {
+      "name": "20260907122000_order_input_scope.sql",
+      "sha256_raw": "81b084123fac6e08715ce44eda101eed956f41c3feb643c6e5c8c62d0572400b",
+      "sha256_lf": "1f72ec3fb67c6faddd8848fd75920225849d2476f78c978131d53ac17e4c7acf",
+      "byte_count": 2019,
+      "applied_order": 94
+    },
+    {
+      "name": "20260907123000_report_order_entitlement.sql",
+      "sha256_raw": "b228c86c031d2a32dcc591a084693d9f4977c8c17e3e65368658f36d8be08b46",
+      "sha256_lf": "2f0ab93ef382df00b6e5631403e76eb66f2508bdcda33784540f75163f50272b",
+      "byte_count": 2715,
+      "applied_order": 95
+    },
+    {
+      "name": "20260907130000_privacy_requests.sql",
+      "sha256_raw": "de97b8d608fe9c9c54623ad06e1844a77f7e83d71f676084cd648bee41062d46",
+      "sha256_lf": "c37a8699dd01e1d392524437e6580840666b2936c990c6b9adc9163d887fb9e0",
+      "byte_count": 7789,
+      "applied_order": 96
+    },
+    {
+      "name": "20260907131000_storage_gc_fence.sql",
+      "sha256_raw": "7756f59ed95254d7c8d11613c0f42762d9128ba1239cd9055a5a2de07f5747a2",
+      "sha256_lf": "3505d261e2becceaecb961fc462973cb8c5e8b3da6659ae474cdc9e909db45a6",
+      "byte_count": 7489,
+      "applied_order": 97
+    },
+    {
+      "name": "20260907132000_privacy_operations_sweep.sql",
+      "sha256_raw": "94d7aed38344786a6a4229bbb8a754712d9e84314d5b9370feafc297cac9967f",
+      "sha256_lf": "4b2c01478b385f1858a908bb95ed4d29e2b0e9304257aae000b1d2d52032a067",
+      "byte_count": 2229,
+      "applied_order": 98
+    },
+    {
+      "name": "20260907133000_retention_hold_serialization.sql",
+      "sha256_raw": "b4b128074d6fd85a1f45e83f27ecc0112e51088ed2cdd399397bf6fd3cbd7d65",
+      "sha256_lf": "9c09efc649bd1b5369d505c5804b9e136334113b1d0d81f285954daff66a5f31",
+      "byte_count": 2543,
+      "applied_order": 99
+    },
+    {
+      "name": "20260907140000_product_metrics.sql",
+      "sha256_raw": "5d4329aba91489f03b8c8a68548f69ab65e63e89dd6e24fdecad571699199ce8",
+      "sha256_lf": "eae8498f809c7e14609fd15aaf61b1507d98b027de20f6de816ebb59252585e5",
+      "byte_count": 6080,
+      "applied_order": 100
+    },
+    {
+      "name": "20260907141000_product_monitor.sql",
+      "sha256_raw": "4a8bd0d48abc39fd963a0d43eeb9285ccf3823c0929965b7209801ace4ea4bc0",
+      "sha256_lf": "3ca991a69eeb3b4b5b8f2fe85170ef2c124f2512be91eae96418cbc06ee31703",
+      "byte_count": 2630,
+      "applied_order": 101
+    },
+    {
+      "name": "20260907150000_paid_document_capacity.sql",
+      "sha256_raw": "94e7513c3468e7650d56a38f1610ff5d0b39bdaf7462d78b571d00f8ce0abae5",
+      "sha256_lf": "94e7513c3468e7650d56a38f1610ff5d0b39bdaf7462d78b571d00f8ce0abae5",
+      "byte_count": 4055,
+      "applied_order": 102
+    },
+    {
+      "name": "20260907190000_request_pause_trigger_authority.sql",
+      "sha256_raw": "a7700f50bae9f25c8be168dc95b9b1374b6e336ee875272259df3adf16d7bd8f",
+      "sha256_lf": "a7700f50bae9f25c8be168dc95b9b1374b6e336ee875272259df3adf16d7bd8f",
+      "byte_count": 1035,
+      "applied_order": 103
+    },
+    {
+      "name": "20260907193000_questionnaire_source_scope.sql",
+      "sha256_raw": "553c54547750fb60305c35e47da7befeb3eb80d05bde9da3cc1e5dbe184f8dab",
+      "sha256_lf": "0c0f409d6cd385295a056e2d0df0a142b9a3e83e817c869386f1418818f8fbc7",
+      "byte_count": 2050,
+      "applied_order": 104
+    },
+    {
+      "name": "20260907200000_owner_support_threads.sql",
+      "sha256_raw": "8f4ff63c11604347f5d10c025e281bcbd100e52d80627c0fdba94d5e644040e4",
+      "sha256_lf": "940fec5d9953bb88186ac729420476fe1d24489d684668d0dfa0f3f1b2b03ca2",
+      "byte_count": 9861,
+      "applied_order": 105
+    },
+    {
+      "name": "20260907210000_saved_worker_analysis_scope.sql",
+      "sha256_raw": "8232c8ed35bec97f17eaedefbd20b4733036cfca774cb6192e8a9bdd077dee71",
+      "sha256_lf": "8232c8ed35bec97f17eaedefbd20b4733036cfca774cb6192e8a9bdd077dee71",
+      "byte_count": 1309,
+      "applied_order": 106
+    },
+    {
+      "name": "20260908001500_request_retry_integrity.sql",
+      "sha256_raw": "24bd194f1169f0029d822925d04ea6668a80ed1105b593c315e1218f3456478d",
+      "sha256_lf": "ba92214791bbcc6287db9f0ce46820cf4453e27877f074e69d3c5c53e66e2f2e",
+      "byte_count": 5847,
+      "applied_order": 107
+    },
+    {
+      "name": "20260908013000_saved_extraction_invocations.sql",
+      "sha256_raw": "9b0a982a38ce99b7675fece56d81138f91a3b09e15e046933b74d6356f34cb27",
+      "sha256_lf": "9b0a982a38ce99b7675fece56d81138f91a3b09e15e046933b74d6356f34cb27",
+      "byte_count": 2835,
+      "applied_order": 108
+    },
+    {
+      "name": "20260908073000_request_statement_scope.sql",
+      "sha256_raw": "f38c41f781a2b1932c87a7bc356380b6bc87a31803c9172188221dbe27966f53",
+      "sha256_lf": "243e8d63b3f0f2b028b3359cd34c333b59b2e3b652f3d7c4c1b5f6d64d4ee396",
+      "byte_count": 2052,
+      "applied_order": 109
+    },
+    {
+      "name": "20260908145315_order_quote_ledger.sql",
+      "sha256_raw": "159e1aeb98df89187583ca46c0662025ed142f51c85dc23f195a493fb51a4a8a",
+      "sha256_lf": "159e1aeb98df89187583ca46c0662025ed142f51c85dc23f195a493fb51a4a8a",
+      "byte_count": 8274,
+      "applied_order": 110
+    },
+    {
+      "name": "20260908151940_quoted_order_acceptance.sql",
+      "sha256_raw": "53353c7925682b31980f99d528ef08714f6e1f2447f81ab7f13ba896a4f06ad4",
+      "sha256_lf": "53353c7925682b31980f99d528ef08714f6e1f2447f81ab7f13ba896a4f06ad4",
+      "byte_count": 5722,
+      "applied_order": 111
+    },
+    {
+      "name": "20260908153942_quote_unstarted_cancellation.sql",
+      "sha256_raw": "1eb0f99dcc5143fa27d288d2664413aa6d20fccb4d284d1293dfc7c62bd6f822",
+      "sha256_lf": "1eb0f99dcc5143fa27d288d2664413aa6d20fccb4d284d1293dfc7c62bd6f822",
+      "byte_count": 14014,
+      "applied_order": 112
+    },
+    {
+      "name": "20260908154530_quoted_checkout_retry_freshness.sql",
+      "sha256_raw": "469183ae41d4d783e11c81437c43d5db3fd6d8ff04af30e6388ddb7fa02795f8",
+      "sha256_lf": "04778d7cc7a73c635461a8f6700beb40f7759b4988826e4865e3bf427661d6ce",
+      "byte_count": 4478,
+      "applied_order": 113
+    },
+    {
+      "name": "20260908162320_ai_report_publication.sql",
+      "sha256_raw": "ec331ed662e7b2e2ee7ad2d2c433bf64b49b7ba2f7c1b6d27567872068b77075",
+      "sha256_lf": "ec331ed662e7b2e2ee7ad2d2c433bf64b49b7ba2f7c1b6d27567872068b77075",
+      "byte_count": 6945,
+      "applied_order": 114
+    }
+  ],
+  "files_applied": 112,
+  "files_compensated": 2,
+  "compensations": [
+    {
+      "file": "202609010005_governance_runtime_security.sql",
+      "reason": "Managed platform refuses superuser attributes/reserved-role modification; preserve and verify existing shared DEV runtime provisioning",
+      "sqlstate": "42501",
+      "verbatim_failure": "permission denied to alter role",
+      "pre_statements": [
+        "grant usage, create on schema private to tivdoc_governance_owner"
+      ],
+      "omitted_lines": [
+        {
+          "line": 28,
+          "statement": "alter role tivdoc_governance_owner nologin nosuperuser nocreatedb nocreaterole noinherit noreplication nobypassrls;"
+        },
+        {
+          "line": 29,
+          "statement": "alter role tivdoc_operations_runtime nologin nosuperuser nocreatedb nocreaterole noinherit noreplication nobypassrls;"
+        },
+        {
+          "line": 30,
+          "statement": "alter role tivdoc_worker_runtime nologin nosuperuser nocreatedb nocreaterole noinherit noreplication nobypassrls;"
+        },
+        {
+          "line": 31,
+          "statement": "alter role tivdoc_web_runtime nologin nosuperuser nocreatedb nocreaterole noinherit noreplication nobypassrls;"
+        },
+        {
+          "line": 32,
+          "statement": "alter role tivdoc_identity_runtime nologin nosuperuser nocreatedb nocreaterole noinherit noreplication nobypassrls;"
+        },
+        {
+          "line": 34,
+          "statement": "revoke tivdoc_governance_owner from anon, authenticated, service_role, tivdoc_identity_runtime, tivdoc_operations_runtime, tivdoc_worker_runtime, tivdoc_web_runtime;"
+        },
+        {
+          "line": 35,
+          "statement": "revoke service_role from tivdoc_governance_owner, tivdoc_identity_runtime, tivdoc_operations_runtime, tivdoc_worker_runtime, tivdoc_web_runtime;"
+        }
+      ]
+    },
+    {
+      "file": "202609010007_global_dependency_invalidation.sql",
+      "reason": "ownership transfer needs CREATE on the target schema; no superuser exists to bypass it",
+      "sqlstate": "42501",
+      "verbatim_failure": "permission denied for schema public",
+      "pre_statements": [
+        "grant usage, create on schema public to tivdoc_governance_owner"
+      ],
+      "omitted_lines": []
+    }
+  ],
+  "idempotent_reapply": "expected_conflict",
+  "reapply_detail": "202608290001_engine_persistence_foundation.sql: constraint \"documents_declared_type_code_check\" for relation \"documents\" already exists",
+  "status": "PASS",
+  "blocked_reason": null,
+  "failed_file": null,
+  "failure_reason": null,
+  "executing_role": "tivdoc_dev_migrator",
+  "database": "tivdoc_release_chain_20260908_5a7b69e",
+  "sha": "5a7b69e533db037c51820012c485da8aabc42143",
+  "sharedRoleProvisioningUnchanged": true,
+  "scaffold": "Synthetic storage.buckets only; not live Storage API",
+  "scope": "Fresh separate DEV database, existing shared runtime LOGIN provisioning preserved; listed managed-platform compensations are not an uncompensated superuser replay",
+  "productionChanged": false
+}

@@ -18,7 +18,7 @@ import { postgresCaseAccessDb, supabaseCaseAccessDb } from "./db.ts";
 const PRODUCT_ROOT = join(process.cwd(), "src", "server", "product");
 // `[\s\S]` rather than the dotall flag: a generic argument often spans lines,
 // and this project's target predates `s`.
-const RPC_CALL = /\brpc(?:<[\s\S]{0,600}?>)?\(\s*"([a-z_]+)"/gu;
+const RPC_CALL = /\brpc(?:<[\s\S]{0,600}?>)?\(\s*(['"])([a-z][a-z0-9_]+)\1/gu;
 
 function sourceFiles(directory: string): string[] {
   return readdirSync(directory).flatMap((name) => {
@@ -32,7 +32,7 @@ function calledFunctionNames(): string[] {
   const names = new Set<string>();
   for (const file of sourceFiles(PRODUCT_ROOT)) {
     const source = readFileSync(file, "utf8");
-    for (const match of source.matchAll(RPC_CALL)) names.add(match[1]!);
+    for (const match of source.matchAll(RPC_CALL)) names.add(match[2]!);
   }
   return [...names].sort();
 }
@@ -53,6 +53,7 @@ describe("case access store adapters", () => {
     expect(names.length).toBeGreaterThan(10);
     expect(names).toContain("case_request_open");
     expect(names).toContain("case_documents_list");
+    expect(names).toContain("june2026_regular_report_artifact");
 
     const queries: string[] = [];
     const postgres = postgresCaseAccessDb({
@@ -83,6 +84,9 @@ describe("case access store adapters", () => {
       // family and `case_payment_*` is not, so the guard is about the list and
       // not about the prefix looking familiar.
       await expect(store.rpc("case_payment_refund", {})).rejects.toThrow("CASE_ACCESS_DB_FUNCTION_UNKNOWN");
+      for (const name of ["june2026_regular_authority", "june2026_regular_report_artifact_extra", "june2026_regular_report_artifact;drop"]) {
+        await expect(store.rpc(name, {})).rejects.toThrow("CASE_ACCESS_DB_FUNCTION_UNKNOWN");
+      }
     }
   });
 
@@ -111,4 +115,41 @@ describe("case access store adapters", () => {
     await expect(postgres.rpc("case_access_identity_upsert", {})).resolves.toEqual([{ value: "id-1" }]);
     await expect(supabase.rpc("case_access_identity_upsert", {})).resolves.toEqual([{ value: "id-1" }]);
   });
+});
+
+
+it("maps only the explicit source visibility refusal to absence in both adapters",async()=>{
+ for(const message of ['REPORT_SOURCE_FORBIDDEN','REPORT_SOURCE_MISSING','connection failed']){
+  const error=Object.assign(Error(message),{code:'P0001'});
+  const stores=[postgresCaseAccessDb({async query(){throw error;}}),supabaseCaseAccessDb({async rpc(){return {data:null,error};}})];
+  for(const store of stores){
+   if(message==='REPORT_SOURCE_FORBIDDEN')await expect(store.rpc('case_report_source',{})).resolves.toEqual([]);
+   else await expect(store.rpc('case_report_source',{})).rejects.toThrow();
+   await expect(store.rpc('case_report_review_source',{})).rejects.toThrow();
+  }
+ }
+});
+
+it.each([
+ ['REVIEW_REQUEST_SOURCE_CHANGED','REQUEST_FIELD_SOURCE_CHANGED'],
+ ['REVIEW_REQUEST_ANSWER_INVALID','REQUEST_ANSWER_INVALID'],
+ ['REVIEW_REQUEST_CLOSED','REQUEST_EDIT_CLOSED'],
+ ['REVIEW_REQUEST_FORBIDDEN','REQUEST_FIELD_FORBIDDEN'],
+])('preserves the exact locked review refusal %s consistently in both adapters',async(message,safe)=>{
+ const error=Object.assign(Error(message),{code:'P0001',detail:'private database detail'});
+ const stores=[postgresCaseAccessDb({async query(){throw error;}}),supabaseCaseAccessDb({async rpc(){return {data:null,error};}})];
+ for(const store of stores)for(const fn of ['case_request_answer_identified','case_request_edit','case_request_review_states'])
+  await expect(store.rpc(fn,{})).rejects.toThrow(`CASE_ACCESS_DB_RPC_FAILED:${fn}:${safe}`);
+});
+
+it.each([
+ ['case_report_source','P0001','REVIEW_REQUEST_SOURCE_CHANGED'],
+ ['case_request_answer_identified','08006','REVIEW_REQUEST_SOURCE_CHANGED'],
+ ['case_request_answer_identified','P0001','REVIEW_REQUEST_SOURCE_CHANGED: private@example.invalid'],
+ ['case_request_answer_identified','P0001','REVIEW_REQUEST_TARGET_INVALID'],
+])('does not broaden review refusal mapping for %s/%s/%s',async(fn,code,message)=>{
+ const error=Object.assign(Error(message),{code});
+ const postgres=postgresCaseAccessDb({async query(){throw error;}}),supabase=supabaseCaseAccessDb({async rpc(){return {data:null,error};}});
+ await expect(postgres.rpc(fn,{})).rejects.toBe(error);
+ await expect(supabase.rpc(fn,{})).rejects.toThrow(`CASE_ACCESS_DB_RPC_FAILED:${fn}:rpc_failed`);
 });

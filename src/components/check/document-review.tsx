@@ -5,18 +5,20 @@ import { useRouter } from "next/navigation";
 import { FileArrowUp, FilePdf, X } from "@phosphor-icons/react/dist/ssr";
 import { trackEvent } from "@/lib/analytics";
 import { countPdfPages, measureImage, type ReadabilityReport } from "@/lib/document-readability";
-import { lastCompleteMonth, MAX_PAYSLIPS, validateUploadDescriptor, type DocumentType } from "@/lib/validation";
-import { uploadNextPath, type DocumentUpload, type SavedDocument, type UploadSnapshot } from "@/lib/document-upload";
+import { lastCompleteMonth, MAX_PAYSLIPS, validateUploadDescriptor } from "@/lib/validation";
+import { documentUploadSchema, selectedSourceIntakeUpload, MAX_TRAVEL_TARIFF_DOCUMENTS, uploadNextPath, type DocumentUpload, type DocumentUploadType, type SavedDocument, type TravelTariffEvidencePurpose, type UploadSnapshot } from "@/lib/document-upload";
 import { transferDocuments } from "./document-transfer";
+import { documentCapacity, uploadMonthOptions } from "@/lib/document-capacity";
 import "./document-review.css";
 
 type Chosen = {
-  id: string; documentType: DocumentType; file: File; previewUrl: string;
+  id: string; documentType: DocumentUploadType; file: File; previewUrl: string;
   pages: number | null; readability: ReadabilityReport | null; periodMonth: string;
+  evidencePurpose?: TravelTariffEvidencePurpose;
   replace?: { documentId: string; versionId: string };
   sent: number;
 };
-const labels = { payslip: "תלוש", contract: "חוזה", attendance: "דוח נוכחות" };
+const labels = { payslip: "תלוש", contract: "חוזה", attendance: "דוח נוכחות", other: "מסמך נוסף" };
 function formatSize(size: number) {
   return size < 1024 * 1024 ? `${Math.round(size / 1024)}KB` : `${(size / 1024 / 1024).toFixed(1)}MB`;
 }
@@ -37,13 +39,34 @@ async function post(path: string, body: unknown, signal?: AbortSignal): Promise<
   return data;
 }
 
-export function DocumentReview({ initial }: { initial: UploadSnapshot }) {
+export function TravelTariffPurposeFields({ purpose, months, disabled, onChange }: {
+  purpose: TravelTariffEvidencePurpose; months: readonly string[]; disabled: boolean;
+  onChange: (purpose: TravelTariffEvidencePurpose) => void;
+}) {
+  return <fieldset disabled={disabled}>
+    <legend>מקור תעריפי הנסיעה</legend>
+    <label>חודש הבדיקה של תעריף הנסיעה
+      <select value={purpose.month} onChange={event => onChange({ ...purpose, month: event.target.value })}>
+        <option value="">בחרו חודש שנרכש לבדיקה</option>
+        {months.map(month => <option key={month} value={month}>{monthLabel(month)}</option>)}
+      </select>
+    </label>
+    <label>עמוד במקור
+      <input type="number" min={1} max={100} step={1} value={purpose.page || ""} onChange={event => onChange({ ...purpose, page: Number(event.target.value) })} />
+    </label>
+    <label>מיקום התעריף או טבלת הכרטיסים בעמוד
+      <input type="text" maxLength={120} value={purpose.locator} placeholder="למשל: טבלת תעריפים במרכז העמוד" onChange={event => onChange({ ...purpose, locator: event.target.value })} />
+    </label>
+  </fieldset>;
+}
+
+export function DocumentReview({ initial, initialRequestId, replacementVersionId }: { initial: UploadSnapshot; initialRequestId?: string; replacementVersionId?: string }) {
   const router = useRouter();
   const [snapshot, setSnapshot] = useState(initial);
   const [chosen, setChosen] = useState<Chosen[]>([]);
-  const [checkMonth, setCheckMonth] = useState(initial.checkPeriodMonth ?? lastCompleteMonth());
-  const [requestId, setRequestId] = useState(initial.documents.some((doc) => doc.document_type === "payslip")
-    ? "" : initial.requests.find((request) => request.code === "document_missing")?.id ?? "");
+  const [checkMonth, setCheckMonth] = useState(()=>selectedSourceIntakeUpload(initial,initialRequestId)?'':initial.checkPeriodMonth ?? lastCompleteMonth());
+  const [requestId, setRequestId] = useState(initialRequestId ?? (initial.documents.some((doc) => doc.document_type === "payslip")
+    ? "" : initial.requests.find((request) => request.code === "document_missing")?.id ?? ""));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [batchId, setBatchId] = useState<string | null>(null);
@@ -53,7 +76,10 @@ export function DocumentReview({ initial }: { initial: UploadSnapshot }) {
   const manifestRef = useRef<DocumentUpload | null>(null);
   const workingRef = useRef(false);
   const storageKey = `tivdoc:document-upload:v1:${initial.caseId}`;
-  const months = useMemo(() => recentMonths(), []);
+  const recent = useMemo(() => recentMonths(), []);
+  const capacity = documentCapacity(snapshot.capacity);
+  const months = uploadMonthOptions(capacity, recent, snapshot.documents.map(doc => doc.period_month));
+  const tariffMonths = capacity.paidMonths.filter(month => /^2026-(05|06|07)$/u.test(month)).sort().reverse();
   useEffect(() => {
     // Only an opaque batch id is persisted; no files, names or signed URLs.
     // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrate external tab storage after SSR; initial HTML must be identical on server and client.
@@ -74,19 +100,27 @@ export function DocumentReview({ initial }: { initial: UploadSnapshot }) {
   const payslips = [...kept.filter((doc) => doc.document_type === "payslip").map((doc) => doc.period_month),
     ...chosen.filter((doc) => doc.documentType === "payslip").map((doc) => doc.periodMonth)];
   const availableMonths = [...new Set(payslips.filter((month): month is string => Boolean(month)))].sort().reverse();
-  const paid = uploadNextPath(snapshot) !== "/check/payment";
+  const sourceIntake=selectedSourceIntakeUpload(snapshot,requestId);
+  const sourceIntakeMonth=sourceIntake?snapshot.requests.find(r=>r.id===requestId)?.sourceIntake?.month:null;
+  const paid = uploadNextPath(snapshot,!!sourceIntake) !== "/check/payment";
   const effectiveCheckMonth = availableMonths.includes(checkMonth) ? checkMonth : availableMonths[0];
   const locked = busy || batchId !== null || !recoveryReady;
 
-  async function add(documentType: DocumentType, file?: File, replace?: SavedDocument) {
+  async function add(documentType: DocumentUploadType, file?: File, replace?: SavedDocument) {
+    if(sourceIntake&&documentType==='other'){setError('לבקשת מקור זו מצרפים תלוש, דוח נוכחות או חוזה.');return;}
     if (!file || workingRef.current || batchId) return;
     const problem = validateUploadDescriptor(file);
     if (problem) { setError(problem); return; }
+    if (documentType === "other" && file.type !== "application/pdf") { setError("מקור תעריפי נסיעה מצורף כקובץ PDF."); return; }
     const current = chosenRef.current;
     const count = snapshot.documents.filter((doc) => doc.document_type === documentType).length
       + current.filter((doc) => doc.documentType === documentType && !doc.replace).length;
-    if (!replace && count >= (documentType === "payslip" ? MAX_PAYSLIPS : 1)) {
+    if (!replace && count >= (documentType === "payslip" ? capacity.maxPayslips : documentType === "other" ? MAX_TRAVEL_TARIFF_DOCUMENTS : 1)) {
       setError("אין מקום למסמך נוסף מסוג זה. להחלפה, יש לבחור במסמך השמור."); return;
+    }
+    const pending = current.filter(item => !replace || item.replace?.documentId !== replace.id);
+    if (pending.length >= capacity.maxBatchFiles || pending.reduce((sum, item) => sum + item.file.size, file.size) > capacity.maxBatchBytes) {
+      setError("הבחירה הגיעה למגבלת העלאה אחת. יש לשמור את הקבצים שנבחרו, ואז לצרף את הבאים."); return;
     }
     workingRef.current = true; setBusy(true); setError("");
     try {
@@ -95,7 +129,11 @@ export function DocumentReview({ initial }: { initial: UploadSnapshot }) {
       if (prior) URL.revokeObjectURL(prior.previewUrl);
       updateChosen([...current.filter((item) => item !== prior), {
         id: crypto.randomUUID(), documentType, file, pages, readability, previewUrl: URL.createObjectURL(file),
-        periodMonth: replace?.period_month ?? months[0]!, sent: 0,
+        periodMonth: sourceIntake?'':replace?.period_month ?? months[0]!, sent: 0,
+        ...(documentType === "other" ? { evidencePurpose: {
+          kind: "travel_tariff" as const, month: replace?.evidence_purpose?.month ?? tariffMonths[0] ?? "",
+          page: 1, locator: "",
+        } } : {}),
         ...(replace ? { replace: { documentId: replace.id, versionId: replace.version_id } } : {}),
       }]);
     } catch { setError("לא הצלחנו לקרוא את הקובץ. אפשר לבחור אותו שוב."); }
@@ -131,7 +169,7 @@ export function DocumentReview({ initial }: { initial: UploadSnapshot }) {
   }
   async function submit() {
     if (workingRef.current) return;
-    if (!batchId && chosen.length === 0) { router.push(uploadNextPath(snapshot)); return; }
+    if (!batchId && chosen.length === 0) { router.push(uploadNextPath(snapshot,!!sourceIntake)); return; }
     workingRef.current = true; setBusy(true); setError("");
     const controller = new AbortController(); abortRef.current = controller;
     try {
@@ -145,20 +183,26 @@ export function DocumentReview({ initial }: { initial: UploadSnapshot }) {
           const files = await Promise.all(chosenRef.current.map(async (item) => ({
             clientId: item.id, documentType: item.documentType, name: item.file.name, type: item.file.type as DocumentUpload["files"][number]["type"], size: item.file.size,
             sha256: Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", await item.file.arrayBuffer())), (byte) => byte.toString(16).padStart(2, "0")).join(""),
-            ...(item.documentType === "payslip" ? { periodMonth: item.periodMonth } : {}),
+            ...(item.documentType === "payslip"&&!sourceIntake ? { periodMonth: item.periodMonth } : {}),
+            ...(item.evidencePurpose ? { evidencePurpose: item.evidencePurpose } : {}),
             ...(item.replace ? { replace: item.replace } : {}),
           })));
-          manifestRef.current = { caseId: snapshot.caseId, batchId: id, files,
+          const parsed = documentUploadSchema.safeParse({ caseId: snapshot.caseId, batchId: id, files,
             ...(!paid && effectiveCheckMonth ? { checkPeriodMonth: effectiveCheckMonth } : {}),
             ...(requestId ? { requestId } : {}),
-          };
+            ...(sourceIntake?{sourceIntake}:{}),
+          });
+          if (!parsed.success) throw new Error("יש לבדוק את סוג הקובץ, החודש, העמוד והמיקום במקור לפני ההעלאה.");
+          manifestRef.current = parsed.data;
           remember(id);
         }
         result = await transferDocuments({ manifest: manifestRef.current, files: new Map(chosenRef.current.map((item) => [item.id, item.file])), signal: controller.signal, post, put: putFile }) as UploadSnapshot;
       }
+      const completedBatch=batchId??manifestRef.current?.batchId;
+      const sourceIntakeCompleted=!!sourceIntake||!!result.sourceIntakeReceipts?.some(r=>r.batch_id===completedBatch);
       accept(result);
       trackEvent("payslip_uploaded", { document_count: result.documents.length });
-      router.push(uploadNextPath(result)); router.refresh();
+      router.push(uploadNextPath(result,sourceIntakeCompleted)); router.refresh();
     } catch (caught) {
       if (!(caught instanceof DOMException && caught.name === "AbortError")) setError(caught instanceof Error ? caught.message : "ההעלאה לא הושלמה. אפשר לנסות שוב.");
     } finally { workingRef.current = false; setBusy(false); abortRef.current = null; }
@@ -178,19 +222,22 @@ export function DocumentReview({ initial }: { initial: UploadSnapshot }) {
       <div className="check-page-heading">
         <span className="mono">מסמכים</span>
         <h1>{paid ? "השלמת מסמכים לתיק" : "נראה שהתלוש קריא — לפני שמשלמים."}</h1>
-        <p>אפשר לצרף עד {MAX_PAYSLIPS} תלושים. הבדיקה הראשונית רצה על חודש אחד שתבחר; הדוח המלא מכסה את כולם.</p>
+        <p>אפשר לשמור עד {capacity.maxPayslips} תלושים בתיק. הבדיקה הראשונית מתייחסת לחודש אחד; היקף הדוח המלא נקבע בהזמנה ששולמה.</p>
       </div>
+      {replacementVersionId && !snapshot.documents.some(doc => doc.version_id === replacementVersionId) ? <p role="alert">המסמך של השאלה כבר השתנה. חזרו לשאלות בתיק כדי לראות את המצב העדכני; לא נבחר מסמך אחר להחלפה.</p> : null}
       {snapshot.documents.length > 0 ? <section aria-label="מסמכים שמורים">
         <h2>המסמכים השמורים בתיק</h2>
         <ul className="document-review__list">{snapshot.documents.map((doc) => <li className="document-card" key={doc.id}>
           <FilePdf aria-hidden="true" />
           <div className="document-card__body">
             <p className="document-card__name">{doc.original_filename}</p>
-            <p>{labels[doc.document_type]} · {formatSize(doc.size)}{doc.period_month ? ` · ${monthLabel(doc.period_month)}` : ""}</p>
+            {doc.version_id === replacementVersionId ? <p role="status">זה המסמך של השאלה. להחלפתו, בחרו קובץ דרך ״החלפת מסמך״ בכרטיס זה. שאר המסמכים נשמרים בתיק.</p> : null}
+            <p>{doc.evidence_purpose?.kind === "travel_tariff" ? "מקור תעריפי נסיעה" : labels[doc.document_type]} · {formatSize(doc.size)}{doc.period_month && !doc.evidence_purpose ? ` · ${monthLabel(doc.period_month)}` : ""}</p>
+            {doc.evidence_purpose ? <p>{monthLabel(doc.evidence_purpose.month)} · עמוד {doc.evidence_purpose.page} מתוך {doc.evidence_purpose.page_count} · {doc.evidence_purpose.locator}</p> : null}
             <p role="status">{replaced.has(doc.id) ? "נבחר קובץ להחלפה. המסמך השמור נשאר עד לסיום." : "שמור בתיק"}</p>
           </div>
           <label className="button button--ghost">החלפת מסמך
-            <input type="file" aria-label={`החלפת ${doc.original_filename}`} accept="application/pdf,image/jpeg,image/png" disabled={locked}
+            <input type="file" aria-label={`החלפת ${doc.original_filename}`} accept={doc.document_type === "other" ? "application/pdf" : "application/pdf,image/jpeg,image/png"} disabled={locked}
               onChange={(event) => { void add(doc.document_type, event.target.files?.[0], doc); event.target.value = ""; }} />
           </label>
         </li>)}</ul>
@@ -200,11 +247,17 @@ export function DocumentReview({ initial }: { initial: UploadSnapshot }) {
           const count = snapshot.documents.filter((doc) => doc.document_type === type).length + chosen.filter((doc) => doc.documentType === type && !doc.replace).length;
           return <label className="button button--ghost" key={type}>
             <FileArrowUp aria-hidden="true" /> הוספת {labels[type]}
-            <input type="file" aria-label={`הוספת ${labels[type]}`} accept="application/pdf,image/jpeg,image/png" disabled={locked || count >= (type === "payslip" ? MAX_PAYSLIPS : 1)}
+            <input type="file" aria-label={`הוספת ${labels[type]}`} accept="application/pdf,image/jpeg,image/png" disabled={locked || count >= (type === "payslip" ? capacity.maxPayslips : 1)}
               onChange={(event) => { void add(type, event.target.files?.[0]); event.target.value = ""; }} />
           </label>;
         })}
+        {paid && !sourceIntake && tariffMonths.length > 0 ? <label className="button button--ghost">
+          <FileArrowUp aria-hidden="true" /> הוספת מקור תעריפי נסיעה
+          <input type="file" aria-label="הוספת מקור תעריפי נסיעה" accept="application/pdf" disabled={locked || snapshot.documents.filter(doc => doc.document_type === "other").length + chosen.filter(doc => doc.documentType === "other" && !doc.replace).length >= MAX_TRAVEL_TARIFF_DOCUMENTS}
+            onChange={event => { void add("other", event.target.files?.[0]); event.target.value = ""; }} />
+        </label> : null}
       </div>
+      {paid && !sourceIntake && tariffMonths.length > 0 ? <p>לבדיקת נסיעות אפשר לצרף PDF עם תעריפים או כרטיסי נסיעה, ולציין את החודש והמיקום במקור.</p> : null}
       <ul className="document-review__list">{chosen.map((item) => <li className="document-card" key={item.id}>
         <div className="document-card__preview">{item.file.type === "application/pdf" ? <FilePdf aria-hidden="true" />
           // eslint-disable-next-line @next/next/no-img-element -- local object URL
@@ -213,11 +266,13 @@ export function DocumentReview({ initial }: { initial: UploadSnapshot }) {
           <p className="document-card__name">{item.file.name}</p>
           <p>{item.replace ? "החלפה ממתינה" : "מסמך חדש"} · {formatSize(item.file.size)}{item.pages === null ? "" : ` · ${item.pages} עמודים`}</p>
           {item.readability?.message ? <p role="status">{item.readability.message}</p> : null}
-          {item.documentType === "payslip" ? <label>חודש התלוש
+          {item.documentType === "payslip"&&!sourceIntake ? <label>חודש התלוש
             <select value={item.periodMonth} disabled={locked} onChange={(event) => updateChosen(chosenRef.current.map((row) => row.id === item.id ? { ...row, periodMonth: event.target.value } : row))}>
               {[...new Set([item.periodMonth, ...months])].sort().reverse().map((month) => <option key={month} value={month}>{monthLabel(month)}</option>)}
             </select>
           </label> : null}
+          {item.evidencePurpose ? <TravelTariffPurposeFields purpose={item.evidencePurpose} months={tariffMonths} disabled={locked}
+            onChange={evidencePurpose => updateChosen(chosenRef.current.map(row => row.id === item.id ? { ...row, evidencePurpose } : row))} /> : null}
           {item.sent > 0 ? <p role="status">נשלח {formatSize(item.sent)} מתוך {formatSize(item.file.size)} · ממתין לשמירה בתיק</p> : null}
         </div>
         <button type="button" className="document-card__remove" aria-label={`הסרת ${item.file.name} מהבחירה`} disabled={locked} onClick={() => remove(item.id)}><X aria-hidden="true" /></button>
@@ -225,19 +280,20 @@ export function DocumentReview({ initial }: { initial: UploadSnapshot }) {
       {!paid && availableMonths.length > 0 ? <label className="document-review__check-month">חודש הבדיקה הראשונית
         <select value={effectiveCheckMonth} disabled={locked || chosen.length === 0} onChange={(event) => setCheckMonth(event.target.value)}>
           {availableMonths.map((month) => <option key={month} value={month}>{monthLabel(month)}</option>)}
-        </select><span>הדוח המלא מכסה את כל החודשים שצירפת.</span>
+        </select><span>היקף הדוח המלא נקבע בנפרד, לפי התקופה שבהזמנה.</span>
       </label> : null}
-      {snapshot.requests.length > 0 ? <label>בקשת ההשלמה שהמסמך עונה עליה
+      {sourceIntake?<p role="status">צירוף מקור לרכישה שכבר אומתה. {sourceIntakeMonth?`הבקשה מתייחסת ל־${monthLabel(sourceIntakeMonth)}. `:''}אין לבחור חודש עבור הקובץ: לאחר קבלתו נזהה את סוג המסמך ואת התאריכים המופיעים בו. קבלת הקובץ לבדה אינה משלימה את המידע או מאשרת דוח.</p>:null}
+      {snapshot.requests.length > 0 ? <label>הבקשה שאליה מצורף המסמך
         <select value={requestId} disabled={locked} onChange={(event) => setRequestId(event.target.value)}>
           <option value="">צירוף מסמך ללא מענה לבקשה</option>
           {snapshot.requests.map((request) => <option key={request.id} value={request.id}>{request.question}</option>)}
         </select>
       </label> : null}
-      <p className="upload-limit">PDF, JPG או PNG. עד 10MB לקובץ ועד 25MB יחד בתיק.</p>
+      <p className="upload-limit">PDF, JPG או PNG. עד 10MB לקובץ, עד 25MB בהעלאה אחת ועד {formatSize(capacity.maxCaseBytes)} בתיק.</p>
       {batchId ? <p role="status">יש ניסיון העלאה שטרם אישרנו את סיומו. המסמכים השמורים נשמרו. אפשר לנסות להשלים אותו או לבטל את הניסיון.</p> : null}
       {error ? <div className="form-error" role="alert">{error}</div> : null}
       <div className="document-review__actions">
-        <button className="button button--primary button--wide" type="button" disabled={busy || !recoveryReady || (payslips.length === 0 && !batchId)} onClick={() => void submit()}>
+        <button className="button button--primary button--wide" type="button" disabled={busy || !recoveryReady || ((sourceIntake?chosen.length===0&&kept.length===0:payslips.length === 0) && !batchId)} onClick={() => void submit()}>
           {busy ? "מעלים…" : batchId ? "ניסיון נוסף להשלמת ההעלאה" : paid ? "שמירה וחזרה לתיק" : "אישור ומעבר לתשלום"}
         </button>
         {busy ? <button className="button button--ghost" type="button" onClick={() => abortRef.current?.abort()}>עצירת השליחה</button> : null}

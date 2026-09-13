@@ -1,0 +1,42 @@
+# החלטות תיק שעדיין חסר להן מסלול אוטומטי — 12.9.2026
+
+ביקורת קוד לקריאה בלבד על `a135fd6`, לתשעת הנושאים שנרכשו ולגבולות [המועמד לשחרור](tivdoc-release-candidate-v1.md): מאי–יולי 2026, האוכלוסייה והמסלולים המפורשים בלבד. **מענה לכל שאלות הלקוח אינו מספיק כיום להשלמת החישוב.** חסרים גם חיבור תשובה לנתון טיפוסי מאומת וגם יצירת החלטות תחולה מתוך ראיות התיק. אלה חסמי מימוש; אין לסווג את כולם כמקור משפטי חסר או כצורך באישור אנושי. המסמך אינו מוסיף הכרעה משפטית או טוען להפעלה ב־Production.
+
+## מה כבר אוטומטי ומה נשאר
+
+המתאמים `automatic-pension.ts`, `automatic-payroll.ts`, `automatic-benefits.ts` ו־`automatic-nonpay.ts` יוצרים ראיות עם `applicability:[]` או `assessments:[]`. [קטלוג 11 המתכונים](../src/engine/ai-release-decisions/catalog.ts) מכסה את `pension.rounding`, `travel.rounding`, `vacation.pay_rounding`, `mw.method`, `mw.rounding`, `wt.rounding`, `wt.weekly_aggregation`, `wt.rest_additive`, `cv.rate_2026`, `cv.proration`, `cv.rounding`. גם אלה מתקבלים רק בהתקיים התנאים העובדתיים וקבלות השיטה והמקור; המתכון אינו בוחר נתון חסר ואינו מחליף `unknown` מכוון.
+
+בטבלה, ״נשאר״ פירושו שאין במתאמים ובמתכונים האוטומטיים הנוכחיים יצרן להחלטה הנדרשת, אפילו אם הנתונים הטיפוסיים כבר שמישים. קלט ראיות מפורש יכול להכיל החלטה; עצם קיום הסכמה או בדיקה סינתטית אינו מסלול מוצר.
+
+| נושאים וקוד ההחלטות | מזהים שנשארים ללא יצרן אוטומטי | סוג הראיה החסרה למסלול |
+|---|---|---|
+| פנסיה — [pension/index.ts](../src/engine/entitlement-review/pension/index.ts) | `pension.general_coverage`, `pension.no_better_arrangement`, `pension.pensionable_wage`, `pension.pension_fund`; לפני תום ההמתנה הרגילה גם `pension.prior_coverage_evidence`; בחודש זכאות חלקי `pension.cap_interval` | תחולת ההסדר על התיק; סיווג רכיבי השכר והמוצר הפנסיוני; ביטוח קודם כשמשנה את החודש. תקרת חודש חלקי דורשת שיטה נפרדת, לא חלוקה יומית מומצאת. |
+| נסיעות — [travel/index.ts](../src/engine/entitlement-review/travel/index.ts) | `travel.general_coverage`, `travel.no_better_arrangement`, `travel.fare_basis`, `travel.ticket_options`; בהסעת מעסיק לכיוון אחד גם `travel.one_direction_treatment` | שתי הראשונות תחולת תיק; תעריף ואפשרויות כרטיס דורשים ראיות מסלול ותעריף. טיפול בכיוון אחד הוא שיטת פרשנות נוספת. מסלול אפס מזוהה דורש רק את שתי החלטות התחולה. |
+| חופשה — [vacation/index.ts](../src/engine/entitlement-review/vacation/index.ts) | מכסה: `vacation.general_section3`, `vacation.no_better_arrangement`, `vacation.seniority_basis`; בחלקיות שנתית גם `vacation.annual_workdays`. דמי חופשה: `vacation.no_better_arrangement`, `vacation.pay_applicability`, `vacation.pay_wage_basis`; שעתי: `vacation.pay_quarter_selection`, `vacation.pay_calendar_days`; חודשי: `vacation.pay_monthly_period`; השוואה: `vacation.pay_recorded_allocation` | תחולה, ותק ומניין שנתי; בנפרד, חופשה שנלקחה, שכר ותקופת השכר שנבחרה כדין. אין המרת מכסה שנתית לצבירה חודשית חלקי 12. |
+| שכר מינימום — [minimum-wage/resolve.ts](../src/engine/entitlement-review/minimum-wage/resolve.ts) | `mw.population`, `mw.ordinary_scope`, `mw.eligible_components`, `mw.allocation` | אוכלוסייה ומתכונת שכר; מלאי רכיבים שלם ומסווג, ושיוך לאותן שעות/תקופה. כיום `mw.allocation` נדרש גם לפני תוצאת הצפוי, ולא רק בהשוואה. |
+| שעות עבודה ומנוחה שבועית — [working-time/resolve.ts](../src/engine/entitlement-review/working-time/resolve.ts) | `wt.coverage`, `wt.arrangement`, `wt.workday_assignment`, `wt.regular_wage`, `wt.payroll_allocation`, וכן `wt.worked_time.<day.id>` לכל יום עבודה | תחולת התפקיד וההסדר; שיוך מקטעים, הפסקות ושכר רגיל; הקצאת תשלום ללא כפל. `wt.payroll_allocation` כיום בשער הבסיס. `wt.non_rest_scope` נשאר חסם כשהחלון לא ידוע, ואסור לאשרו כדי לעקוף זאת; חלון מזוהה מייתר אותו. |
+| הבראה — [convalescence/resolve.ts](../src/engine/entitlement-review/convalescence/resolve.ts) | `cv.population`, `cv.source_chain`, `cv.benefit_year`, `cv.qualifying_service`, `cv.due_date`; בהשוואה גם `cv.allocation` | שרשרת מקור ותחולתה בנפרד מאוכלוסיית התיק; שנת ההבראה, שירות מזכה, מועד תשלום והקצאתו. חודש התלוש אינו מוכיח שנת צבירה או מועד חיוב. |
+| חוזה ובונוסים — [obligations/policy.ts](../src/engine/entitlement-review/obligations/policy.ts), [index.ts](../src/engine/entitlement-review/obligations/index.ts) | `obligation.clause_interpretation`, `obligation.agreement_binding`, `obligation.payment_scope`, `obligation.complete_conditions`, `obligation.rounding`; בהשוואה `obligation.recorded_scope` | הסעיף המסוים, גרסאות ההסכם, מלוא התנאים ותקופת התשלום. אין מתכון למשפחה זו. מקור הסכום הוא החוזה, לא תעריף סטטוטורי חלופי. תנאי שלא התקיים עשוי להפיק תוצאה לא כספית תקינה. |
+
+## חסם ההשלמות המדויק
+
+ב־[simple-product.ts:20–37](../src/engine/entitlement-review/simple-product.ts) נוצרים `answer_targets` רק לבחירות הנסיעות המפורשות ולכמה תאריכים/ערכי כן־לא של חופשה. יתר החוסרים מקבלים `required_evidence_kind: observed_reading`. ב־[completions.ts:178–185](../src/engine/document-review/completions.ts), תשובת `provided` כזו נשמרת ומייצרת `review_existing_source`; היא אינה הופכת למספר מאומת ואינה נשאלת מחדש. [compose.ts:27–44](../src/engine/entitlement-review/compose.ts) משחזר נתונים רק דרך `answer_targets`. לכן תשובה לבקשת מקור יכולה להישאר ללא צרכן שמקדם את החישוב.
+
+בדיוק הנוכחי, `minimum-wage/resolve.ts:48` ו־`convalescence/resolve.ts:57` מפיקים `customer_declaration_allowed:false` לכל החוסרים. **אין שם הרשאת הצהרה חיובית שאפשר פשוט להפעיל.** נדרש מסלול לקריאת מקור מאומתת, ולנתונים שמותר לקבל כהצהרה נדרש מיפוי טיפוסי מפורש. גם פנסיה ממפה רק שש עובדות העסקה/גיל, שעות רק סיווגים מסוימים של ימים ומקטעים, וחוזה רק תנאי כן־לא; סכום מקור או מבנה חדש אינם נוצרים מתשובה חופשית.
+
+## סדר תיקון ותנאי קבלה
+
+1. **להשלים חומרת נתונים לפני אישור תחולה:** רשימת שדות סגורה וסכמה לכל נתון, תשובה מזוהה או `document_field` מתאים, וקישור לתיק/מסמך/גרסה/תקופה. נתוני מקור מספריים לא יקודמו מהצהרה רגילה. מבנים חסרים — תקופות, מקטעי משרה, רבע שכר — צריכים קליטה טיפוסית, לא שינוי שדה טקסט. מבחן קבלה: תשובה תקינה משנה רק תלויים; `unknown`, מקור זר/ישן וסתירה נשארים חסומים; תיקון וריפליי שומרים היסטוריה.
+2. **להוסיף מתכוני שיטה תחומים:** טיפול נסיעות בכיוון אחד רק עם קבלת פרשנות תואמת; עיגול התחייבות חוזית עם מקור הסעיף והוראותיו, בלי מקור חוקי מומצא. `cv.source_chain` אינו מתכון מקור בלבד בניסוחו הנוכחי: הוא כולל גם בדיקת הסדר מיטיב, ולכן מחייב הפרדת ההחלטות או ראיות תיק מלאות. כל מתכון נושא גרסה, קבלות מקור/שיטה ובדיקות עצמאיות, ותוקף/ביטול נבדקים בזמן הפרסום.
+3. **להוסיף הכרעות תיק רק כאשר ניתן להוכיחן:** מוצר פנסיוני מזוהה; שיוך מקטעי עבודה מסווגים ושלמים; מלאי רכיבי שכר מסווג והקצאתו; שנת הבראה, שירות ומועד לפי ראיות מזוהות; ימי חופשה ורבע שכר שנבחרו במפורש. אם העובדות הדרושות אינן בסכמה — להוסיף אותן תחילה. גיל, שם רכיב, מקור חקיקה תקין או עצם מסגרת השחרור אינם מוכיחים תחולה, היעדר הסדר מיטיב או הסכם מחייב. קבלת AI מתועדת אינה חתימה אנושית ואינה אישור חוב.
+
+הגבולות שנותרים הם עובדתיים או גבולות הענף המפורש: למשל שנה שטרם תועדה במלואה, חלון מנוחה חסר, חודש חלקי ללא שיטה נתמכת, או הסכם שלא זוהתה גרסתו המחייבת. יש להציג את החסר המדויק; אין לתת להם שם כולל ״חסר משפטי״, ואין לספור שאלות שנענו כהוכחה שהענף הושלם.
+
+
+## עדכון חיבור נסיעות ושעות — 12.9.2026
+
+שלושת מתכוני הנסיעות general_coverage/fare_basis/ticket_options מחוברים כעת לקטלוג, לתשובות הטיפוסיות ול-replay. no_better_arrangement ו-one_direction נשארים נפרדים. שיתוף v2 משתמש בקבלת עובדה אישית קיימת בין שלושה נושאים; אין אישור תעריף מהצהרה.
+
+ענף השעות האוטומטי מקבל כעת תעריף בסיס נצפה יחיד מתוך החילוץ השמור הרגיל. המנגנון הגרסתי החדש מפריד סכום צפוי מהשוואת תשלום, ולכן חוסר או סתירת הקצאה אינם מבטלים חשבון צפוי עצמאי. הרכב השכר, התפקיד וההסדר עדיין זקוקים ליצרני עובדות והחלטות תחולה.
+
+נוספו תנאי מקור לשעות וחופשה וכן יצרן מקור חלקי לחופשה, אך אין לסמן אותם כמחוברים לקטלוג רק משום שהבדיקות שלהם עברו. בחופשה היצרן משתמש בתשובות עובדתיות ומלאי מקור; אינו שואל את המשתמש לאשר סיווג לפי סעיף5. ההמשך: חיבור CV4 וביטולי replay, קליטת עובדות תחולת שעות/מתכונת וקשרי שכר, שילוב מקור חופשה והמתכונים, והתחייבויות חוזיות. לכל אלה נותרה עבודת תוכנה; הם אינם רשימת אישורים חיצוניים בלבד.

@@ -1,0 +1,145 @@
+{
+  "origin": "https://salary-oq30tj1do-tivdoccom-5042s-projects.vercel.app",
+  "deployedSha": "923517ec42e37296a68c69ae2d362a4629808efa",
+  "checks": [
+    {
+      "name": "owner session reaches the isolated hosted upload screen",
+      "passed": true
+    },
+    {
+      "name": "initial payslip and contract are uploaded through UI, Storage and completion",
+      "passed": true
+    },
+    {
+      "name": "returning to upload renders the saved first payslip and contract",
+      "passed": true
+    },
+    {
+      "name": "adding a second payslip preserves both original document identities and versions",
+      "passed": true
+    },
+    {
+      "name": "connection failure before completion leaves the original replacement target saved",
+      "passed": true
+    },
+    {
+      "name": "reload retry completes the exact prior replacement and changes only the selected version",
+      "passed": false,
+      "detail": "page.waitForResponse: Timeout 20000ms exceeded while waiting for event \"response\""
+    }
+  ],
+  "snapshots": {
+    "initial": {
+      "caseId": "ffede141-c065-4479-88e3-de6c15725cb3",
+      "status": "under_review",
+      "capacity": {
+        "paidMonths": [],
+        "maxPayslips": 12,
+        "maxCaseBytes": 26214400,
+        "maxBatchBytes": 26214400,
+        "maxBatchFiles": 14
+      },
+      "publicId": "TV-8ACE4A30",
+      "requests": [],
+      "documents": [
+        {
+          "id": "e25947d7-8ff7-4e77-be0c-56d075133177",
+          "size": 889,
+          "slot": "contract",
+          "mime_type": "application/pdf",
+          "version_id": "a2d553a5-f8a1-49b7-9cd7-77bf563d857a",
+          "period_month": null,
+          "document_type": "contract",
+          "original_filename": "qa-contract.pdf"
+        },
+        {
+          "id": "c15d1664-c51f-4501-9b94-1dddb9a74394",
+          "size": 885,
+          "slot": "payslip-01",
+          "mime_type": "application/pdf",
+          "version_id": "8778d71a-432b-47c5-9b90-6d02bac46556",
+          "period_month": "2026-08",
+          "document_type": "payslip",
+          "original_filename": "qa-first.pdf"
+        }
+      ],
+      "paymentStatus": "verified",
+      "checkPeriodMonth": "2026-08",
+      "next": "/case/TV-8ACE4A30/documents"
+    },
+    "added": {
+      "caseId": "ffede141-c065-4479-88e3-de6c15725cb3",
+      "status": "under_review",
+      "capacity": {
+        "paidMonths": [],
+        "maxPayslips": 12,
+        "maxCaseBytes": 26214400,
+        "maxBatchBytes": 26214400,
+        "maxBatchFiles": 14
+      },
+      "publicId": "TV-8ACE4A30",
+      "requests": [],
+      "documents": [
+        {
+          "id": "e25947d7-8ff7-4e77-be0c-56d075133177",
+          "size": 889,
+          "slot": "contract",
+          "mime_type": "application/pdf",
+          "version_id": "a2d553a5-f8a1-49b7-9cd7-77bf563d857a",
+          "period_month": null,
+          "document_type": "contract",
+          "original_filename": "qa-contract.pdf"
+        },
+        {
+          "id": "c15d1664-c51f-4501-9b94-1dddb9a74394",
+          "size": 885,
+          "slot": "payslip-01",
+          "mime_type": "application/pdf",
+          "version_id": "8778d71a-432b-47c5-9b90-6d02bac46556",
+          "period_month": "2026-08",
+          "document_type": "payslip",
+          "original_filename": "qa-first.pdf"
+        },
+        {
+          "id": "5fd5aab9-a9f1-4b58-9cba-f31e2a455695",
+          "size": 887,
+          "slot": "payslip-02",
+          "mime_type": "application/pdf",
+          "version_id": "0313a84b-1e1b-4176-8be3-b0e9713118c5",
+          "period_month": "2026-08",
+          "document_type": "payslip",
+          "original_filename": "qa-second.pdf"
+        }
+      ],
+      "paymentStatus": "verified",
+      "checkPeriodMonth": "2026-08",
+      "next": "/case/TV-8ACE4A30/documents"
+    }
+  },
+  "expectedFiles": [
+    {
+      "name": "qa-first.pdf",
+      "sha256": "e8724100422fe9603f1ce7bd6da9826917b0f5cc961270b8df7a84dec92664a5",
+      "size": 885
+    },
+    {
+      "name": "qa-contract.pdf",
+      "sha256": "f3839a60c8f42122a680162ad0b48198a617ee592190796e743e1c4dbb3006c2",
+      "size": 889
+    },
+    {
+      "name": "qa-second.pdf",
+      "sha256": "3b1193798019aafeee0779331be8e8a2c43a6077d69fbfb87fa25d0e9e12b3a7",
+      "size": 887
+    },
+    {
+      "name": "qa-replaced.pdf",
+      "sha256": "6720baccce18f9b1f9f9b6137a6e5229157879d8024bc5dd9a7053d5f16f552f",
+      "size": 888
+    }
+  ],
+  "errors": [],
+  "scope": "Two seeded synthetic QA identities; actual hosted pages, HTTP upload APIs, DEV Storage PUT and isolated web-role DB RPC. No OTP delivery or real payment/provider verification.",
+  "productionChanged": false,
+  "secretsIncluded": false
+}

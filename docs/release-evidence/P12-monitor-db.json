@@ -1,0 +1,12 @@
+{
+  "checks": [
+    "monitor requires the operations database role",
+    "injected provider failure appears with age and a specific recovery instruction",
+    "monitor excludes PII and never claims unmeasured Storage integrity"
+  ],
+  "database": "tivdoc_release_replay_20260907",
+  "fixtures": "synthetic QA; injected dead letter",
+  "providerVerified": false,
+  "browserProven": false,
+  "production": "untouched"
+}

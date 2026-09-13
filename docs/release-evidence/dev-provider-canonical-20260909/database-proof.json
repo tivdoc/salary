@@ -1,0 +1,43 @@
+{
+  "verdict": "PASS",
+  "gitSha": "99432cb49a2870de834a8155769858997b25b369",
+  "dirty": false,
+  "database": "tivdoc_release_replay_20260907",
+  "schema": "130 / 20260909185038",
+  "caseId": "0ffecfdb-bda0-4d06-8fbe-71c75f93cac7",
+  "otherId": "11abb6c1-6f97-48ba-a46d-081d187b61ba",
+  "runIds": [
+    "5a3b8840-835f-4c75-8b51-beff237af003",
+    "06142f2c-ddf9-42d1-8b5b-218cd9bb7a68"
+  ],
+  "checks": [
+    "actual SQL refuses June questions when only June travel and July minimum wage were purchased; adding the June minimum-wage entitlement permits necessary questions",
+    "actual scoped worker opens8 source-bound questions once including a1e-7-confidence component; exact TS/SQL wording and hash; no input revision from opening; canonical review persists and retries once",
+    "foreign identity and unidentified originals rejected; simultaneous exact original retry produces one answer revision and does not stale sibling questions",
+    "correction and exact retry preserve original answer; next actual canonical run retains identified declaration with unreviewed status; both runs retained; no financial finding or publication seeded",
+    "revoked entitlement and month metadata invalidate scope; exact source metadata rejects foreign identity and replacement; old originals/corrections/drafts and browser-facing current-state RPC become stale while preserving history"
+  ],
+  "source": "synthetic database metadata/checkpoint; no uploaded bytes or provider call",
+  "authorization": "actual worker/web PostgreSQL roles, provisioned synthetic machine identity and existing RLS; no fixture policies",
+  "migrationFiles": [
+    {
+      "name": "20260909181537_june2026_minimum_wage_collection.sql",
+      "sha256": "502bb8a0329756c695d1676b0a1a9225df9828dd60717be5ac6628571f3dc731"
+    },
+    {
+      "name": "20260909183727_june2026_collection_age_prompt.sql",
+      "sha256": "b5b8a04012544c6caf3537bfbe07281d2c761df14691296a4e380759077336de"
+    },
+    {
+      "name": "20260909185038_june2026_collection_source_link.sql",
+      "sha256": "5857690d0ea74a2610015aa59e3ea23ede3e10176a841c0681c9a3d296fdc391"
+    }
+  ],
+  "retainedSyntheticCases": 2,
+  "machineSessionRevoked": true,
+  "customerSessionInjected": false,
+  "liveProvider": false,
+  "emailSent": false,
+  "financialReportProduced": false,
+  "productionDatabaseChanged": false
+}

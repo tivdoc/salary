@@ -1,0 +1,66 @@
+{
+  "verdict": "PASS",
+  "gitSha": "163bc3cb22126cea0dbbb093d5efc874927a67ab",
+  "checks": [
+    "customer RPC rejects foreign identity/case, initial orders and unprivileged roles; web cannot invoke the common ledger helper or forge its audit actor",
+    "authorized saved order snapshot offers cancellation only for the exact unstarted v2 order",
+    "rollback of a customer cancellation restores both the order and reserved initial credit",
+    "two actual web connections and retry create one attributed cancellation; saved history removes the action and releases the 999-minor initial credit once",
+    "customer cancellation refuses creating, uncertain and ready provider-attempt states and keeps the credit reserved",
+    "actual customer cancellation racing a separate web checkout connection cannot release credit and create a provider attempt together",
+    "customer retry sees the stored cancellation after a source change without rewriting its history",
+    "paid orders cannot be cancelled or release initial credit through the customer action"
+  ],
+  "browserChecks": [
+    {
+      "name": "cancellation Preview is exact isolated DEV with external payment disabled",
+      "passed": true
+    },
+    {
+      "name": "only the selected unstarted order offers cancellation; the paid initial order remains protected",
+      "passed": true
+    },
+    {
+      "name": "a separate customer cannot view or cancel the target through either case identifier",
+      "passed": true
+    },
+    {
+      "name": "response loss after actual successful HTTP cancellation is presented as unconfirmed",
+      "passed": true
+    },
+    {
+      "name": "retry uses the same order, receives confirmation and refreshes stored history",
+      "passed": true
+    },
+    {
+      "name": "reload preserves the cancelled order and sends neither checkout nor refund requests",
+      "passed": true
+    },
+    {
+      "name": "cancelled history fits RTL at 360px",
+      "passed": true
+    },
+    {
+      "name": "cancelled history fits RTL at 390px",
+      "passed": true
+    },
+    {
+      "name": "cancelled history fits RTL at 768px",
+      "passed": true
+    },
+    {
+      "name": "cancelled history fits RTL at 1440px",
+      "passed": true
+    }
+  ],
+  "failure": null,
+  "cleanupFailure": null,
+  "migration": "20260908220956_customer_unstarted_order_cancellation.sql",
+  "migrationSha256": "9dc79ff21d8f6a7d9098cbba38c563df588aa76849a42c6d3440999ada634d80",
+  "syntheticCasesRemoved": 2,
+  "syntheticIdentitiesRemoved": 2,
+  "machineSessionRevoked": true,
+  "browserProof": true,
+  "scope": "Actual isolated DEV worker/two web connections and hosted authenticated UI/HTTP cancellation, lost response/retry/reload. Injected synthetic quote basis, payment and readiness; no actual provider settlement, live monetary correctness or production.",
+  "productionChanged": false
+}

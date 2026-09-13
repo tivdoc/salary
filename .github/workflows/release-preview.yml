@@ -1,0 +1,43 @@
+name: Release Preview browser proof
+on:
+  # This evidence run needs a freshly scoped temporary deployment cookie.
+  # It is not ordinary push CI and must not silently skip missing credentials.
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: release-preview-browser
+  cancel-in-progress: false
+jobs:
+  browser:
+    if: github.repository == 'tivdoc/salary' && github.ref == 'refs/heads/codex/tivdoc-release-completion'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require temporary access before installing browser dependencies
+        env:
+          TIVDOC_PREVIEW_BROWSER_STATE: ${{ secrets.TIVDOC_PREVIEW_BROWSER_STATE }}
+        run: node -e "if (!process.env.TIVDOC_PREVIEW_BROWSER_STATE) throw new Error('PREVIEW_TEMPORARY_ACCESS_MISSING')"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Read-only isolated hosted Preview journeys
+        env:
+          TIVDOC_PREVIEW_BROWSER_STATE: ${{ secrets.TIVDOC_PREVIEW_BROWSER_STATE }}
+        run: node --experimental-strip-types scripts/release-completion/preview-launch.mts
+      # Protected owner proof runs locally with the exact synthetic fixture and
+      # private DEV Storage credentials, so bytes are verified before fault injection.
+      # Do not export a Storage service credential to this public-page workflow.
+      - name: Keep public screenshots and scoped receipt only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-preview-browser
+          path: |
+            output/release-completion/preview-launch/
+          retention-days: 14
+          if-no-files-found: error

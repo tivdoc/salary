@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
-import { readCaseIdFromCookie } from "@/lib/case-cookie";
+import { clearCaseCookie, readCaseIdFromCookie } from "@/lib/case-cookie";
 import { exchangeLinkToken, requestAccessCode, requestFunnelCode, resendChallengeCode } from "@/server/product/case-access/service";
-import { readCaseChallengeCookie, setCaseChallengeCookie } from "@/server/product/case-access/session-cookie";
+import { clearCaseChallengeCookie, clearCaseSessionCookie, readCaseSessionCookie, setCaseSessionCookie, readCaseChallengeCookie, setCaseChallengeCookie } from "@/server/product/case-access/session-cookie";
 import { refusedEntrypoint, strictJsonObject } from "@/server/product/routes/http-common";
 import { guardStableHttpEntrypoint } from "@/server/platform/capabilities/stable-http-entrypoint";
+
+import { refreshSession, revokeSession, sameOriginSessionRequest } from "@/server/product/case-access/session-actions";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -21,6 +23,21 @@ export async function POST(request: Request) {
     return refusedEntrypoint(error);
   }
   const body = await strictJsonObject(request, 4_096);
+  if (body?.action === "refresh_session" || body?.action === "logout") {
+    if (!sameOriginSessionRequest(request)) return NextResponse.json({code:"origin_refused"},{status:403});
+    try {
+      const cookie=await readCaseSessionCookie();
+      if(body.action==="logout"){
+        await revokeSession(cookie);
+        await clearCaseSessionCookie();await clearCaseChallengeCookie();await clearCaseCookie();
+        return NextResponse.json({ok:true},{headers:{"Cache-Control":"no-store"}});
+      }
+      const refreshed=await refreshSession(cookie);
+      if(!refreshed||!cookie)return NextResponse.json({code:"session_required"},{status:401,headers:{"Cache-Control":"no-store"}});
+      await setCaseSessionCookie(cookie,refreshed.ttl);
+      return NextResponse.json({ok:true},{headers:{"Cache-Control":"no-store"}});
+    }catch {return NextResponse.json({code:"session_unavailable"},{status:503});}
+  }
   if (!body || (body.funnel !== true && body.challenge !== true && body.exchange !== true && typeof body.contact !== "string")) {
     return NextResponse.json({ error: "לא הצלחנו לקרוא את הבקשה", code: "access_request_invalid" }, { status: 400 });
   }

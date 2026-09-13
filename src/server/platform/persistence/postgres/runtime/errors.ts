@@ -140,6 +140,12 @@ const TRUSTED_DOMAIN_ERROR_NAMES = new Set([
   "PostgresAnalysisError",
   "PostgresIntakeError",
 ]);
+// Exact static business refusals raised by the quote SQL boundary. No arbitrary
+// database message is retained, even when it resembles an uppercase code.
+const TRUSTED_QUOTE_SQL_REFUSALS = new Set([
+  "PRICE_QUOTE_EXPIRED", "PRICE_QUOTE_CREDIT_UNAVAILABLE",
+  "PRICE_QUOTE_EXISTING_ORDER_REQUIRES_RECONCILIATION", "ORDER_COVERAGE_UNAVAILABLE",
+]);
 
 function postgresSqlstate(error: unknown): string | null {
   if (typeof error !== "object" || error === null || !("code" in error)) return null;
@@ -147,6 +153,7 @@ function postgresSqlstate(error: unknown): string | null {
 }
 
 function trustedDomainCode(error: unknown): string | null {
+  if (error instanceof Error && postgresSqlstate(error) === "P0001" && TRUSTED_QUOTE_SQL_REFUSALS.has(error.message)) return error.message;
   if (typeof error !== "object" || error === null || !("name" in error) || !("code" in error)) return null;
   const candidate = error as { name?: unknown; code?: unknown };
   if (typeof candidate.name !== "string" || !TRUSTED_DOMAIN_ERROR_NAMES.has(candidate.name)) return null;

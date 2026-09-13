@@ -1,0 +1,10 @@
+{
+  "checkedAt": "2026-09-09T05:07:39.842Z",
+  "scope": "branch-specific isolated Preview",
+  "branchOverridePresent": true,
+  "liveOcrCredentialConfigured": false,
+  "localProcessCredentialConfigured": false,
+  "providerCalled": false,
+  "secretsIncluded": false,
+  "productionChanged": false
+}

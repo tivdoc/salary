@@ -1,26 +1,30 @@
 "use client";
+import {EXTERNAL_MEASUREMENT_ENABLED} from "@/lib/measurement-policy";
 
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import Script from "next/script";
-import { trackMetaBrowserEvent, trackMetaViewContentOnce } from "@/lib/meta-browser";
+import {
+  trackMetaBrowserEvent,
+  trackMetaViewContentOnce,
+} from "@/lib/meta-browser";
 
 export function MetaPixelProvider({ pixelId }: { pixelId?: string }) {
   const pathname = usePathname();
   const lastPathname = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!pixelId || lastPathname.current === pathname) return;
+    if (!EXTERNAL_MEASUREMENT_ENABLED || !pixelId || lastPathname.current === pathname) return;
     lastPathname.current = pathname;
     trackMetaBrowserEvent("PageView");
     if (pathname === "/check") trackMetaViewContentOnce();
   }, [pathname, pixelId]);
 
-  if (!pixelId) return null;
+  if (!EXTERNAL_MEASUREMENT_ENABLED || !pixelId) return null;
   const serializedPixelId = JSON.stringify(pixelId);
 
   return (
-    <Script id="tivdoc-meta-pixel" strategy="afterInteractive">
+    <Script id="tivdoc-meta-pixel" strategy="lazyOnload">
       {`
         !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
         n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;

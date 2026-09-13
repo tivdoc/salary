@@ -1,0 +1,70 @@
+{
+  "verdict": "PASS",
+  "checks": [
+    "actual paid-source and worker lease admission rejects another worker before provider dispatch",
+    "lease expiry after admission is rejected by the atomic dispatch SQL before any external call",
+    "real adapter verifies PDF bytes outside DB locks; a concurrent independent worker cannot invoke the pending provider again",
+    "provider receipt commits before injected checkpoint rollback; at most the existing two extraction passes execute",
+    "retry through a second actual connection restores the checkpoint and returns the same immutable result without another provider pass",
+    "receipt replay is read-only; DB trigger blocks rewrites, web role has no table access, and actual worker RLS refuses another case",
+    "changed questionnaire rejects the old job; the new pinned source reuses exact same-file/month/policy evidence without OCR expense",
+    "real extraction adapter checkpoint reaches all seven canonical draft stages for the three purchased topics; missing OCR preserves unconfirmed questionnaire values and the actual corrected request revision without publishing amounts",
+    "case and payment state remain unchanged; no customer projection or external provider delivery is performed"
+  ],
+  "runnerChecks": [
+    "actual DB-clock heartbeat renews a running job while provider I/O is held outside case locks",
+    "whole-job consumer rejects a superseded source before additional extraction or analysis",
+    "expiry after canonical analysis but before its transaction commits rolls back all monthly stages and creates no completion manifest",
+    "failure before finalizer SQL preserves the independently committed month and extraction, while job/outbox remain incomplete",
+    "two independent actual worker connections race whole-job completion: one month, one immutable manifest, no repeated provider call",
+    "retry after committed success returns the same saved complete-scope manifest without heartbeat, OCR, monthly rewrite or customer publication",
+    "a later historical full order with a missing February document preserves both available January analyses but cannot acknowledge full scope or create a second manifest"
+  ],
+  "runtimeChecks": [
+    "two real worker transactions atomically dispatch/claim one current paid source, while the peer observes busy without stealing it",
+    "missing purchased document becomes an atomic durable hold with a safe audit reason; repeat host iteration cannot silently mark the job complete",
+    "injected processing failure commits retry_wait with DB-time backoff and no private provider text in the audit",
+    "another host iteration before persisted availability cannot consume an extra attempt",
+    "a reclaimed retry advances the fence and refuses the previous worker failure receipt",
+    "three bounded failed attempts end in a durable hold with exactly three safe failure audit events and no additional provider passes"
+  ],
+  "storageChecks": [
+    "two distinct synthetic PDF objects are uploaded without upsert to the private isolated DEV bucket and downloaded with exact byte hashes",
+    "the first verified worker cannot admit the second real Storage document or claim its case",
+    "a second independently scoped case runs questionnaire, actual Storage bytes, durable extraction, canonical draft/report and final manifest; replay does not call the injected provider again and cannot read the first case report",
+    "only the two owned objects are removed after owned product cases/documents; exact prefix listings confirm absence and both scoped machine sessions are revoked"
+  ],
+  "hostChecks": [
+    "the real canonical root and TLS-verified node-postgres pool verify schema, worker principal, scoped SID/JTI, build pin and local timeouts",
+    "a mismatched session rotation refuses work, while application hold codes survive the canonical rollback",
+    "the host runs actual Storage through saved extraction, canonical draft and completion; replay uses the saved manifest with no new provider pass and another case report is invisible",
+    "revoking the machine session blocks its next transaction before work; all pooled clients have been released"
+  ],
+  "host_sha256": "a188daedf5825c94a13cce4382243f3a35e1fb6229b3c038fff709abd5267f45",
+  "storageObjectsRemoved": 2,
+  "storageInputHashes": [
+    "6bad956ed13a2108edca1c186714a3f8b24fda7f11bccf8271a5c9c71c86e57d",
+    "15f7e245cb06e3e0941fd4423ea5cd1608856af09426138acbbb96bc67def40a"
+  ],
+  "otherMachineSessionRevoked": true,
+  "secondSyntheticCanonicalTenantRetained": "saved-case:eabcae6a-3a4a-466e-8bab-9df96fbd76a1",
+  "runtime_sha256": "de5fab546a6b309e414f7137c7315c79880775482e137ebda00fb29893a0f845",
+  "runner_sha256": "8ff583cdddfcbc58c581007d1b05c18d3e647e8c6d564e734a25edd66cd7f9b4",
+  "database": "tivdoc_release_replay_20260907",
+  "migration": "20260908013000_saved_extraction_invocations.sql",
+  "migration_sha256": "9b0a982a38ce99b7675fece56d81138f91a3b09e15e046933b74d6356f34cb27",
+  "tested_base_sha": "784041decafadc1fc15db5c1319be2b490918837",
+  "worker_composition_sha256": "1a212d67a3bae9013a84a7bc82f907abd60f508b9f380d0791f5d4b51314c67a",
+  "canonical_service_sha256": "9b75d15299e429dd7126fdb8176f711bb1c76c9c0096a7117a55d31ffc6f8e3b",
+  "authorization": "actual worker and peer logins with provisioned synthetic SID/JTI; no fixture RLS policies",
+  "syntheticCasesRemoved": 2,
+  "machineSessionRevoked": true,
+  "requestIdentityRemoved": true,
+  "additional_migration": "20260908073000_request_statement_scope.sql",
+  "syntheticCanonicalTenantRetained": "saved-case:39971907-de6e-4407-8b98-c422b9ce32db",
+  "retainedScope": "Synthetic canonical identity/lifecycle, job history, completed monthly analysis/report bytes and pending draft-ready outbox manifest retained as audit evidence. No customer publication. Product cases/documents/invocations/checkpoints cascade-cleaned.",
+  "providerTransport": "injected deterministic structured responses; actual private isolated DEV Storage PDF bytes/hash and adapter, no network OpenAI call",
+  "providerPasses": 2,
+  "customerPublication": false,
+  "productionChanged": false
+}

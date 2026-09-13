@@ -1,0 +1,20 @@
+{
+  "verdict": "PASS",
+  "checks": [
+    "contradictory checkout payment reference refused",
+    "refusal leaves order unpaid and entitlement absent",
+    "missing payment row cannot create a paid order",
+    "pending verification carries the saved payment reference",
+    "initially unknown payment can be discovered through its exact saved log",
+    "contradictory saved payment row refused",
+    "exact verified observation is idempotent",
+    "one payment event and entitlement across replay",
+    "paid replay cannot replace the original payment"
+  ],
+  "failure": null,
+  "rolledBack": true,
+  "database": "tivdoc_release_replay_20260907",
+  "candidateMigration": "20260908182405_payment_reference_binding.sql",
+  "scope": "Actual PostgreSQL function inside one isolated owner transaction. Worker role switching was refused and no role membership changed. All synthetic metadata and optional candidate migration rolled back. This is not a separate verifier credential, real Storage bytes or provider payment.",
+  "productionChanged": false
+}

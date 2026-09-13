@@ -1,0 +1,20 @@
+{
+  "origin": "https://salary-dsv1kjbir-tivdoccom-5042s-projects.vercel.app",
+  "deployedSha": "4b526f72a1e11415478cbb38c3408b852045d047",
+  "checks": [
+    {
+      "name": "customer opens case support with saved server state",
+      "passed": true
+    },
+    {
+      "name": "unsent support draft survives reload without creating a server thread",
+      "passed": false,
+      "detail": "locator.inputValue: Timeout 20000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByLabel('פרטי הפנייה לתמיכה', { exact: true })\u001b[22m\n"
+    }
+  ],
+  "errors": [],
+  "syntheticCasesRemoved": 2,
+  "scope": "Seeded QA session; hosted customer browser/API and DEV database. Owner response injected through actual operations DB role; no owner HTTP/UI, OTP, provider, real payment or professional approval proof.",
+  "productionChanged": false,
+  "secretsIncluded": false
+}

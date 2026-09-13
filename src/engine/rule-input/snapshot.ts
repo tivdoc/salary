@@ -1,4 +1,5 @@
 import type { EmploymentSnapshot } from "../facts/snapshot.ts";
+import type { Wave3Topic } from "../wave3/contracts.ts";
 import { employmentSnapshotSchema } from "../facts/snapshot.ts";
 import {
   canonicalSha256,
@@ -65,5 +66,19 @@ export function createCanonicalRuleInputSnapshot(
   return deepFreeze({
     reference,
     canonical_snapshot: canonicalSnapshot,
+  });
+}
+
+/** The ordinary analysis and saved-context verifier share the exact topic pin.
+ * This is the original projection recipe; historical references stay identical. */
+export function createTopicRuleInputSnapshot(
+  facts: EmploymentSnapshot,
+  topic: Wave3Topic,
+): RuleInputSnapshot {
+  const canonical = createCanonicalRuleInputSnapshot(facts);
+  return ruleInputSnapshotSchema.parse({
+    snapshot_id: `rule-input:${facts.analysis_run_id}:${topic}`,
+    snapshot_version: `${canonical.reference.snapshot_version}:${topic}`,
+    snapshot_sha256: canonicalSha256({ topic, canonical_rule_input: canonical.reference }),
   });
 }

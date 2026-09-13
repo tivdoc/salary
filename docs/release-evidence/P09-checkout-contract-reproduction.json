@@ -1,0 +1,22 @@
+{
+  "sourceSha": "576808bab905539b190eed74e102cb6149947777",
+  "file": "src/lib/invoice4u.ts",
+  "fileSha256": "4e39b9650bcbcc7e3aff36568255a274d20179a28be4dba040dcc5703f578c85",
+  "command": "npx vitest run src/lib/invoice4u-checkout-contract.test.ts --maxWorkers=1",
+  "totalBeforeFix": 11,
+  "failedBeforeFix": 10,
+  "passedBeforeFix": 1,
+  "defects": [
+    "dictionary OpenInfo unsupported",
+    "documented top-level payment reference omitted",
+    "QA mode and NIS wire currency absent",
+    "contradictory references silently selected",
+    "invalid checkout amounts reach transport"
+  ],
+  "afterFix": {
+    "checkoutTests": 19,
+    "focusedFiles": 8,
+    "focusedTests": 94
+  },
+  "scope": "Injected synthetic transport only; no merchant request, DB mutation or production deployment."
+}

@@ -1,0 +1,2994 @@
+{
+  "schema_version": "tivdoc-saved-extraction-v1",
+  "case_id": "0e6b1fa1-437e-4389-903a-e45e670c7248",
+  "product_document_id": "51dd5005-4211-4298-8a93-8c3ac57de611",
+  "version_id": "94265a5c-7557-4ce6-892c-02613209884e",
+  "input_sha256": "f74f83f18beed42de39c8fc02615a0d05e0f25bc53b2410314dd4f9a56c05a6b",
+  "expected_month": "2026-06",
+  "period_mismatch": false,
+  "requires_confirmation": true,
+  "result_sha256": "163b45a44168a54991f54b4a6c60b4bbe6f95240dd7a0c123f1e1bc8aec4a415",
+  "run": {
+    "result": {
+      "extractor_version": "2.1",
+      "resolution_policy_version": "payslip-v2.1-non-degrading-resolution-2",
+      "first_pass": {
+        "pass_id": "362e3332-4847-477a-b265-aa917c9e51de",
+        "kind": "first_pass",
+        "requested_fields": [
+          "document_type",
+          "salary_period",
+          "employment_start_date",
+          "salary_type",
+          "base_monthly_salary",
+          "hourly_rate",
+          "regular_hours",
+          "overtime_125_hours",
+          "overtime_150_hours",
+          "gross_salary",
+          "total_deductions",
+          "net_salary",
+          "travel_amount",
+          "convalescence_amount",
+          "pension_employee_contribution",
+          "pension_employer_contribution",
+          "severance_contribution",
+          "pension_base",
+          "pension_employee_rate",
+          "pension_employer_rate",
+          "severance_rate",
+          "vacation_balance",
+          "sick_balance"
+        ],
+        "selected_regions": [],
+        "prompt_version": "payslip-extraction-openai-v2-first-r2",
+        "model": "gpt-4o-mini-2024-07-18",
+        "raw_extraction": {
+          "extraction_id": "362e3332-4847-477a-b265-aa917c9e51de",
+          "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+          "status": "completed",
+          "detected_document_type": "payslip",
+          "document_quality_confidence": 0.96,
+          "quality_metrics": {
+            "page_count": 1,
+            "text_coverage": null,
+            "rotation_degrees": null,
+            "source_resolution_dpi": null
+          },
+          "fields": [
+            {
+              "candidate_id": "7fc4d887-0074-4de1-84e0-72223f49077e",
+              "field": "document_type",
+              "raw_value": "payslip",
+              "confidence": 0.96,
+              "source": {
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+                "page": 1,
+                "text_fragment": "document type"
+              },
+              "extraction_method": "ai_vision",
+              "warning_flags": []
+            },
+            {
+              "candidate_id": "4ce64004-4215-4810-a8bd-7a81a8b8cab4",
+              "field": "salary_period",
+              "raw_value": "30/06/2026 - 01/06/2026",
+              "confidence": 0.94,
+              "source": {
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+                "page": 1,
+                "text_fragment": "salary_period: 30/06/2026 - 01/06/2026"
+              },
+              "extraction_method": "ai_vision",
+              "warning_flags": []
+            },
+            {
+              "candidate_id": "b833e89c-ffc5-4b56-bb29-15a82e2be51e",
+              "field": "regular_hours",
+              "raw_value": "100",
+              "confidence": 0.94,
+              "source": {
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+                "page": 1,
+                "text_fragment": "יתעש: 100"
+              },
+              "extraction_method": "ai_vision",
+              "warning_flags": []
+            },
+            {
+              "candidate_id": "df981cbe-f48f-44d5-bfed-8e3d34c221a6",
+              "field": "hourly_rate",
+              "raw_value": "35.40",
+              "confidence": 0.94,
+              "source": {
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+                "page": 1,
+                "text_fragment": "יתעש: 35.40"
+              },
+              "extraction_method": "ai_vision",
+              "warning_flags": []
+            },
+            {
+              "candidate_id": "1001471b-406d-41bc-a778-5fcc416f1d0e",
+              "field": "base_monthly_salary",
+              "raw_value": "3,540.00",
+              "confidence": 0.94,
+              "source": {
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+                "page": 1,
+                "text_fragment": "יתעש: 3,540.00"
+              },
+              "extraction_method": "ai_vision",
+              "warning_flags": []
+            },
+            {
+              "candidate_id": "6020827b-756d-4d71-8042-fe616428fc08",
+              "field": "overtime_125_hours",
+              "raw_value": "10",
+              "confidence": 0.94,
+              "source": {
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+                "page": 1,
+                "text_fragment": "תופסונ: 10"
+              },
+              "extraction_method": "ai_vision",
+              "warning_flags": []
+            },
+            {
+              "candidate_id": "579e6cf4-6ceb-4b99-8f95-16a1d4210f38",
+              "field": "overtime_150_hours",
+              "raw_value": "2",
+              "confidence": 0.94,
+              "source": {
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+                "page": 1,
+                "text_fragment": "תופסונ: 2"
+              },
+              "extraction_method": "ai_vision",
+              "warning_flags": []
+            },
+            {
+              "candidate_id": "d17a040a-1efe-4930-97da-5ebffe224b13",
+              "field": "gross_salary",
+              "raw_value": "4,608.70",
+              "confidence": 0.94,
+              "source": {
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+                "page": 1,
+                "text_fragment": "gross total: 4,608.70"
+              },
+              "extraction_method": "ai_vision",
+              "warning_flags": []
+            },
+            {
+              "candidate_id": "d2a01583-c3c5-479a-9662-90de979176bb",
+              "field": "gross_salary",
+              "raw_value": "4,196.30",
+              "confidence": 0.72,
+              "source": {
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+                "page": 1,
+                "text_fragment": "gross total: 4,196.30"
+              },
+              "extraction_method": "ai_vision",
+              "warning_flags": []
+            },
+            {
+              "candidate_id": "9517dbd4-5e06-470c-b771-012d372820f1",
+              "field": "total_deductions",
+              "raw_value": "3,540.00",
+              "confidence": 0.94,
+              "source": {
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+                "page": 1,
+                "text_fragment": "deductions total: 3,540.00"
+              },
+              "extraction_method": "ai_vision",
+              "warning_flags": []
+            },
+            {
+              "candidate_id": "fa0aa8ec-bd79-4396-8f19-8415a281db22",
+              "field": "net_salary",
+              "raw_value": "4,196.30",
+              "confidence": 0.72,
+              "source": {
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+                "page": 1,
+                "text_fragment": "net total: 4,196.30"
+              },
+              "extraction_method": "ai_vision",
+              "warning_flags": []
+            }
+          ],
+          "additional_components": [
+            {
+              "component_id": "46fbe0b7-eec7-409f-8d95-20af99516419",
+              "source_label": "יתעש",
+              "normalized_label": "hourly_base",
+              "semantic_kind": "hourly_base",
+              "quantity_raw": "100",
+              "rate_raw": "35.40",
+              "percentage_raw": null,
+              "amount_raw": "3,540.00",
+              "confidence": 0.94,
+              "source": {
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+                "page": 1,
+                "text_fragment": "יתעש"
+              },
+              "extraction_method": "ai_vision",
+              "warning_flags": []
+            },
+            {
+              "component_id": "5825a948-3c6c-45ca-9cbf-520c511f77fe",
+              "source_label": "תופסונ",
+              "normalized_label": "overtime_125",
+              "semantic_kind": "overtime_125",
+              "quantity_raw": "10",
+              "rate_raw": "44.25",
+              "percentage_raw": "125%",
+              "amount_raw": "442.50",
+              "confidence": 0.94,
+              "source": {
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+                "page": 1,
+                "text_fragment": "תופסונ"
+              },
+              "extraction_method": "ai_vision",
+              "warning_flags": []
+            },
+            {
+              "component_id": "763b2ebb-1a3b-4e4d-a9f4-9258f0d9a4ec",
+              "source_label": "תופסונ",
+              "normalized_label": "overtime_150",
+              "semantic_kind": "overtime_150",
+              "quantity_raw": "2",
+              "rate_raw": "53.10",
+              "percentage_raw": "150%",
+              "amount_raw": "106.20",
+              "confidence": 0.94,
+              "source": {
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+                "page": 1,
+                "text_fragment": "תופסונ"
+              },
+              "extraction_method": "ai_vision",
+              "warning_flags": []
+            },
+            {
+              "component_id": "1cce5049-434c-42d5-977d-823faaac1fdc",
+              "source_label": "תועיסנ",
+              "normalized_label": null,
+              "semantic_kind": "other",
+              "quantity_raw": "20",
+              "rate_raw": "11.00",
+              "percentage_raw": null,
+              "amount_raw": "220.00",
+              "confidence": 0.94,
+              "source": {
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+                "page": 1,
+                "text_fragment": "תועיסנ"
+              },
+              "extraction_method": "ai_vision",
+              "warning_flags": []
+            },
+            {
+              "component_id": "29fe8e1f-5bad-48d1-ac01-d71b77f74941",
+              "source_label": "דח",
+              "normalized_label": null,
+              "semantic_kind": "unknown",
+              "quantity_raw": null,
+              "rate_raw": null,
+              "percentage_raw": null,
+              "amount_raw": "300.00",
+              "confidence": 0.31999999999999995,
+              "source": {
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+                "page": 1,
+                "text_fragment": "דח"
+              },
+              "extraction_method": "ai_vision",
+              "warning_flags": [
+                "unreadable_value"
+              ]
+            }
+          ],
+          "sensitive_metadata": [],
+          "earnings_components_complete": true,
+          "warnings": [],
+          "provider": {
+            "provider_id": "openai",
+            "extractor_version": "2.1",
+            "model_version": "gpt-4o-mini-2024-07-18"
+          },
+          "operation": {
+            "duration_ms": 8915,
+            "provider_response_id": "resp_01d24a4801696411016aa1bf11541087d09c592da88015e724",
+            "token_usage": {
+              "input_tokens": 3532,
+              "output_tokens": 700,
+              "total_tokens": 4232
+            }
+          },
+          "extracted_at": "2026-09-09T20:18:32.968Z",
+          "error_code": null
+        },
+        "normalized_extraction": {
+          "extraction_id": "362e3332-4847-477a-b265-aa917c9e51de",
+          "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+          "status": "completed",
+          "detected_document_type": "payslip",
+          "document_quality_confidence": 0.96,
+          "quality_metrics": {
+            "page_count": 1,
+            "text_coverage": null,
+            "rotation_degrees": null,
+            "source_resolution_dpi": null
+          },
+          "fields": [
+            {
+              "candidate_id": "7fc4d887-0074-4de1-84e0-72223f49077e",
+              "raw_value": "payslip",
+              "confidence": 0.96,
+              "source": {
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+                "page": 1,
+                "text_fragment": "document type"
+              },
+              "extraction_method": "ai_vision",
+              "warning_flags": [],
+              "field": "document_type",
+              "normalized_value": "payslip"
+            },
+            {
+              "candidate_id": "4ce64004-4215-4810-a8bd-7a81a8b8cab4",
+              "raw_value": "30/06/2026 - 01/06/2026",
+              "confidence": 0.94,
+              "source": {
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+                "page": 1,
+                "text_fragment": "salary_period: 30/06/2026 - 01/06/2026"
+              },
+              "extraction_method": "ai_vision",
+              "warning_flags": [
+                "normalization_failed"
+              ],
+              "field": "salary_period",
+              "normalized_value": null
+            },
+            {
+              "candidate_id": "b833e89c-ffc5-4b56-bb29-15a82e2be51e",
+              "raw_value": "100",
+              "confidence": 0.94,
+              "source": {
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+                "page": 1,
+                "text_fragment": "יתעש: 100"
+              },
+              "extraction_method": "ai_vision",
+              "warning_flags": [],
+              "field": "regular_hours",
+              "normalized_value": {
+                "amount": "100",
+                "unit": "hours_per_month"
+              }
+            },
+            {
+              "candidate_id": "df981cbe-f48f-44d5-bfed-8e3d34c221a6",
+              "raw_value": "35.40",
+              "confidence": 0.94,
+              "source": {
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+                "page": 1,
+                "text_fragment": "יתעש: 35.40"
+              },
+              "extraction_method": "ai_vision",
+              "warning_flags": [],
+              "field": "hourly_rate",
+              "normalized_value": {
+                "currency": "ILS",
+                "minor_units": 3540
+              }
+            },
+            {
+              "candidate_id": "1001471b-406d-41bc-a778-5fcc416f1d0e",
+              "raw_value": "3,540.00",
+              "confidence": 0.94,
+              "source": {
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+                "page": 1,
+                "text_fragment": "יתעש: 3,540.00"
+              },
+              "extraction_method": "ai_vision",
+              "warning_flags": [],
+              "field": "base_monthly_salary",
+              "normalized_value": {
+                "currency": "ILS",
+                "minor_units": 354000
+              }
+            },
+            {
+              "candidate_id": "6020827b-756d-4d71-8042-fe616428fc08",
+              "raw_value": "10",
+              "confidence": 0.94,
+              "source": {
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+                "page": 1,
+                "text_fragment": "תופסונ: 10"
+              },
+              "extraction_method": "ai_vision",
+              "warning_flags": [],
+              "field": "overtime_125_hours",
+              "normalized_value": {
+                "amount": "10",
+                "unit": "hours_per_month"
+              }
+            },
+            {
+              "candidate_id": "579e6cf4-6ceb-4b99-8f95-16a1d4210f38",
+              "raw_value": "2",
+              "confidence": 0.94,
+              "source": {
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+                "page": 1,
+                "text_fragment": "תופסונ: 2"
+              },
+              "extraction_method": "ai_vision",
+              "warning_flags": [],
+              "field": "overtime_150_hours",
+              "normalized_value": {
+                "amount": "2",
+                "unit": "hours_per_month"
+              }
+            },
+            {
+              "candidate_id": "d17a040a-1efe-4930-97da-5ebffe224b13",
+              "raw_value": "4,608.70",
+              "confidence": 0.94,
+              "source": {
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+                "page": 1,
+                "text_fragment": "gross total: 4,608.70"
+              },
+              "extraction_method": "ai_vision",
+              "warning_flags": [],
+              "field": "gross_salary",
+              "normalized_value": {
+                "currency": "ILS",
+                "minor_units": 460870
+              }
+            },
+            {
+              "candidate_id": "d2a01583-c3c5-479a-9662-90de979176bb",
+              "raw_value": "4,196.30",
+              "confidence": 0.72,
+              "source": {
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+                "page": 1,
+                "text_fragment": "gross total: 4,196.30"
+              },
+              "extraction_method": "ai_vision",
+              "warning_flags": [],
+              "field": "gross_salary",
+              "normalized_value": {
+                "currency": "ILS",
+                "minor_units": 419630
+              }
+            },
+            {
+              "candidate_id": "9517dbd4-5e06-470c-b771-012d372820f1",
+              "raw_value": "3,540.00",
+              "confidence": 0.94,
+              "source": {
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+                "page": 1,
+                "text_fragment": "deductions total: 3,540.00"
+              },
+              "extraction_method": "ai_vision",
+              "warning_flags": [],
+              "field": "total_deductions",
+              "normalized_value": {
+                "currency": "ILS",
+                "minor_units": 354000
+              }
+            },
+            {
+              "candidate_id": "fa0aa8ec-bd79-4396-8f19-8415a281db22",
+              "raw_value": "4,196.30",
+              "confidence": 0.72,
+              "source": {
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+                "page": 1,
+                "text_fragment": "net total: 4,196.30"
+              },
+              "extraction_method": "ai_vision",
+              "warning_flags": [],
+              "field": "net_salary",
+              "normalized_value": {
+                "currency": "ILS",
+                "minor_units": 419630
+              }
+            }
+          ],
+          "additional_components": [
+            {
+              "component_id": "46fbe0b7-eec7-409f-8d95-20af99516419",
+              "source_label": "יתעש",
+              "normalized_label": "hourly_base",
+              "semantic_kind": "hourly_base",
+              "quantity_raw": "100",
+              "rate_raw": "35.40",
+              "percentage_raw": null,
+              "amount_raw": "3,540.00",
+              "confidence": 0.94,
+              "source": {
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+                "page": 1,
+                "text_fragment": "יתעש"
+              },
+              "extraction_method": "ai_vision",
+              "warning_flags": [],
+              "quantity": "100",
+              "rate": {
+                "currency": "ILS",
+                "minor_units": 3540
+              },
+              "percentage": null,
+              "amount": {
+                "currency": "ILS",
+                "minor_units": 354000
+              },
+              "normalization_warnings": []
+            },
+            {
+              "component_id": "5825a948-3c6c-45ca-9cbf-520c511f77fe",
+              "source_label": "תופסונ",
+              "normalized_label": "overtime_125",
+              "semantic_kind": "overtime_125",
+              "quantity_raw": "10",
+              "rate_raw": "44.25",
+              "percentage_raw": "125%",
+              "amount_raw": "442.50",
+              "confidence": 0.94,
+              "source": {
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+                "page": 1,
+                "text_fragment": "תופסונ"
+              },
+              "extraction_method": "ai_vision",
+              "warning_flags": [],
+              "quantity": "10",
+              "rate": {
+                "currency": "ILS",
+                "minor_units": 4425
+              },
+              "percentage": {
+                "basis_points": 12500
+              },
+              "amount": {
+                "currency": "ILS",
+                "minor_units": 44250
+              },
+              "normalization_warnings": []
+            },
+            {
+              "component_id": "763b2ebb-1a3b-4e4d-a9f4-9258f0d9a4ec",
+              "source_label": "תופסונ",
+              "normalized_label": "overtime_150",
+              "semantic_kind": "overtime_150",
+              "quantity_raw": "2",
+              "rate_raw": "53.10",
+              "percentage_raw": "150%",
+              "amount_raw": "106.20",
+              "confidence": 0.94,
+              "source": {
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+                "page": 1,
+                "text_fragment": "תופסונ"
+              },
+              "extraction_method": "ai_vision",
+              "warning_flags": [],
+              "quantity": "2",
+              "rate": {
+                "currency": "ILS",
+                "minor_units": 5310
+              },
+              "percentage": {
+                "basis_points": 15000
+              },
+              "amount": {
+                "currency": "ILS",
+                "minor_units": 10620
+              },
+              "normalization_warnings": []
+            },
+            {
+              "component_id": "1cce5049-434c-42d5-977d-823faaac1fdc",
+              "source_label": "תועיסנ",
+              "normalized_label": null,
+              "semantic_kind": "other",
+              "quantity_raw": "20",
+              "rate_raw": "11.00",
+              "percentage_raw": null,
+              "amount_raw": "220.00",
+              "confidence": 0.94,
+              "source": {
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+                "page": 1,
+                "text_fragment": "תועיסנ"
+              },
+              "extraction_method": "ai_vision",
+              "warning_flags": [],
+              "quantity": "20",
+              "rate": {
+                "currency": "ILS",
+                "minor_units": 1100
+              },
+              "percentage": null,
+              "amount": {
+                "currency": "ILS",
+                "minor_units": 22000
+              },
+              "normalization_warnings": []
+            },
+            {
+              "component_id": "29fe8e1f-5bad-48d1-ac01-d71b77f74941",
+              "source_label": "דח",
+              "normalized_label": null,
+              "semantic_kind": "unknown",
+              "quantity_raw": null,
+              "rate_raw": null,
+              "percentage_raw": null,
+              "amount_raw": "300.00",
+              "confidence": 0.31999999999999995,
+              "source": {
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+                "page": 1,
+                "text_fragment": "דח"
+              },
+              "extraction_method": "ai_vision",
+              "warning_flags": [
+                "unreadable_value"
+              ],
+              "quantity": null,
+              "rate": null,
+              "percentage": null,
+              "amount": {
+                "currency": "ILS",
+                "minor_units": 30000
+              },
+              "normalization_warnings": []
+            }
+          ],
+          "sensitive_metadata": [],
+          "earnings_components_complete": true,
+          "warnings": [],
+          "provider": {
+            "provider_id": "openai",
+            "extractor_version": "2.1",
+            "model_version": "gpt-4o-mini-2024-07-18"
+          },
+          "operation": {
+            "duration_ms": 8915,
+            "provider_response_id": "resp_01d24a4801696411016aa1bf11541087d09c592da88015e724",
+            "token_usage": {
+              "input_tokens": 3532,
+              "output_tokens": 700,
+              "total_tokens": 4232
+            }
+          },
+          "extracted_at": "2026-09-09T20:18:32.968Z",
+          "error_code": null
+        },
+        "validation": {
+          "status": "invalid",
+          "field_assessments": [
+            {
+              "candidate_id": "7fc4d887-0074-4de1-84e0-72223f49077e",
+              "field": "document_type",
+              "status": "valid",
+              "issue_codes": []
+            },
+            {
+              "candidate_id": "4ce64004-4215-4810-a8bd-7a81a8b8cab4",
+              "field": "salary_period",
+              "status": "invalid",
+              "issue_codes": [
+                "normalization_failed"
+              ]
+            },
+            {
+              "candidate_id": "b833e89c-ffc5-4b56-bb29-15a82e2be51e",
+              "field": "regular_hours",
+              "status": "valid",
+              "issue_codes": []
+            },
+            {
+              "candidate_id": "df981cbe-f48f-44d5-bfed-8e3d34c221a6",
+              "field": "hourly_rate",
+              "status": "valid",
+              "issue_codes": []
+            },
+            {
+              "candidate_id": "1001471b-406d-41bc-a778-5fcc416f1d0e",
+              "field": "base_monthly_salary",
+              "status": "valid",
+              "issue_codes": []
+            },
+            {
+              "candidate_id": "6020827b-756d-4d71-8042-fe616428fc08",
+              "field": "overtime_125_hours",
+              "status": "valid",
+              "issue_codes": []
+            },
+            {
+              "candidate_id": "579e6cf4-6ceb-4b99-8f95-16a1d4210f38",
+              "field": "overtime_150_hours",
+              "status": "valid",
+              "issue_codes": []
+            },
+            {
+              "candidate_id": "d17a040a-1efe-4930-97da-5ebffe224b13",
+              "field": "gross_salary",
+              "status": "requires_confirmation",
+              "issue_codes": [
+                "conflicting_candidates",
+                "payslip_totals_mismatch"
+              ]
+            },
+            {
+              "candidate_id": "d2a01583-c3c5-479a-9662-90de979176bb",
+              "field": "gross_salary",
+              "status": "requires_confirmation",
+              "issue_codes": [
+                "moderate_field_confidence",
+                "conflicting_candidates"
+              ]
+            },
+            {
+              "candidate_id": "9517dbd4-5e06-470c-b771-012d372820f1",
+              "field": "total_deductions",
+              "status": "requires_confirmation",
+              "issue_codes": [
+                "payslip_totals_mismatch"
+              ]
+            },
+            {
+              "candidate_id": "fa0aa8ec-bd79-4396-8f19-8415a281db22",
+              "field": "net_salary",
+              "status": "requires_confirmation",
+              "issue_codes": [
+                "moderate_field_confidence",
+                "payslip_totals_mismatch"
+              ]
+            }
+          ],
+          "issues": [
+            {
+              "code": "normalization_failed",
+              "severity": "error",
+              "field_candidate_ids": [
+                "4ce64004-4215-4810-a8bd-7a81a8b8cab4"
+              ],
+              "field_keys": [
+                "salary_period"
+              ],
+              "message": "A field could not be normalized deterministically."
+            },
+            {
+              "code": "moderate_field_confidence",
+              "severity": "warning",
+              "field_candidate_ids": [
+                "d2a01583-c3c5-479a-9662-90de979176bb"
+              ],
+              "field_keys": [
+                "gross_salary"
+              ],
+              "message": "A field is below the automatic-confirmation threshold."
+            },
+            {
+              "code": "moderate_field_confidence",
+              "severity": "warning",
+              "field_candidate_ids": [
+                "fa0aa8ec-bd79-4396-8f19-8415a281db22"
+              ],
+              "field_keys": [
+                "net_salary"
+              ],
+              "message": "A field is below the automatic-confirmation threshold."
+            },
+            {
+              "code": "conflicting_candidates",
+              "severity": "confirmation",
+              "field_candidate_ids": [
+                "d17a040a-1efe-4930-97da-5ebffe224b13",
+                "d2a01583-c3c5-479a-9662-90de979176bb"
+              ],
+              "field_keys": [
+                "gross_salary"
+              ],
+              "message": "Multiple extracted candidates disagree for the same field."
+            },
+            {
+              "code": "payslip_totals_mismatch",
+              "severity": "confirmation",
+              "field_candidate_ids": [
+                "d17a040a-1efe-4930-97da-5ebffe224b13",
+                "9517dbd4-5e06-470c-b771-012d372820f1",
+                "fa0aa8ec-bd79-4396-8f19-8415a281db22"
+              ],
+              "field_keys": [
+                "gross_salary",
+                "total_deductions",
+                "net_salary"
+              ],
+              "message": "Gross, deductions, and net totals do not reconcile technically."
+            },
+            {
+              "code": "critical_field_missing",
+              "severity": "confirmation",
+              "field_candidate_ids": [],
+              "field_keys": [
+                "salary_period"
+              ],
+              "message": "A contextually critical field is missing: salary_period."
+            }
+          ]
+        },
+        "confidence_assessment": {
+          "decisions": [
+            {
+              "field": "salary_period",
+              "applicable": true,
+              "status": "needs_confirmation",
+              "effective_confidence": 0,
+              "threshold": 0.95,
+              "candidate_ids": [],
+              "reason_codes": [
+                "critical_field_missing",
+                "below_field_threshold"
+              ]
+            },
+            {
+              "field": "salary_type",
+              "applicable": false,
+              "status": "not_applicable",
+              "effective_confidence": 0,
+              "threshold": 0.95,
+              "candidate_ids": [],
+              "reason_codes": []
+            },
+            {
+              "field": "gross_salary",
+              "applicable": true,
+              "status": "needs_confirmation",
+              "effective_confidence": 0.5,
+              "threshold": 0.95,
+              "candidate_ids": [
+                "d17a040a-1efe-4930-97da-5ebffe224b13",
+                "d2a01583-c3c5-479a-9662-90de979176bb"
+              ],
+              "reason_codes": [
+                "critical_field_conflict",
+                "gate0_requires_review",
+                "below_field_threshold"
+              ]
+            },
+            {
+              "field": "total_deductions",
+              "applicable": true,
+              "status": "needs_confirmation",
+              "effective_confidence": 0.5,
+              "threshold": 0.95,
+              "candidate_ids": [
+                "9517dbd4-5e06-470c-b771-012d372820f1"
+              ],
+              "reason_codes": [
+                "gate0_requires_review",
+                "below_field_threshold"
+              ]
+            },
+            {
+              "field": "net_salary",
+              "applicable": true,
+              "status": "needs_confirmation",
+              "effective_confidence": 0.5,
+              "threshold": 0.95,
+              "candidate_ids": [
+                "fa0aa8ec-bd79-4396-8f19-8415a281db22"
+              ],
+              "reason_codes": [
+                "gate0_requires_review",
+                "below_field_threshold"
+              ]
+            },
+            {
+              "field": "hourly_rate",
+              "applicable": false,
+              "status": "not_applicable",
+              "effective_confidence": 0,
+              "threshold": 0.95,
+              "candidate_ids": [],
+              "reason_codes": []
+            },
+            {
+              "field": "regular_hours",
+              "applicable": false,
+              "status": "not_applicable",
+              "effective_confidence": 0,
+              "threshold": 0.95,
+              "candidate_ids": [],
+              "reason_codes": []
+            },
+            {
+              "field": "pension_base",
+              "applicable": false,
+              "status": "not_applicable",
+              "effective_confidence": 0,
+              "threshold": 0.95,
+              "candidate_ids": [],
+              "reason_codes": []
+            },
+            {
+              "field": "pension_employee_contribution",
+              "applicable": false,
+              "status": "not_applicable",
+              "effective_confidence": 0,
+              "threshold": 0.95,
+              "candidate_ids": [],
+              "reason_codes": []
+            },
+            {
+              "field": "pension_employer_contribution",
+              "applicable": false,
+              "status": "not_applicable",
+              "effective_confidence": 0,
+              "threshold": 0.95,
+              "candidate_ids": [],
+              "reason_codes": []
+            },
+            {
+              "field": "severance_contribution",
+              "applicable": false,
+              "status": "not_applicable",
+              "effective_confidence": 0,
+              "threshold": 0.95,
+              "candidate_ids": [],
+              "reason_codes": []
+            },
+            {
+              "field": "overtime_125_hours",
+              "applicable": true,
+              "status": "needs_confirmation",
+              "effective_confidence": 0.94,
+              "threshold": 0.95,
+              "candidate_ids": [
+                "6020827b-756d-4d71-8042-fe616428fc08"
+              ],
+              "reason_codes": [
+                "below_field_threshold"
+              ]
+            },
+            {
+              "field": "overtime_150_hours",
+              "applicable": true,
+              "status": "needs_confirmation",
+              "effective_confidence": 0.94,
+              "threshold": 0.95,
+              "candidate_ids": [
+                "579e6cf4-6ceb-4b99-8f95-16a1d4210f38"
+              ],
+              "reason_codes": [
+                "below_field_threshold"
+              ]
+            }
+          ]
+        },
+        "salary_type_assessment": {
+          "documented": null,
+          "inferred": {
+            "value": "mixed",
+            "confidence": 0.72,
+            "basis": [
+              "hourly_rate",
+              "regular_hours",
+              "payroll_structure"
+            ],
+            "warning_flags": [
+              "inferred_not_documented"
+            ]
+          }
+        },
+        "pension_section_visible": false,
+        "totals_section_visible": true
+      },
+      "recovery_passes": [
+        {
+          "pass_id": "233c7b9e-935f-41ba-8b74-2666244ede54",
+          "kind": "targeted_recovery",
+          "requested_fields": [
+            "salary_period"
+          ],
+          "selected_regions": [],
+          "prompt_version": "payslip-extraction-openai-v2-recovery-r2",
+          "model": "gpt-4o-mini-2024-07-18",
+          "raw_extraction": {
+            "extraction_id": "233c7b9e-935f-41ba-8b74-2666244ede54",
+            "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+            "status": "partial",
+            "detected_document_type": "unknown",
+            "document_quality_confidence": 0.96,
+            "quality_metrics": {
+              "page_count": 1,
+              "text_coverage": null,
+              "rotation_degrees": null,
+              "source_resolution_dpi": null
+            },
+            "fields": [
+              {
+                "candidate_id": "e95f51b8-dc62-4ed6-b68b-e3d351797b3f",
+                "field": "salary_period",
+                "raw_value": "01/06/2026 - 30/06/2026",
+                "confidence": 0.94,
+                "source": {
+                  "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+                  "page": 1,
+                  "text_fragment": "salary_period: 01/06/2026 - 30/06/2026"
+                },
+                "extraction_method": "ai_vision",
+                "warning_flags": []
+              }
+            ],
+            "additional_components": [],
+            "sensitive_metadata": [],
+            "earnings_components_complete": false,
+            "warnings": [],
+            "provider": {
+              "provider_id": "openai",
+              "extractor_version": "2.1",
+              "model_version": "gpt-4o-mini-2024-07-18"
+            },
+            "operation": {
+              "duration_ms": 5316,
+              "provider_response_id": "resp_0ac3c5af7286c903016aa1bf19a8d087d2886c8d92f3876b5d",
+              "token_usage": {
+                "input_tokens": 3564,
+                "output_tokens": 234,
+                "total_tokens": 3798
+              }
+            },
+            "extracted_at": "2026-09-09T20:18:38.512Z",
+            "error_code": null
+          },
+          "normalized_extraction": {
+            "extraction_id": "233c7b9e-935f-41ba-8b74-2666244ede54",
+            "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+            "status": "partial",
+            "detected_document_type": "unknown",
+            "document_quality_confidence": 0.96,
+            "quality_metrics": {
+              "page_count": 1,
+              "text_coverage": null,
+              "rotation_degrees": null,
+              "source_resolution_dpi": null
+            },
+            "fields": [
+              {
+                "candidate_id": "e95f51b8-dc62-4ed6-b68b-e3d351797b3f",
+                "raw_value": "01/06/2026 - 30/06/2026",
+                "confidence": 0.94,
+                "source": {
+                  "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+                  "page": 1,
+                  "text_fragment": "salary_period: 01/06/2026 - 30/06/2026"
+                },
+                "extraction_method": "ai_vision",
+                "warning_flags": [
+                  "normalization_failed"
+                ],
+                "field": "salary_period",
+                "normalized_value": null
+              }
+            ],
+            "additional_components": [],
+            "sensitive_metadata": [],
+            "earnings_components_complete": false,
+            "warnings": [],
+            "provider": {
+              "provider_id": "openai",
+              "extractor_version": "2.1",
+              "model_version": "gpt-4o-mini-2024-07-18"
+            },
+            "operation": {
+              "duration_ms": 5316,
+              "provider_response_id": "resp_0ac3c5af7286c903016aa1bf19a8d087d2886c8d92f3876b5d",
+              "token_usage": {
+                "input_tokens": 3564,
+                "output_tokens": 234,
+                "total_tokens": 3798
+              }
+            },
+            "extracted_at": "2026-09-09T20:18:38.512Z",
+            "error_code": null
+          },
+          "validation": {
+            "status": "invalid",
+            "field_assessments": [
+              {
+                "candidate_id": "e95f51b8-dc62-4ed6-b68b-e3d351797b3f",
+                "field": "salary_period",
+                "status": "invalid",
+                "issue_codes": [
+                  "normalization_failed"
+                ]
+              }
+            ],
+            "issues": [
+              {
+                "code": "normalization_failed",
+                "severity": "error",
+                "field_candidate_ids": [
+                  "e95f51b8-dc62-4ed6-b68b-e3d351797b3f"
+                ],
+                "field_keys": [
+                  "salary_period"
+                ],
+                "message": "A field could not be normalized deterministically."
+              },
+              {
+                "code": "critical_field_missing",
+                "severity": "confirmation",
+                "field_candidate_ids": [],
+                "field_keys": [
+                  "salary_period"
+                ],
+                "message": "A contextually critical field is missing: salary_period."
+              }
+            ]
+          },
+          "confidence_assessment": {
+            "decisions": [
+              {
+                "field": "salary_period",
+                "applicable": true,
+                "status": "needs_confirmation",
+                "effective_confidence": 0,
+                "threshold": 0.95,
+                "candidate_ids": [],
+                "reason_codes": [
+                  "critical_field_missing",
+                  "below_field_threshold"
+                ]
+              },
+              {
+                "field": "salary_type",
+                "applicable": false,
+                "status": "not_applicable",
+                "effective_confidence": 0,
+                "threshold": 0.95,
+                "candidate_ids": [],
+                "reason_codes": []
+              },
+              {
+                "field": "gross_salary",
+                "applicable": true,
+                "status": "needs_confirmation",
+                "effective_confidence": 0,
+                "threshold": 0.95,
+                "candidate_ids": [],
+                "reason_codes": [
+                  "critical_field_missing",
+                  "below_field_threshold"
+                ]
+              },
+              {
+                "field": "total_deductions",
+                "applicable": false,
+                "status": "not_applicable",
+                "effective_confidence": 0,
+                "threshold": 0.95,
+                "candidate_ids": [],
+                "reason_codes": []
+              },
+              {
+                "field": "net_salary",
+                "applicable": true,
+                "status": "needs_confirmation",
+                "effective_confidence": 0,
+                "threshold": 0.95,
+                "candidate_ids": [],
+                "reason_codes": [
+                  "critical_field_missing",
+                  "below_field_threshold"
+                ]
+              },
+              {
+                "field": "hourly_rate",
+                "applicable": false,
+                "status": "not_applicable",
+                "effective_confidence": 0,
+                "threshold": 0.95,
+                "candidate_ids": [],
+                "reason_codes": []
+              },
+              {
+                "field": "regular_hours",
+                "applicable": false,
+                "status": "not_applicable",
+                "effective_confidence": 0,
+                "threshold": 0.95,
+                "candidate_ids": [],
+                "reason_codes": []
+              },
+              {
+                "field": "pension_base",
+                "applicable": false,
+                "status": "not_applicable",
+                "effective_confidence": 0,
+                "threshold": 0.95,
+                "candidate_ids": [],
+                "reason_codes": []
+              },
+              {
+                "field": "pension_employee_contribution",
+                "applicable": false,
+                "status": "not_applicable",
+                "effective_confidence": 0,
+                "threshold": 0.95,
+                "candidate_ids": [],
+                "reason_codes": []
+              },
+              {
+                "field": "pension_employer_contribution",
+                "applicable": false,
+                "status": "not_applicable",
+                "effective_confidence": 0,
+                "threshold": 0.95,
+                "candidate_ids": [],
+                "reason_codes": []
+              },
+              {
+                "field": "severance_contribution",
+                "applicable": false,
+                "status": "not_applicable",
+                "effective_confidence": 0,
+                "threshold": 0.95,
+                "candidate_ids": [],
+                "reason_codes": []
+              },
+              {
+                "field": "overtime_125_hours",
+                "applicable": false,
+                "status": "not_applicable",
+                "effective_confidence": 0,
+                "threshold": 0.95,
+                "candidate_ids": [],
+                "reason_codes": []
+              },
+              {
+                "field": "overtime_150_hours",
+                "applicable": false,
+                "status": "not_applicable",
+                "effective_confidence": 0,
+                "threshold": 0.95,
+                "candidate_ids": [],
+                "reason_codes": []
+              }
+            ]
+          },
+          "salary_type_assessment": {
+            "documented": null,
+            "inferred": null
+          },
+          "pension_section_visible": false,
+          "totals_section_visible": false
+        }
+      ],
+      "recovery_decision": {
+        "requested": true,
+        "skipped": false,
+        "fields_requested": [
+          "salary_period"
+        ],
+        "regions": [
+          "header"
+        ],
+        "reason_codes": [
+          "critical_field_missing",
+          "normalization_failed"
+        ],
+        "expected_information_gain": "missing_critical_field"
+      },
+      "resolutions": [
+        {
+          "field": "document_type",
+          "status": "confirmed",
+          "first_pass_status": "confirmed",
+          "first_pass_candidate_ids": [
+            "7fc4d887-0074-4de1-84e0-72223f49077e"
+          ],
+          "recovery_candidate_ids": [],
+          "selected_candidate_id": "7fc4d887-0074-4de1-84e0-72223f49077e",
+          "reason_codes": [
+            "first_pass_preserved"
+          ]
+        },
+        {
+          "field": "salary_period",
+          "status": "missing",
+          "first_pass_status": "missing",
+          "first_pass_candidate_ids": [],
+          "recovery_candidate_ids": [],
+          "selected_candidate_id": null,
+          "reason_codes": [
+            "recovery_missing"
+          ]
+        },
+        {
+          "field": "base_monthly_salary",
+          "status": "candidate",
+          "first_pass_status": "candidate",
+          "first_pass_candidate_ids": [
+            "1001471b-406d-41bc-a778-5fcc416f1d0e"
+          ],
+          "recovery_candidate_ids": [],
+          "selected_candidate_id": "1001471b-406d-41bc-a778-5fcc416f1d0e",
+          "reason_codes": [
+            "first_pass_preserved"
+          ]
+        },
+        {
+          "field": "hourly_rate",
+          "status": "candidate",
+          "first_pass_status": "candidate",
+          "first_pass_candidate_ids": [
+            "df981cbe-f48f-44d5-bfed-8e3d34c221a6"
+          ],
+          "recovery_candidate_ids": [],
+          "selected_candidate_id": "df981cbe-f48f-44d5-bfed-8e3d34c221a6",
+          "reason_codes": [
+            "first_pass_preserved"
+          ]
+        },
+        {
+          "field": "regular_hours",
+          "status": "candidate",
+          "first_pass_status": "candidate",
+          "first_pass_candidate_ids": [
+            "b833e89c-ffc5-4b56-bb29-15a82e2be51e"
+          ],
+          "recovery_candidate_ids": [],
+          "selected_candidate_id": "b833e89c-ffc5-4b56-bb29-15a82e2be51e",
+          "reason_codes": [
+            "first_pass_preserved"
+          ]
+        },
+        {
+          "field": "overtime_125_hours",
+          "status": "candidate",
+          "first_pass_status": "candidate",
+          "first_pass_candidate_ids": [
+            "6020827b-756d-4d71-8042-fe616428fc08"
+          ],
+          "recovery_candidate_ids": [],
+          "selected_candidate_id": "6020827b-756d-4d71-8042-fe616428fc08",
+          "reason_codes": [
+            "first_pass_preserved"
+          ]
+        },
+        {
+          "field": "overtime_150_hours",
+          "status": "candidate",
+          "first_pass_status": "candidate",
+          "first_pass_candidate_ids": [
+            "579e6cf4-6ceb-4b99-8f95-16a1d4210f38"
+          ],
+          "recovery_candidate_ids": [],
+          "selected_candidate_id": "579e6cf4-6ceb-4b99-8f95-16a1d4210f38",
+          "reason_codes": [
+            "first_pass_preserved"
+          ]
+        },
+        {
+          "field": "gross_salary",
+          "status": "conflicted",
+          "first_pass_status": "conflicted",
+          "first_pass_candidate_ids": [
+            "d17a040a-1efe-4930-97da-5ebffe224b13",
+            "d2a01583-c3c5-479a-9662-90de979176bb"
+          ],
+          "recovery_candidate_ids": [],
+          "selected_candidate_id": null,
+          "reason_codes": [
+            "first_pass_conflict_preserved"
+          ]
+        },
+        {
+          "field": "total_deductions",
+          "status": "requires_confirmation",
+          "first_pass_status": "requires_confirmation",
+          "first_pass_candidate_ids": [
+            "9517dbd4-5e06-470c-b771-012d372820f1"
+          ],
+          "recovery_candidate_ids": [],
+          "selected_candidate_id": "9517dbd4-5e06-470c-b771-012d372820f1",
+          "reason_codes": [
+            "first_pass_preserved"
+          ]
+        },
+        {
+          "field": "net_salary",
+          "status": "requires_confirmation",
+          "first_pass_status": "requires_confirmation",
+          "first_pass_candidate_ids": [
+            "fa0aa8ec-bd79-4396-8f19-8415a281db22"
+          ],
+          "recovery_candidate_ids": [],
+          "selected_candidate_id": "fa0aa8ec-bd79-4396-8f19-8415a281db22",
+          "reason_codes": [
+            "first_pass_preserved"
+          ]
+        }
+      ],
+      "historical_validation": {
+        "status": "invalid",
+        "field_assessments": [
+          {
+            "candidate_id": "7fc4d887-0074-4de1-84e0-72223f49077e",
+            "field": "document_type",
+            "status": "valid",
+            "issue_codes": []
+          },
+          {
+            "candidate_id": "4ce64004-4215-4810-a8bd-7a81a8b8cab4",
+            "field": "salary_period",
+            "status": "invalid",
+            "issue_codes": [
+              "normalization_failed"
+            ]
+          },
+          {
+            "candidate_id": "b833e89c-ffc5-4b56-bb29-15a82e2be51e",
+            "field": "regular_hours",
+            "status": "valid",
+            "issue_codes": []
+          },
+          {
+            "candidate_id": "df981cbe-f48f-44d5-bfed-8e3d34c221a6",
+            "field": "hourly_rate",
+            "status": "valid",
+            "issue_codes": []
+          },
+          {
+            "candidate_id": "1001471b-406d-41bc-a778-5fcc416f1d0e",
+            "field": "base_monthly_salary",
+            "status": "valid",
+            "issue_codes": []
+          },
+          {
+            "candidate_id": "6020827b-756d-4d71-8042-fe616428fc08",
+            "field": "overtime_125_hours",
+            "status": "valid",
+            "issue_codes": []
+          },
+          {
+            "candidate_id": "579e6cf4-6ceb-4b99-8f95-16a1d4210f38",
+            "field": "overtime_150_hours",
+            "status": "valid",
+            "issue_codes": []
+          },
+          {
+            "candidate_id": "d17a040a-1efe-4930-97da-5ebffe224b13",
+            "field": "gross_salary",
+            "status": "requires_confirmation",
+            "issue_codes": [
+              "conflicting_candidates",
+              "payslip_totals_mismatch"
+            ]
+          },
+          {
+            "candidate_id": "d2a01583-c3c5-479a-9662-90de979176bb",
+            "field": "gross_salary",
+            "status": "requires_confirmation",
+            "issue_codes": [
+              "moderate_field_confidence",
+              "conflicting_candidates"
+            ]
+          },
+          {
+            "candidate_id": "9517dbd4-5e06-470c-b771-012d372820f1",
+            "field": "total_deductions",
+            "status": "requires_confirmation",
+            "issue_codes": [
+              "payslip_totals_mismatch"
+            ]
+          },
+          {
+            "candidate_id": "fa0aa8ec-bd79-4396-8f19-8415a281db22",
+            "field": "net_salary",
+            "status": "requires_confirmation",
+            "issue_codes": [
+              "moderate_field_confidence",
+              "payslip_totals_mismatch"
+            ]
+          }
+        ],
+        "issues": [
+          {
+            "code": "normalization_failed",
+            "severity": "error",
+            "field_candidate_ids": [
+              "4ce64004-4215-4810-a8bd-7a81a8b8cab4"
+            ],
+            "field_keys": [
+              "salary_period"
+            ],
+            "message": "A field could not be normalized deterministically."
+          },
+          {
+            "code": "moderate_field_confidence",
+            "severity": "warning",
+            "field_candidate_ids": [
+              "d2a01583-c3c5-479a-9662-90de979176bb"
+            ],
+            "field_keys": [
+              "gross_salary"
+            ],
+            "message": "A field is below the automatic-confirmation threshold."
+          },
+          {
+            "code": "moderate_field_confidence",
+            "severity": "warning",
+            "field_candidate_ids": [
+              "fa0aa8ec-bd79-4396-8f19-8415a281db22"
+            ],
+            "field_keys": [
+              "net_salary"
+            ],
+            "message": "A field is below the automatic-confirmation threshold."
+          },
+          {
+            "code": "conflicting_candidates",
+            "severity": "confirmation",
+            "field_candidate_ids": [
+              "d17a040a-1efe-4930-97da-5ebffe224b13",
+              "d2a01583-c3c5-479a-9662-90de979176bb"
+            ],
+            "field_keys": [
+              "gross_salary"
+            ],
+            "message": "Multiple extracted candidates disagree for the same field."
+          },
+          {
+            "code": "payslip_totals_mismatch",
+            "severity": "confirmation",
+            "field_candidate_ids": [
+              "d17a040a-1efe-4930-97da-5ebffe224b13",
+              "9517dbd4-5e06-470c-b771-012d372820f1",
+              "fa0aa8ec-bd79-4396-8f19-8415a281db22"
+            ],
+            "field_keys": [
+              "gross_salary",
+              "total_deductions",
+              "net_salary"
+            ],
+            "message": "Gross, deductions, and net totals do not reconcile technically."
+          },
+          {
+            "code": "critical_field_missing",
+            "severity": "confirmation",
+            "field_candidate_ids": [],
+            "field_keys": [
+              "salary_period"
+            ],
+            "message": "A contextually critical field is missing: salary_period."
+          }
+        ]
+      },
+      "current_validation": {
+        "status": "requires_confirmation",
+        "field_assessments": [
+          {
+            "candidate_id": "7fc4d887-0074-4de1-84e0-72223f49077e",
+            "field": "document_type",
+            "status": "valid",
+            "issue_codes": []
+          },
+          {
+            "candidate_id": "b833e89c-ffc5-4b56-bb29-15a82e2be51e",
+            "field": "regular_hours",
+            "status": "valid",
+            "issue_codes": []
+          },
+          {
+            "candidate_id": "df981cbe-f48f-44d5-bfed-8e3d34c221a6",
+            "field": "hourly_rate",
+            "status": "valid",
+            "issue_codes": []
+          },
+          {
+            "candidate_id": "1001471b-406d-41bc-a778-5fcc416f1d0e",
+            "field": "base_monthly_salary",
+            "status": "valid",
+            "issue_codes": []
+          },
+          {
+            "candidate_id": "6020827b-756d-4d71-8042-fe616428fc08",
+            "field": "overtime_125_hours",
+            "status": "valid",
+            "issue_codes": []
+          },
+          {
+            "candidate_id": "579e6cf4-6ceb-4b99-8f95-16a1d4210f38",
+            "field": "overtime_150_hours",
+            "status": "valid",
+            "issue_codes": []
+          },
+          {
+            "candidate_id": "d17a040a-1efe-4930-97da-5ebffe224b13",
+            "field": "gross_salary",
+            "status": "requires_confirmation",
+            "issue_codes": [
+              "conflicting_candidates",
+              "payslip_totals_mismatch",
+              "recovery_conflict"
+            ]
+          },
+          {
+            "candidate_id": "d2a01583-c3c5-479a-9662-90de979176bb",
+            "field": "gross_salary",
+            "status": "requires_confirmation",
+            "issue_codes": [
+              "moderate_field_confidence",
+              "conflicting_candidates",
+              "recovery_conflict"
+            ]
+          },
+          {
+            "candidate_id": "9517dbd4-5e06-470c-b771-012d372820f1",
+            "field": "total_deductions",
+            "status": "requires_confirmation",
+            "issue_codes": [
+              "payslip_totals_mismatch"
+            ]
+          },
+          {
+            "candidate_id": "fa0aa8ec-bd79-4396-8f19-8415a281db22",
+            "field": "net_salary",
+            "status": "requires_confirmation",
+            "issue_codes": [
+              "moderate_field_confidence",
+              "payslip_totals_mismatch"
+            ]
+          }
+        ],
+        "issues": [
+          {
+            "code": "moderate_field_confidence",
+            "severity": "warning",
+            "field_candidate_ids": [
+              "d2a01583-c3c5-479a-9662-90de979176bb"
+            ],
+            "field_keys": [
+              "gross_salary"
+            ],
+            "message": "A field is below the automatic-confirmation threshold."
+          },
+          {
+            "code": "moderate_field_confidence",
+            "severity": "warning",
+            "field_candidate_ids": [
+              "fa0aa8ec-bd79-4396-8f19-8415a281db22"
+            ],
+            "field_keys": [
+              "net_salary"
+            ],
+            "message": "A field is below the automatic-confirmation threshold."
+          },
+          {
+            "code": "conflicting_candidates",
+            "severity": "confirmation",
+            "field_candidate_ids": [
+              "d17a040a-1efe-4930-97da-5ebffe224b13",
+              "d2a01583-c3c5-479a-9662-90de979176bb"
+            ],
+            "field_keys": [
+              "gross_salary"
+            ],
+            "message": "Multiple extracted candidates disagree for the same field."
+          },
+          {
+            "code": "payslip_totals_mismatch",
+            "severity": "confirmation",
+            "field_candidate_ids": [
+              "d17a040a-1efe-4930-97da-5ebffe224b13",
+              "9517dbd4-5e06-470c-b771-012d372820f1",
+              "fa0aa8ec-bd79-4396-8f19-8415a281db22"
+            ],
+            "field_keys": [
+              "gross_salary",
+              "total_deductions",
+              "net_salary"
+            ],
+            "message": "Gross, deductions, and net totals do not reconcile technically."
+          },
+          {
+            "code": "critical_field_missing",
+            "severity": "confirmation",
+            "field_candidate_ids": [],
+            "field_keys": [
+              "salary_period"
+            ],
+            "message": "A contextually critical field is missing: salary_period."
+          },
+          {
+            "code": "recovery_conflict",
+            "severity": "confirmation",
+            "field_candidate_ids": [
+              "d17a040a-1efe-4930-97da-5ebffe224b13",
+              "d2a01583-c3c5-479a-9662-90de979176bb"
+            ],
+            "field_keys": [
+              "gross_salary"
+            ],
+            "message": "Recovery disagreed with an existing first-pass observation; neither observation is confirmed."
+          }
+        ]
+      },
+      "resolved_historical_issue_codes": [],
+      "final_extraction": {
+        "extraction_id": "b4f82d10-b9e8-4121-a840-e39ddf1a0982",
+        "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+        "status": "completed",
+        "detected_document_type": "payslip",
+        "document_quality_confidence": 0.96,
+        "quality_metrics": {
+          "page_count": 1,
+          "text_coverage": null,
+          "rotation_degrees": null,
+          "source_resolution_dpi": null
+        },
+        "fields": [
+          {
+            "candidate_id": "7fc4d887-0074-4de1-84e0-72223f49077e",
+            "raw_value": "payslip",
+            "confidence": 0.96,
+            "source": {
+              "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+              "page": 1,
+              "text_fragment": "document type"
+            },
+            "extraction_method": "ai_vision",
+            "warning_flags": [],
+            "field": "document_type",
+            "normalized_value": "payslip"
+          },
+          {
+            "candidate_id": "b833e89c-ffc5-4b56-bb29-15a82e2be51e",
+            "raw_value": "100",
+            "confidence": 0.94,
+            "source": {
+              "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+              "page": 1,
+              "text_fragment": "יתעש: 100"
+            },
+            "extraction_method": "ai_vision",
+            "warning_flags": [],
+            "field": "regular_hours",
+            "normalized_value": {
+              "amount": "100",
+              "unit": "hours_per_month"
+            }
+          },
+          {
+            "candidate_id": "df981cbe-f48f-44d5-bfed-8e3d34c221a6",
+            "raw_value": "35.40",
+            "confidence": 0.94,
+            "source": {
+              "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+              "page": 1,
+              "text_fragment": "יתעש: 35.40"
+            },
+            "extraction_method": "ai_vision",
+            "warning_flags": [],
+            "field": "hourly_rate",
+            "normalized_value": {
+              "currency": "ILS",
+              "minor_units": 3540
+            }
+          },
+          {
+            "candidate_id": "1001471b-406d-41bc-a778-5fcc416f1d0e",
+            "raw_value": "3,540.00",
+            "confidence": 0.94,
+            "source": {
+              "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+              "page": 1,
+              "text_fragment": "יתעש: 3,540.00"
+            },
+            "extraction_method": "ai_vision",
+            "warning_flags": [],
+            "field": "base_monthly_salary",
+            "normalized_value": {
+              "currency": "ILS",
+              "minor_units": 354000
+            }
+          },
+          {
+            "candidate_id": "6020827b-756d-4d71-8042-fe616428fc08",
+            "raw_value": "10",
+            "confidence": 0.94,
+            "source": {
+              "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+              "page": 1,
+              "text_fragment": "תופסונ: 10"
+            },
+            "extraction_method": "ai_vision",
+            "warning_flags": [],
+            "field": "overtime_125_hours",
+            "normalized_value": {
+              "amount": "10",
+              "unit": "hours_per_month"
+            }
+          },
+          {
+            "candidate_id": "579e6cf4-6ceb-4b99-8f95-16a1d4210f38",
+            "raw_value": "2",
+            "confidence": 0.94,
+            "source": {
+              "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+              "page": 1,
+              "text_fragment": "תופסונ: 2"
+            },
+            "extraction_method": "ai_vision",
+            "warning_flags": [],
+            "field": "overtime_150_hours",
+            "normalized_value": {
+              "amount": "2",
+              "unit": "hours_per_month"
+            }
+          },
+          {
+            "candidate_id": "d17a040a-1efe-4930-97da-5ebffe224b13",
+            "raw_value": "4,608.70",
+            "confidence": 0.94,
+            "source": {
+              "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+              "page": 1,
+              "text_fragment": "gross total: 4,608.70"
+            },
+            "extraction_method": "ai_vision",
+            "warning_flags": [],
+            "field": "gross_salary",
+            "normalized_value": {
+              "currency": "ILS",
+              "minor_units": 460870
+            }
+          },
+          {
+            "candidate_id": "d2a01583-c3c5-479a-9662-90de979176bb",
+            "raw_value": "4,196.30",
+            "confidence": 0.72,
+            "source": {
+              "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+              "page": 1,
+              "text_fragment": "gross total: 4,196.30"
+            },
+            "extraction_method": "ai_vision",
+            "warning_flags": [],
+            "field": "gross_salary",
+            "normalized_value": {
+              "currency": "ILS",
+              "minor_units": 419630
+            }
+          },
+          {
+            "candidate_id": "9517dbd4-5e06-470c-b771-012d372820f1",
+            "raw_value": "3,540.00",
+            "confidence": 0.94,
+            "source": {
+              "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+              "page": 1,
+              "text_fragment": "deductions total: 3,540.00"
+            },
+            "extraction_method": "ai_vision",
+            "warning_flags": [],
+            "field": "total_deductions",
+            "normalized_value": {
+              "currency": "ILS",
+              "minor_units": 354000
+            }
+          },
+          {
+            "candidate_id": "fa0aa8ec-bd79-4396-8f19-8415a281db22",
+            "raw_value": "4,196.30",
+            "confidence": 0.72,
+            "source": {
+              "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+              "page": 1,
+              "text_fragment": "net total: 4,196.30"
+            },
+            "extraction_method": "ai_vision",
+            "warning_flags": [],
+            "field": "net_salary",
+            "normalized_value": {
+              "currency": "ILS",
+              "minor_units": 419630
+            }
+          }
+        ],
+        "additional_components": [
+          {
+            "component_id": "46fbe0b7-eec7-409f-8d95-20af99516419",
+            "source_label": "יתעש",
+            "normalized_label": "hourly_base",
+            "semantic_kind": "hourly_base",
+            "quantity_raw": "100",
+            "rate_raw": "35.40",
+            "percentage_raw": null,
+            "amount_raw": "3,540.00",
+            "confidence": 0.94,
+            "source": {
+              "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+              "page": 1,
+              "text_fragment": "יתעש"
+            },
+            "extraction_method": "ai_vision",
+            "warning_flags": [],
+            "quantity": "100",
+            "rate": {
+              "currency": "ILS",
+              "minor_units": 3540
+            },
+            "percentage": null,
+            "amount": {
+              "currency": "ILS",
+              "minor_units": 354000
+            },
+            "normalization_warnings": []
+          },
+          {
+            "component_id": "5825a948-3c6c-45ca-9cbf-520c511f77fe",
+            "source_label": "תופסונ",
+            "normalized_label": "overtime_125",
+            "semantic_kind": "overtime_125",
+            "quantity_raw": "10",
+            "rate_raw": "44.25",
+            "percentage_raw": "125%",
+            "amount_raw": "442.50",
+            "confidence": 0.94,
+            "source": {
+              "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+              "page": 1,
+              "text_fragment": "תופסונ"
+            },
+            "extraction_method": "ai_vision",
+            "warning_flags": [],
+            "quantity": "10",
+            "rate": {
+              "currency": "ILS",
+              "minor_units": 4425
+            },
+            "percentage": {
+              "basis_points": 12500
+            },
+            "amount": {
+              "currency": "ILS",
+              "minor_units": 44250
+            },
+            "normalization_warnings": []
+          },
+          {
+            "component_id": "763b2ebb-1a3b-4e4d-a9f4-9258f0d9a4ec",
+            "source_label": "תופסונ",
+            "normalized_label": "overtime_150",
+            "semantic_kind": "overtime_150",
+            "quantity_raw": "2",
+            "rate_raw": "53.10",
+            "percentage_raw": "150%",
+            "amount_raw": "106.20",
+            "confidence": 0.94,
+            "source": {
+              "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+              "page": 1,
+              "text_fragment": "תופסונ"
+            },
+            "extraction_method": "ai_vision",
+            "warning_flags": [],
+            "quantity": "2",
+            "rate": {
+              "currency": "ILS",
+              "minor_units": 5310
+            },
+            "percentage": {
+              "basis_points": 15000
+            },
+            "amount": {
+              "currency": "ILS",
+              "minor_units": 10620
+            },
+            "normalization_warnings": []
+          },
+          {
+            "component_id": "1cce5049-434c-42d5-977d-823faaac1fdc",
+            "source_label": "תועיסנ",
+            "normalized_label": null,
+            "semantic_kind": "other",
+            "quantity_raw": "20",
+            "rate_raw": "11.00",
+            "percentage_raw": null,
+            "amount_raw": "220.00",
+            "confidence": 0.94,
+            "source": {
+              "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+              "page": 1,
+              "text_fragment": "תועיסנ"
+            },
+            "extraction_method": "ai_vision",
+            "warning_flags": [],
+            "quantity": "20",
+            "rate": {
+              "currency": "ILS",
+              "minor_units": 1100
+            },
+            "percentage": null,
+            "amount": {
+              "currency": "ILS",
+              "minor_units": 22000
+            },
+            "normalization_warnings": []
+          },
+          {
+            "component_id": "29fe8e1f-5bad-48d1-ac01-d71b77f74941",
+            "source_label": "דח",
+            "normalized_label": null,
+            "semantic_kind": "unknown",
+            "quantity_raw": null,
+            "rate_raw": null,
+            "percentage_raw": null,
+            "amount_raw": "300.00",
+            "confidence": 0.31999999999999995,
+            "source": {
+              "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+              "page": 1,
+              "text_fragment": "דח"
+            },
+            "extraction_method": "ai_vision",
+            "warning_flags": [
+              "unreadable_value"
+            ],
+            "quantity": null,
+            "rate": null,
+            "percentage": null,
+            "amount": {
+              "currency": "ILS",
+              "minor_units": 30000
+            },
+            "normalization_warnings": []
+          }
+        ],
+        "sensitive_metadata": [],
+        "earnings_components_complete": true,
+        "warnings": [],
+        "provider": {
+          "provider_id": "openai",
+          "extractor_version": "2.1",
+          "model_version": "gpt-4o-mini-2024-07-18"
+        },
+        "operation": {
+          "duration_ms": 14231,
+          "provider_response_id": null,
+          "token_usage": {
+            "input_tokens": 7096,
+            "output_tokens": 934,
+            "total_tokens": 8030
+          }
+        },
+        "extracted_at": "2026-09-09T20:18:38.512Z",
+        "error_code": null
+      },
+      "final_validation": {
+        "status": "invalid",
+        "field_assessments": [
+          {
+            "candidate_id": "7fc4d887-0074-4de1-84e0-72223f49077e",
+            "field": "document_type",
+            "status": "valid",
+            "issue_codes": []
+          },
+          {
+            "candidate_id": "b833e89c-ffc5-4b56-bb29-15a82e2be51e",
+            "field": "regular_hours",
+            "status": "valid",
+            "issue_codes": []
+          },
+          {
+            "candidate_id": "df981cbe-f48f-44d5-bfed-8e3d34c221a6",
+            "field": "hourly_rate",
+            "status": "valid",
+            "issue_codes": []
+          },
+          {
+            "candidate_id": "1001471b-406d-41bc-a778-5fcc416f1d0e",
+            "field": "base_monthly_salary",
+            "status": "valid",
+            "issue_codes": []
+          },
+          {
+            "candidate_id": "6020827b-756d-4d71-8042-fe616428fc08",
+            "field": "overtime_125_hours",
+            "status": "valid",
+            "issue_codes": []
+          },
+          {
+            "candidate_id": "579e6cf4-6ceb-4b99-8f95-16a1d4210f38",
+            "field": "overtime_150_hours",
+            "status": "valid",
+            "issue_codes": []
+          },
+          {
+            "candidate_id": "d17a040a-1efe-4930-97da-5ebffe224b13",
+            "field": "gross_salary",
+            "status": "requires_confirmation",
+            "issue_codes": [
+              "conflicting_candidates",
+              "payslip_totals_mismatch",
+              "recovery_conflict"
+            ]
+          },
+          {
+            "candidate_id": "d2a01583-c3c5-479a-9662-90de979176bb",
+            "field": "gross_salary",
+            "status": "requires_confirmation",
+            "issue_codes": [
+              "moderate_field_confidence",
+              "conflicting_candidates",
+              "recovery_conflict"
+            ]
+          },
+          {
+            "candidate_id": "9517dbd4-5e06-470c-b771-012d372820f1",
+            "field": "total_deductions",
+            "status": "requires_confirmation",
+            "issue_codes": [
+              "payslip_totals_mismatch"
+            ]
+          },
+          {
+            "candidate_id": "fa0aa8ec-bd79-4396-8f19-8415a281db22",
+            "field": "net_salary",
+            "status": "requires_confirmation",
+            "issue_codes": [
+              "moderate_field_confidence",
+              "payslip_totals_mismatch"
+            ]
+          }
+        ],
+        "issues": [
+          {
+            "code": "moderate_field_confidence",
+            "severity": "warning",
+            "field_candidate_ids": [
+              "d2a01583-c3c5-479a-9662-90de979176bb"
+            ],
+            "field_keys": [
+              "gross_salary"
+            ],
+            "message": "A field is below the automatic-confirmation threshold."
+          },
+          {
+            "code": "moderate_field_confidence",
+            "severity": "warning",
+            "field_candidate_ids": [
+              "fa0aa8ec-bd79-4396-8f19-8415a281db22"
+            ],
+            "field_keys": [
+              "net_salary"
+            ],
+            "message": "A field is below the automatic-confirmation threshold."
+          },
+          {
+            "code": "conflicting_candidates",
+            "severity": "confirmation",
+            "field_candidate_ids": [
+              "d17a040a-1efe-4930-97da-5ebffe224b13",
+              "d2a01583-c3c5-479a-9662-90de979176bb"
+            ],
+            "field_keys": [
+              "gross_salary"
+            ],
+            "message": "Multiple extracted candidates disagree for the same field."
+          },
+          {
+            "code": "payslip_totals_mismatch",
+            "severity": "confirmation",
+            "field_candidate_ids": [
+              "d17a040a-1efe-4930-97da-5ebffe224b13",
+              "9517dbd4-5e06-470c-b771-012d372820f1",
+              "fa0aa8ec-bd79-4396-8f19-8415a281db22"
+            ],
+            "field_keys": [
+              "gross_salary",
+              "total_deductions",
+              "net_salary"
+            ],
+            "message": "Gross, deductions, and net totals do not reconcile technically."
+          },
+          {
+            "code": "critical_field_missing",
+            "severity": "confirmation",
+            "field_candidate_ids": [],
+            "field_keys": [
+              "salary_period"
+            ],
+            "message": "A contextually critical field is missing: salary_period."
+          },
+          {
+            "code": "recovery_conflict",
+            "severity": "confirmation",
+            "field_candidate_ids": [
+              "d17a040a-1efe-4930-97da-5ebffe224b13",
+              "d2a01583-c3c5-479a-9662-90de979176bb"
+            ],
+            "field_keys": [
+              "gross_salary"
+            ],
+            "message": "Recovery disagreed with an existing first-pass observation; neither observation is confirmed."
+          },
+          {
+            "code": "normalization_failed",
+            "severity": "error",
+            "field_candidate_ids": [
+              "4ce64004-4215-4810-a8bd-7a81a8b8cab4"
+            ],
+            "field_keys": [
+              "salary_period"
+            ],
+            "message": "A field could not be normalized deterministically."
+          }
+        ]
+      },
+      "final_confidence_assessment": {
+        "decisions": [
+          {
+            "field": "salary_period",
+            "applicable": true,
+            "status": "needs_confirmation",
+            "effective_confidence": 0,
+            "threshold": 0.95,
+            "candidate_ids": [],
+            "reason_codes": [
+              "critical_field_missing",
+              "below_field_threshold"
+            ]
+          },
+          {
+            "field": "salary_type",
+            "applicable": false,
+            "status": "not_applicable",
+            "effective_confidence": 0,
+            "threshold": 0.95,
+            "candidate_ids": [],
+            "reason_codes": []
+          },
+          {
+            "field": "gross_salary",
+            "applicable": true,
+            "status": "needs_confirmation",
+            "effective_confidence": 0.5,
+            "threshold": 0.95,
+            "candidate_ids": [
+              "d17a040a-1efe-4930-97da-5ebffe224b13",
+              "d2a01583-c3c5-479a-9662-90de979176bb"
+            ],
+            "reason_codes": [
+              "critical_field_conflict",
+              "gate0_requires_review",
+              "below_field_threshold"
+            ]
+          },
+          {
+            "field": "total_deductions",
+            "applicable": true,
+            "status": "needs_confirmation",
+            "effective_confidence": 0.5,
+            "threshold": 0.95,
+            "candidate_ids": [
+              "9517dbd4-5e06-470c-b771-012d372820f1"
+            ],
+            "reason_codes": [
+              "gate0_requires_review",
+              "below_field_threshold"
+            ]
+          },
+          {
+            "field": "net_salary",
+            "applicable": true,
+            "status": "needs_confirmation",
+            "effective_confidence": 0.5,
+            "threshold": 0.95,
+            "candidate_ids": [
+              "fa0aa8ec-bd79-4396-8f19-8415a281db22"
+            ],
+            "reason_codes": [
+              "gate0_requires_review",
+              "below_field_threshold"
+            ]
+          },
+          {
+            "field": "hourly_rate",
+            "applicable": false,
+            "status": "not_applicable",
+            "effective_confidence": 0,
+            "threshold": 0.95,
+            "candidate_ids": [],
+            "reason_codes": []
+          },
+          {
+            "field": "regular_hours",
+            "applicable": false,
+            "status": "not_applicable",
+            "effective_confidence": 0,
+            "threshold": 0.95,
+            "candidate_ids": [],
+            "reason_codes": []
+          },
+          {
+            "field": "pension_base",
+            "applicable": false,
+            "status": "not_applicable",
+            "effective_confidence": 0,
+            "threshold": 0.95,
+            "candidate_ids": [],
+            "reason_codes": []
+          },
+          {
+            "field": "pension_employee_contribution",
+            "applicable": false,
+            "status": "not_applicable",
+            "effective_confidence": 0,
+            "threshold": 0.95,
+            "candidate_ids": [],
+            "reason_codes": []
+          },
+          {
+            "field": "pension_employer_contribution",
+            "applicable": false,
+            "status": "not_applicable",
+            "effective_confidence": 0,
+            "threshold": 0.95,
+            "candidate_ids": [],
+            "reason_codes": []
+          },
+          {
+            "field": "severance_contribution",
+            "applicable": false,
+            "status": "not_applicable",
+            "effective_confidence": 0,
+            "threshold": 0.95,
+            "candidate_ids": [],
+            "reason_codes": []
+          },
+          {
+            "field": "overtime_125_hours",
+            "applicable": true,
+            "status": "needs_confirmation",
+            "effective_confidence": 0.94,
+            "threshold": 0.95,
+            "candidate_ids": [
+              "6020827b-756d-4d71-8042-fe616428fc08"
+            ],
+            "reason_codes": [
+              "below_field_threshold"
+            ]
+          },
+          {
+            "field": "overtime_150_hours",
+            "applicable": true,
+            "status": "needs_confirmation",
+            "effective_confidence": 0.94,
+            "threshold": 0.95,
+            "candidate_ids": [
+              "579e6cf4-6ceb-4b99-8f95-16a1d4210f38"
+            ],
+            "reason_codes": [
+              "below_field_threshold"
+            ]
+          }
+        ]
+      }
+    },
+    "snapshot": {
+      "snapshot_id": "b4f82d10-b9e8-4121-a840-e39ddf1a0982",
+      "case_id": "0e6b1fa1-437e-4389-903a-e45e670c7248",
+      "analysis_run_id": "cb9f5145-7ca2-4d9f-9ca9-5d63e16dfa51",
+      "schema_version": "1.0.0",
+      "facts": [
+        {
+          "fact_id": "82aa25bb-3660-477d-9b75-88c370ce17c1",
+          "case_id": "0e6b1fa1-437e-4389-903a-e45e670c7248",
+          "status": "missing",
+          "provenance": [
+            {
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e"
+              },
+              "read_by": "machine",
+              "verified": false
+            }
+          ],
+          "confidence": 0.96,
+          "conflicting_fact_ids": [],
+          "resolution": null,
+          "created_at": "2026-09-09T20:18:23.817Z",
+          "path": "documents.period",
+          "value": null
+        },
+        {
+          "fact_id": "68ffb494-0d5c-46bc-b77c-a559eaab40cd",
+          "case_id": "0e6b1fa1-437e-4389-903a-e45e670c7248",
+          "status": "missing",
+          "provenance": [
+            {
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e"
+              },
+              "read_by": "machine",
+              "verified": false
+            }
+          ],
+          "confidence": 0.96,
+          "conflicting_fact_ids": [],
+          "resolution": null,
+          "created_at": "2026-09-09T20:18:23.817Z",
+          "path": "employment.start_date",
+          "value": null
+        },
+        {
+          "fact_id": "4397bd4b-3b79-4900-a154-61db6ee3f281",
+          "case_id": "0e6b1fa1-437e-4389-903a-e45e670c7248",
+          "status": "missing",
+          "provenance": [
+            {
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e"
+              },
+              "read_by": "machine",
+              "verified": false
+            }
+          ],
+          "confidence": 0.96,
+          "conflicting_fact_ids": [],
+          "resolution": null,
+          "created_at": "2026-09-09T20:18:23.817Z",
+          "path": "compensation.salary_type",
+          "value": null
+        },
+        {
+          "fact_id": "82312eb3-105c-42c9-a6c5-9927ff1451a7",
+          "case_id": "0e6b1fa1-437e-4389-903a-e45e670c7248",
+          "status": "candidate",
+          "provenance": [
+            {
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+                "locator": {
+                  "page": 1,
+                  "text_span": "יתעש: 3,540.00"
+                }
+              },
+              "read_by": "machine",
+              "verified": false
+            }
+          ],
+          "confidence": 0.94,
+          "conflicting_fact_ids": [],
+          "resolution": null,
+          "created_at": "2026-09-09T20:18:23.817Z",
+          "path": "compensation.base_monthly_salary",
+          "value": {
+            "currency": "ILS",
+            "minor_units": 354000
+          }
+        },
+        {
+          "fact_id": "082cb540-971b-43c6-a99e-fcbd20bacf9f",
+          "case_id": "0e6b1fa1-437e-4389-903a-e45e670c7248",
+          "status": "candidate",
+          "provenance": [
+            {
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+                "locator": {
+                  "page": 1,
+                  "text_span": "יתעש: 35.40"
+                }
+              },
+              "read_by": "machine",
+              "verified": false
+            }
+          ],
+          "confidence": 0.94,
+          "conflicting_fact_ids": [],
+          "resolution": null,
+          "created_at": "2026-09-09T20:18:23.817Z",
+          "path": "compensation.hourly_rate",
+          "value": {
+            "currency": "ILS",
+            "minor_units": 3540
+          }
+        },
+        {
+          "fact_id": "29e04ddf-7306-4152-ae35-7b6a5e3012d6",
+          "case_id": "0e6b1fa1-437e-4389-903a-e45e670c7248",
+          "status": "conflicted",
+          "provenance": [
+            {
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+                "locator": {
+                  "page": 1,
+                  "text_span": "gross total: 4,608.70"
+                }
+              },
+              "read_by": "machine",
+              "verified": false
+            },
+            {
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+                "locator": {
+                  "page": 1,
+                  "text_span": "gross total: 4,196.30"
+                }
+              },
+              "read_by": "machine",
+              "verified": false
+            }
+          ],
+          "confidence": 0.72,
+          "conflicting_fact_ids": [
+            "d17a040a-1efe-4930-97da-5ebffe224b13",
+            "d2a01583-c3c5-479a-9662-90de979176bb"
+          ],
+          "resolution": null,
+          "created_at": "2026-09-09T20:18:23.817Z",
+          "path": "compensation.gross_salary",
+          "value": null
+        },
+        {
+          "fact_id": "ae426153-2147-4d82-8768-dfdc06a08d50",
+          "case_id": "0e6b1fa1-437e-4389-903a-e45e670c7248",
+          "status": "needs_confirmation",
+          "provenance": [
+            {
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+                "locator": {
+                  "page": 1,
+                  "text_span": "net total: 4,196.30"
+                }
+              },
+              "read_by": "machine",
+              "verified": false
+            }
+          ],
+          "confidence": 0.72,
+          "conflicting_fact_ids": [],
+          "resolution": null,
+          "created_at": "2026-09-09T20:18:23.817Z",
+          "path": "compensation.net_salary",
+          "value": {
+            "currency": "ILS",
+            "minor_units": 419630
+          }
+        },
+        {
+          "fact_id": "44302339-099a-4aa9-9720-2c9b7640f277",
+          "case_id": "0e6b1fa1-437e-4389-903a-e45e670c7248",
+          "status": "candidate",
+          "provenance": [
+            {
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+                "locator": {
+                  "page": 1,
+                  "text_span": "יתעש: 100"
+                }
+              },
+              "read_by": "machine",
+              "verified": false
+            }
+          ],
+          "confidence": 0.94,
+          "conflicting_fact_ids": [],
+          "resolution": null,
+          "created_at": "2026-09-09T20:18:23.817Z",
+          "path": "work.regular_hours",
+          "value": {
+            "amount": "100",
+            "unit": "hours_per_month"
+          }
+        },
+        {
+          "fact_id": "c5e751fe-7f59-4548-869d-9bb2600ea035",
+          "case_id": "0e6b1fa1-437e-4389-903a-e45e670c7248",
+          "status": "candidate",
+          "provenance": [
+            {
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+                "locator": {
+                  "page": 1,
+                  "text_span": "תופסונ: 10"
+                }
+              },
+              "read_by": "machine",
+              "verified": false
+            }
+          ],
+          "confidence": 0.94,
+          "conflicting_fact_ids": [],
+          "resolution": null,
+          "created_at": "2026-09-09T20:18:23.817Z",
+          "path": "work.overtime_125_hours",
+          "value": {
+            "amount": "10",
+            "unit": "hours_per_month"
+          }
+        },
+        {
+          "fact_id": "4970aa70-3a0e-47e6-939a-04f017473c32",
+          "case_id": "0e6b1fa1-437e-4389-903a-e45e670c7248",
+          "status": "candidate",
+          "provenance": [
+            {
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+                "locator": {
+                  "page": 1,
+                  "text_span": "תופסונ: 2"
+                }
+              },
+              "read_by": "machine",
+              "verified": false
+            }
+          ],
+          "confidence": 0.94,
+          "conflicting_fact_ids": [],
+          "resolution": null,
+          "created_at": "2026-09-09T20:18:23.817Z",
+          "path": "work.overtime_150_hours",
+          "value": {
+            "amount": "2",
+            "unit": "hours_per_month"
+          }
+        },
+        {
+          "fact_id": "6a0a007e-aece-4889-8708-126857eee032",
+          "case_id": "0e6b1fa1-437e-4389-903a-e45e670c7248",
+          "status": "candidate",
+          "provenance": [
+            {
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+                "locator": {
+                  "page": 1,
+                  "text_span": "תופסונ: 10"
+                }
+              },
+              "read_by": "machine",
+              "verified": false
+            },
+            {
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+                "locator": {
+                  "page": 1,
+                  "text_span": "תופסונ: 2"
+                }
+              },
+              "read_by": "machine",
+              "verified": false
+            }
+          ],
+          "confidence": 0.94,
+          "conflicting_fact_ids": [],
+          "resolution": null,
+          "created_at": "2026-09-09T20:18:23.817Z",
+          "path": "work.overtime_hours",
+          "value": {
+            "amount": "12",
+            "unit": "hours_per_month"
+          }
+        },
+        {
+          "fact_id": "3d8c8234-1ae5-4b2a-b0fc-a7b64cf3eb65",
+          "case_id": "0e6b1fa1-437e-4389-903a-e45e670c7248",
+          "status": "missing",
+          "provenance": [
+            {
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e"
+              },
+              "read_by": "machine",
+              "verified": false
+            }
+          ],
+          "confidence": 0.96,
+          "conflicting_fact_ids": [],
+          "resolution": null,
+          "created_at": "2026-09-09T20:18:23.817Z",
+          "path": "pension.base_salary",
+          "value": null
+        },
+        {
+          "fact_id": "7ad0dfb5-a39c-47e5-93bb-28c95de69706",
+          "case_id": "0e6b1fa1-437e-4389-903a-e45e670c7248",
+          "status": "missing",
+          "provenance": [
+            {
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e"
+              },
+              "read_by": "machine",
+              "verified": false
+            }
+          ],
+          "confidence": 0.96,
+          "conflicting_fact_ids": [],
+          "resolution": null,
+          "created_at": "2026-09-09T20:18:23.817Z",
+          "path": "pension.contributions",
+          "value": null
+        },
+        {
+          "fact_id": "d0cafe11-0cbe-45d6-abc1-f18a519c1b8e",
+          "case_id": "0e6b1fa1-437e-4389-903a-e45e670c7248",
+          "status": "missing",
+          "provenance": [
+            {
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e"
+              },
+              "read_by": "machine",
+              "verified": false
+            }
+          ],
+          "confidence": 0.96,
+          "conflicting_fact_ids": [],
+          "resolution": null,
+          "created_at": "2026-09-09T20:18:23.817Z",
+          "path": "pension.severance_contribution",
+          "value": null
+        },
+        {
+          "fact_id": "8cd672d0-7e3a-49f6-8816-96cc60038396",
+          "case_id": "0e6b1fa1-437e-4389-903a-e45e670c7248",
+          "status": "missing",
+          "provenance": [
+            {
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e"
+              },
+              "read_by": "machine",
+              "verified": false
+            }
+          ],
+          "confidence": 0.96,
+          "conflicting_fact_ids": [],
+          "resolution": null,
+          "created_at": "2026-09-09T20:18:23.817Z",
+          "path": "travel.reimbursement",
+          "value": null
+        },
+        {
+          "fact_id": "a583bc8f-008b-4290-9b9f-dd7f94321b52",
+          "case_id": "0e6b1fa1-437e-4389-903a-e45e670c7248",
+          "status": "missing",
+          "provenance": [
+            {
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e"
+              },
+              "read_by": "machine",
+              "verified": false
+            }
+          ],
+          "confidence": 0.96,
+          "conflicting_fact_ids": [],
+          "resolution": null,
+          "created_at": "2026-09-09T20:18:23.817Z",
+          "path": "convalescence.payment",
+          "value": null
+        },
+        {
+          "fact_id": "3cc3790b-594e-430d-8771-d45bff072845",
+          "case_id": "0e6b1fa1-437e-4389-903a-e45e670c7248",
+          "status": "missing",
+          "provenance": [
+            {
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e"
+              },
+              "read_by": "machine",
+              "verified": false
+            }
+          ],
+          "confidence": 0.96,
+          "conflicting_fact_ids": [],
+          "resolution": null,
+          "created_at": "2026-09-09T20:18:23.817Z",
+          "path": "leave.vacation_balance",
+          "value": null
+        },
+        {
+          "fact_id": "49c19385-7334-4db1-8bd9-35decf301c67",
+          "case_id": "0e6b1fa1-437e-4389-903a-e45e670c7248",
+          "status": "missing",
+          "provenance": [
+            {
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "document_id": "94265a5c-7557-4ce6-892c-02613209884e"
+              },
+              "read_by": "machine",
+              "verified": false
+            }
+          ],
+          "confidence": 0.96,
+          "conflicting_fact_ids": [],
+          "resolution": null,
+          "created_at": "2026-09-09T20:18:23.817Z",
+          "path": "leave.sick_balance",
+          "value": null
+        }
+      ],
+      "created_at": "2026-09-09T20:18:23.817Z"
+    },
+    "preprocessing": [
+      {
+        "preprocessing_version": "payslip-raster-preprocess-1",
+        "crop_plan_version": "payslip-semantic-bands-1",
+        "applied": false,
+        "source_width": null,
+        "source_height": null,
+        "upscale_factor": 1,
+        "deskew_degrees": 0,
+        "grayscale": false,
+        "contrast_gain": 1,
+        "sharpen_sigma": 0,
+        "reason": "unsupported_source"
+      },
+      {
+        "preprocessing_version": "payslip-raster-preprocess-1",
+        "crop_plan_version": "payslip-semantic-bands-1",
+        "applied": false,
+        "source_width": null,
+        "source_height": null,
+        "upscale_factor": 1,
+        "deskew_degrees": 0,
+        "grayscale": false,
+        "contrast_gain": 1,
+        "sharpen_sigma": 0,
+        "reason": "unsupported_source"
+      }
+    ],
+    "provider_receipts": [
+      {
+        "schema_version": "tivdoc-openai-provider-receipt-v1",
+        "origin": "openai_live",
+        "case_id": "0e6b1fa1-437e-4389-903a-e45e670c7248",
+        "analysis_run_id": "cb9f5145-7ca2-4d9f-9ca9-5d63e16dfa51",
+        "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+        "extraction_id": "362e3332-4847-477a-b265-aa917c9e51de",
+        "source_sha256": "f74f83f18beed42de39c8fc02615a0d05e0f25bc53b2410314dd4f9a56c05a6b",
+        "source_size_bytes": 28991,
+        "source_mime_type": "application/pdf",
+        "source_page_count": 1,
+        "request_sha256": "17b5b1ab45574c90328590f335120ff89667c1607ab028e9d7898e2c92da3290",
+        "raw_extraction_sha256": "3dc1f2efffca69fc097a5f638292348c97b5488eb03a986c3a3ecd5a9a3bf103",
+        "pass_kind": "first_pass",
+        "requested_model": "gpt-4o-mini-2024-07-18",
+        "actual_model": "gpt-4o-mini-2024-07-18",
+        "extractor_version": "2.1",
+        "prompt_version": "payslip-extraction-openai-v2-first-r2",
+        "provider_response_id": "resp_01d24a4801696411016aa1bf11541087d09c592da88015e724",
+        "provider_request_id": "req_1f6930fa51dd47c1bfb1c9958c09f720",
+        "provider_attempted": true,
+        "status": "completed",
+        "error_code": null,
+        "http_status": null,
+        "duration_ms": 8915,
+        "token_usage": {
+          "input_tokens": 3532,
+          "output_tokens": 700,
+          "total_tokens": 4232
+        },
+        "cost": {
+          "status": "not_returned_by_provider",
+          "amount_usd": null
+        },
+        "created_at": "2026-09-09T20:18:32.968Z",
+        "receipt_sha256": "2dcfc4b5c3164a7ba90ad6fb51e9cd740b2af43220a6b2dddbc70854c439425b"
+      },
+      {
+        "schema_version": "tivdoc-openai-provider-receipt-v1",
+        "origin": "openai_live",
+        "case_id": "0e6b1fa1-437e-4389-903a-e45e670c7248",
+        "analysis_run_id": "cb9f5145-7ca2-4d9f-9ca9-5d63e16dfa51",
+        "document_id": "94265a5c-7557-4ce6-892c-02613209884e",
+        "extraction_id": "233c7b9e-935f-41ba-8b74-2666244ede54",
+        "source_sha256": "f74f83f18beed42de39c8fc02615a0d05e0f25bc53b2410314dd4f9a56c05a6b",
+        "source_size_bytes": 28991,
+        "source_mime_type": "application/pdf",
+        "source_page_count": 1,
+        "request_sha256": "6f9e4b64d123b3a0327bdd1ab3f8b600bf848433284ff3d2a2986246e4b868f6",
+        "raw_extraction_sha256": "c93b8046db9096039718e218bba3cc8a924a39c3735cc876ec424d5c58fba8cb",
+        "pass_kind": "targeted_recovery",
+        "requested_model": "gpt-4o-mini-2024-07-18",
+        "actual_model": "gpt-4o-mini-2024-07-18",
+        "extractor_version": "2.1",
+        "prompt_version": "payslip-extraction-openai-v2-recovery-r2",
+        "provider_response_id": "resp_0ac3c5af7286c903016aa1bf19a8d087d2886c8d92f3876b5d",
+        "provider_request_id": "req_8d91fa7caea6461ebf1f74fc99c40869",
+        "provider_attempted": true,
+        "status": "completed",
+        "error_code": null,
+        "http_status": null,
+        "duration_ms": 5316,
+        "token_usage": {
+          "input_tokens": 3564,
+          "output_tokens": 234,
+          "total_tokens": 3798
+        },
+        "cost": {
+          "status": "not_returned_by_provider",
+          "amount_usd": null
+        },
+        "created_at": "2026-09-09T20:18:38.512Z",
+        "receipt_sha256": "9ea09ddc84ee8ae79347c7a5028927965ac39600d6934c0746b9f983371bafb9"
+      }
+    ]
+  }
+}

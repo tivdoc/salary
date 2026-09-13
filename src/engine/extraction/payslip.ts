@@ -1,4 +1,6 @@
+import {customerSourceStructureReadingSchema} from './source-structure.ts';
 import { z } from "zod";
+import {customerDocumentReadingSchema,customerDocumentRowCellReadingSchema,customerDocumentScopeReadingSchema,customerSourceTranscriptionSchema,sourceReadingContextSchema} from './customer-reading.ts';
 import {
   confidenceSchema,
   decimalStringSchema,
@@ -9,6 +11,8 @@ import {
 } from "../domain/primitives.ts";
 import {
   candidateSourceSchema,
+  aggregateTotalObservationSchema,
+  sourceScopeObservationSchema,
   candidateWarningSchema,
   detectedDocumentTypeSchema,
   documentQualityMetricsSchema,
@@ -119,6 +123,12 @@ export const normalizedAdditionalComponentSchema = z
 
 export const normalizedPayslipExtractionSchema = z
   .object({
+    customer_readings:z.array(customerDocumentReadingSchema).max(100).optional(),
+    customer_row_readings:z.array(customerDocumentRowCellReadingSchema).max(400).optional(),
+    customer_scope_readings:z.array(customerDocumentScopeReadingSchema).max(300).optional(),
+    customer_source_transcriptions:z.array(customerSourceTranscriptionSchema).max(100).optional(),
+    customer_source_structures:z.array(customerSourceStructureReadingSchema).max(150).optional(),
+    source_reading_context:sourceReadingContextSchema.optional(),
     extraction_id: z.uuid(),
     document_id: z.uuid(),
     status: extractionStatusSchema,
@@ -127,6 +137,8 @@ export const normalizedPayslipExtractionSchema = z
     quality_metrics: documentQualityMetricsSchema,
     fields: z.array(normalizedCandidateFieldSchema),
     additional_components: z.array(normalizedAdditionalComponentSchema),
+    aggregate_total_observations:z.array(aggregateTotalObservationSchema).max(3).optional(),
+    source_scope_observations:z.array(sourceScopeObservationSchema).max(300).optional(),
     sensitive_metadata: z.array(sensitiveMetadataCandidateSchema),
     earnings_components_complete: z.boolean(),
     warnings: z.array(domainCodeSchema),

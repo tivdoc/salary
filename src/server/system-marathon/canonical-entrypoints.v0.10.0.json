@@ -1878,6 +1878,145 @@
         "MANAGED_PLATFORM_NOT_PROVEN"
       ],
       "non_claim": "Site S4 (ב.12): records the opt-out for the case a reminder token names. It peeks at the token rather than spending it, and answers ok for every token so liveness cannot be probed."
+    },
+    {
+      "entrypoint_id": "CEP-109",
+      "kind": "api_route",
+      "stable_entry": "/api/notifications/resend",
+      "source_path": "src/app/api/notifications/resend/route.ts",
+      "canonical_contract_id": "route.api.notification-outbox-webhook",
+      "canonical_target": "src/app/api/notifications/resend/route.ts:POST",
+      "classification": "IMPLEMENTED_NOT_WIRED",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/product/case-access/resend-webhook.ts",
+        "src/server/product/case-access/db.ts"
+      ],
+      "blockers": [
+        "MANAGED_PLATFORM_NOT_PROVEN"
+      ],
+      "non_claim": "Signature-verified provider event inbox; no cookie authority, no message sending, disabled until configured."
+    },
+    {
+      "entrypoint_id": "CEP-110",
+      "kind": "api_route",
+      "stable_entry": "/api/cases/[token]/reports",
+      "source_path": "src/app/api/cases/[token]/reports/route.ts",
+      "canonical_contract_id": "route.api.customer-saved-report",
+      "canonical_target": "src/app/api/cases/[token]/reports/route.ts:GET,POST",
+      "classification": "IMPLEMENTED_NOT_WIRED",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/product/reports/customer-reports.ts"
+      ],
+      "blockers": [
+        "MANAGED_PLATFORM_NOT_PROVEN"
+      ],
+      "non_claim": "Identity-scoped saved report PDF, pinned source and correction intake; no calculation or human approval."
+    },
+    {
+      "entrypoint_id": "CEP-111",
+      "kind": "app_route",
+      "stable_entry": "/case/[token]/orders",
+      "source_path": "src/app/case/[token]/orders/page.tsx",
+      "canonical_contract_id": "route.page.customer-orders",
+      "canonical_target": "src/app/case/[token]/orders/page.tsx:default",
+      "classification": "IMPLEMENTED_NOT_WIRED",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/product/orders/service.ts"
+      ],
+      "blockers": [
+        "MANAGED_PLATFORM_NOT_PROVEN"
+      ],
+      "non_claim": "Identity-scoped order history and server-quoted purchase; live sales require capability and configuration."
+    },
+    {
+      "entrypoint_id": "CEP-112",
+      "kind": "app_route",
+      "stable_entry": "/account",
+      "source_path": "src/app/account/page.tsx",
+      "canonical_contract_id": "route.page.customer-privacy",
+      "canonical_target": "src/app/account/page.tsx:default",
+      "classification": "IMPLEMENTED_NOT_WIRED",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/product/case-access/db.ts"
+      ],
+      "blockers": [
+        "MANAGED_PLATFORM_NOT_PROVEN"
+      ],
+      "non_claim": "Identity-scoped privacy requests and fresh-session export; request intake is not deletion completion."
+    },
+    {
+      "entrypoint_id": "CEP-113",
+      "kind": "api_route",
+      "stable_entry": "/api/account",
+      "source_path": "src/app/api/account/route.ts",
+      "canonical_contract_id": "route.api.customer-privacy",
+      "canonical_target": "src/app/api/account/route.ts:POST",
+      "classification": "IMPLEMENTED_NOT_WIRED",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/product/case-access/db.ts"
+      ],
+      "blockers": [
+        "MANAGED_PLATFORM_NOT_PROVEN"
+      ],
+      "non_claim": "Identity-scoped privacy requests and fresh-session export; request intake is not deletion completion."
+    },
+    {
+      "entrypoint_id": "CEP-114",
+      "kind": "app_route",
+      "stable_entry": "/accessibility",
+      "source_path": "src/app/accessibility/page.tsx",
+      "canonical_contract_id": "route.public.accessibility",
+      "canonical_target": "src/app/accessibility/page.tsx:default",
+      "classification": "PARTIAL",
+      "product_stable": true,
+      "dependencies": [],
+      "blockers": [],
+      "non_claim": "Public accessibility information and verification limits, not a professional compliance certificate."
+    },
+    {
+      "entrypoint_id": "CEP-115",
+      "kind": "app_route",
+      "stable_entry": "/operations/dev-worker",
+      "source_path": "src/app/operations/dev-worker/page.tsx",
+      "canonical_contract_id": "route.operations.dev-worker-status",
+      "canonical_target": "src/server/product/processing/managed-worker-host.ts:readManagedDevStatus",
+      "classification": "IMPLEMENTED_NOT_WIRED",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/product/auth/next-session.ts",
+        "src/server/product/reports/support.ts",
+        "src/server/product/processing/managed-worker-contract.ts"
+      ],
+      "blockers": [
+        "MANAGED_IDENTITY_NOT_PROVEN",
+        "MANAGED_DEV_OPERATIONS_NOT_ACTIVATED"
+      ],
+      "non_claim": "Scoped DEV worker status requires the existing operations session and support owner; the operations surface remains closed on Preview and Production. A scheduled worker proof does not prove hosted operations activation."
+    },
+    {
+      "entrypoint_id": "CEP-116",
+      "kind": "api_route",
+      "stable_entry": "/api/operations/dev-worker",
+      "source_path": "src/app/api/operations/dev-worker/route.ts",
+      "canonical_contract_id": "route.operations.dev-worker-control",
+      "canonical_target": "src/server/product/processing/managed-worker-http.ts:createManagedWorkerHttpHandler",
+      "classification": "IMPLEMENTED_NOT_WIRED",
+      "product_stable": true,
+      "dependencies": [
+        "src/server/product/auth/runtime.ts",
+        "src/server/product/processing/managed-worker-host.ts",
+        "src/server/product/processing/managed-worker-contract.ts"
+      ],
+      "blockers": [
+        "MANAGED_IDENTITY_NOT_PROVEN",
+        "MANAGED_DEV_OPERATIONS_NOT_ACTIVATED"
+      ],
+      "non_claim": "Exact DEV job status and bounded retry require operations identity, support ownership, CSRF and a separately scoped DB capability. No customer or request can activate this engine route in Preview or Production."
     }
   ]
 }

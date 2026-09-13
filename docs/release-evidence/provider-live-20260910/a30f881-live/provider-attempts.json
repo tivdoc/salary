@@ -1,0 +1,17 @@
+[
+  {
+    "sourceSha256": "4a1749471e064555bcd72a265aba80191ef6f3fe8f1d1f3e5613730e360558fb",
+    "passKind": "first_pass",
+    "receiptConfirmed": true
+  },
+  {
+    "sourceSha256": "520ff4644bedc7c4e1fe333f30662027e2bd4d94721e6338d325b03f175b18f5",
+    "passKind": "first_pass",
+    "receiptConfirmed": true
+  },
+  {
+    "sourceSha256": "520ff4644bedc7c4e1fe333f30662027e2bd4d94721e6338d325b03f175b18f5",
+    "passKind": "targeted_recovery",
+    "receiptConfirmed": true
+  }
+]

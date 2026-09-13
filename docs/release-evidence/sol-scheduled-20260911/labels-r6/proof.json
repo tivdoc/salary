@@ -1,0 +1,241 @@
+{
+  "schemaVersion": "tivdoc-sol-scheduled-labels-v1",
+  "proofId": "ae109f30-02ca-49d5-abb1-ba6bbbfb0c31",
+  "gitSha": "aa21e32a9433eca872b06014f46a86029c140df3",
+  "checkedAt": "2026-09-11T01:22:06.996Z",
+  "state": "LABEL_QUALITY_FAIL",
+  "phase": "complete",
+  "source": {
+    "id": "he-clear",
+    "path": "docs/release-evidence/live-provider-june2026/he-clear-june-2026.pdf",
+    "sha256": "f74f83f18beed42de39c8fc02615a0d05e0f25bc53b2410314dd4f9a56c05a6b",
+    "sizeBytes": 28991,
+    "pageCount": 1
+  },
+  "model": "gpt-5.6-sol",
+  "reasoningEffort": "medium",
+  "promptVersion": "payslip-extraction-openai-v2-first-r6",
+  "resolutionPolicy": "payslip-v2.1-non-degrading-resolution-4",
+  "focusedLabelOracle": [
+    {
+      "semanticKind": "overtime_125",
+      "sourceLabel": "שעות נוספות",
+      "quantity": "10",
+      "rateMinor": 4425,
+      "amountMinor": 44250,
+      "page": 1
+    },
+    {
+      "semanticKind": "overtime_150",
+      "sourceLabel": "שעות נוספות",
+      "quantity": "2",
+      "rateMinor": 5310,
+      "amountMinor": 10620,
+      "page": 1
+    }
+  ],
+  "labels": [
+    {
+      "expected": {
+        "semanticKind": "overtime_125",
+        "sourceLabel": "שעות נוספות",
+        "quantity": "10",
+        "rateMinor": 4425,
+        "amountMinor": 44250,
+        "page": 1
+      },
+      "actual": [
+        {
+          "componentId": "08463214-5971-4cb7-8976-db84e455b69f",
+          "sourceLabel": "שעות נוספות 125%",
+          "quantity": "10",
+          "rate": {
+            "currency": "ILS",
+            "minor_units": 4425
+          },
+          "amount": {
+            "currency": "ILS",
+            "minor_units": 44250
+          },
+          "source": {
+            "document_id": "566ecb0b-a369-4871-a588-9aa843fb0807",
+            "page": 1,
+            "text_fragment": "שעות נוספות 125%"
+          }
+        }
+      ]
+    },
+    {
+      "expected": {
+        "semanticKind": "overtime_150",
+        "sourceLabel": "שעות נוספות",
+        "quantity": "2",
+        "rateMinor": 5310,
+        "amountMinor": 10620,
+        "page": 1
+      },
+      "actual": [
+        {
+          "componentId": "850f5747-05e1-487c-aaec-2dbe9abcd70c",
+          "sourceLabel": "שעות נוספות 150%",
+          "quantity": "2",
+          "rate": {
+            "currency": "ILS",
+            "minor_units": 5310
+          },
+          "amount": {
+            "currency": "ILS",
+            "minor_units": 10620
+          },
+          "source": {
+            "document_id": "566ecb0b-a369-4871-a588-9aa843fb0807",
+            "page": 1,
+            "text_fragment": "שעות נוספות 150%"
+          }
+        }
+      ]
+    }
+  ],
+  "fullOracleComparison": {
+    "passed": false,
+    "failures": [
+      "ROW_overtime_125",
+      "ROW_overtime_150"
+    ],
+    "observedFieldCount": 21,
+    "observedComponentCount": 9,
+    "financialResultGenerated": false,
+    "legalReadinessProved": false
+  },
+  "receipt": {
+    "schema_version": "tivdoc-openai-provider-receipt-v1",
+    "origin": "openai_live",
+    "case_id": "4901cfab-a32d-4693-82bf-291e055b6bb8",
+    "analysis_run_id": "475f89e2-17fa-40ac-9aa3-489f217dccb9",
+    "document_id": "566ecb0b-a369-4871-a588-9aa843fb0807",
+    "extraction_id": "e6af638b-a9cb-4065-9d4c-6641791334e9",
+    "source_sha256": "f74f83f18beed42de39c8fc02615a0d05e0f25bc53b2410314dd4f9a56c05a6b",
+    "source_size_bytes": 28991,
+    "source_mime_type": "application/pdf",
+    "source_page_count": 1,
+    "request_sha256": "f91d3ae6386fb87bca1fbd61b6adc8c27efcb2a17673381ba9c7dbb16ca93289",
+    "raw_extraction_sha256": "133bf6f9be26695a016076b2d805f9e6213e2325476eb1d03930e8adcd80be63",
+    "pass_kind": "first_pass",
+    "requested_model": "gpt-5.6-sol",
+    "actual_model": "gpt-5.6-sol",
+    "extractor_version": "2.1",
+    "prompt_version": "payslip-extraction-openai-v2-first-r6",
+    "provider_response_id": "resp_088fc86af2878a77016aa3579c49f087d2bc9c5910125fee3b",
+    "provider_request_id": "req_349c07d2890243cf83b36d47230b429c",
+    "provider_attempted": true,
+    "status": "completed",
+    "error_code": null,
+    "http_status": null,
+    "duration_ms": 35463,
+    "token_usage": {
+      "input_tokens": 4567,
+      "output_tokens": 3325,
+      "total_tokens": 7892
+    },
+    "cost": {
+      "status": "not_returned_by_provider",
+      "amount_usd": null
+    },
+    "created_at": "2026-09-11T01:22:06.887Z",
+    "receipt_sha256": "a08b4657df59640b0bc1ad7d3edcdb1f97daf7f3a8a75506f6e3ed962399c1f0"
+  },
+  "resultSha256": "e2191a34d116b8373f32578b31b7f3970738ffaaae9909e95cbea108895585fb",
+  "immutable": [
+    {
+      "file": "docs/release-evidence/live-provider-june2026/he-clear-june-2026.pdf",
+      "sha256": "f74f83f18beed42de39c8fc02615a0d05e0f25bc53b2410314dd4f9a56c05a6b"
+    },
+    {
+      "file": "docs/release-evidence/live-provider-june2026/independent-input-oracles.json",
+      "sha256": "936bf1cbe08b7f6a03567ee397e1bfb229cd5af3c850e8c216fbdac19ef078f3"
+    },
+    {
+      "file": "docs/release-evidence/sol-comparison-20260910/sol-clear-structured.json",
+      "sha256": "f5a9c589f2954e227385e7ad881281053204e56160a0f9517906adaf22fb5937"
+    }
+  ],
+  "budgetBefore": {
+    "policy": {
+      "version": "tivdoc-sol-comparison-budget-v1",
+      "model": "gpt-5.6-sol",
+      "executionProfile": "sol-medium-comparison-v1",
+      "reasoningEffort": "medium",
+      "serviceTier": "default",
+      "pricingSource": "https://developers.openai.com/api/docs/models/gpt-5.6-sol",
+      "pricingCheckedAt": "2026-09-10",
+      "pricingValidUntil": "2026-09-17T00:00:00Z",
+      "inputUsdPerMillion": 4,
+      "outputUsdPerMillion": 20,
+      "inputTokenCeiling": 64000,
+      "outputTokenCeiling": 10000,
+      "maxRequests": 12,
+      "maxReservedMicroUsd": 5000000,
+      "countReservedMicroUsd": 256000,
+      "generationReservedMicroUsd": 456000,
+      "sdkRetries": 0
+    },
+    "contentRequests": 0,
+    "generations": 0,
+    "countRequests": 0,
+    "reservedUpperBoundUsd": 0,
+    "unknownOutcomes": 0,
+    "supplierReturnedCost": {
+      "status": "not_returned_by_provider",
+      "amountUsd": null
+    },
+    "countEndpointTariff": "not_separately_documented_reserved_at_full_input_price",
+    "instanceGenerations": 0
+  },
+  "budgetAfter": {
+    "policy": {
+      "version": "tivdoc-sol-comparison-budget-v1",
+      "model": "gpt-5.6-sol",
+      "executionProfile": "sol-medium-comparison-v1",
+      "reasoningEffort": "medium",
+      "serviceTier": "default",
+      "pricingSource": "https://developers.openai.com/api/docs/models/gpt-5.6-sol",
+      "pricingCheckedAt": "2026-09-10",
+      "pricingValidUntil": "2026-09-17T00:00:00Z",
+      "inputUsdPerMillion": 4,
+      "outputUsdPerMillion": 20,
+      "inputTokenCeiling": 64000,
+      "outputTokenCeiling": 10000,
+      "maxRequests": 12,
+      "maxReservedMicroUsd": 5000000,
+      "countReservedMicroUsd": 256000,
+      "generationReservedMicroUsd": 456000,
+      "sdkRetries": 0
+    },
+    "contentRequests": 2,
+    "generations": 1,
+    "countRequests": 1,
+    "reservedUpperBoundUsd": 0.712,
+    "unknownOutcomes": 0,
+    "supplierReturnedCost": {
+      "status": "not_returned_by_provider",
+      "amountUsd": null
+    },
+    "countEndpointTariff": "not_separately_documented_reserved_at_full_input_price",
+    "instanceGenerations": 1
+  },
+  "providerInvocationEntered": true,
+  "providerOutcome": "receipt_recorded",
+  "sdkRetries": 0,
+  "maxGenerations": 1,
+  "maxContentRequestsForThisTest": 2,
+  "automaticRecovery": false,
+  "oracleSentToProvider": false,
+  "safeError": "SOL_LABEL_ASSERTION_OR_ENVIRONMENT_FAILURE",
+  "realProviderReceiptRequired": true,
+  "syntheticDocument": true,
+  "databaseChanged": false,
+  "financialResultGenerated": false,
+  "legalActivation": false,
+  "humanReview": false,
+  "scope": "Only the two previously mismatched printed overtime labels. Full oracle failures remain separately visible; labels passing does not establish global extraction quality."
+}

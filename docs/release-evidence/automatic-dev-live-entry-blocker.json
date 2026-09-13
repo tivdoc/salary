@@ -1,0 +1,19 @@
+{
+  "gitSha": "71be72242d8af06c04bd7359946efb62e6372f2a",
+  "bundleSha256": "02b9e18f401dead95a948021c36bba72fb97559ecafe9bc728e2104f57947e92",
+  "cleanBuild": true,
+  "result": {
+    "worker": "managed_dev",
+    "state": "blocked",
+    "code": "LIVE_EXTRACTION_PROVIDER_UNCONFIGURED",
+    "items": [],
+    "notifications": {
+      "state": "disabled"
+    }
+  },
+  "exitCode": 1,
+  "providerCalled": false,
+  "workClaimed": false,
+  "reason": "No usable provider configuration found; actual live executable refuses before discovery/claim",
+  "productionChanged": false
+}

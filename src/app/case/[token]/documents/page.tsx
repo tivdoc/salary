@@ -32,7 +32,7 @@ export default async function CaseDocumentsPage({ params }: { params: Promise<{ 
 
   const documents = await listCaseDocuments(item.case_id);
   return (
-    <CaseShell eyebrow={`תיק ${item.public_id}`}>
+    <CaseShell publicId={item.public_id} eyebrow={`תיק ${item.public_id}`}>
       <CaseDocuments publicId={item.public_id} documents={documents} />
       <p className="case-back">
         <Link href={`/case/${item.public_id}`}>חזרה לתיק</Link>

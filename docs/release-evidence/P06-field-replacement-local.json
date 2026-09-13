@@ -1,0 +1,18 @@
+{
+  "base": "163bc3cb22126cea0dbbb093d5efc874927a67ab",
+  "reproduction": {
+    "failed": 2,
+    "passed": 3,
+    "failures": [
+      "offers the current source replacement after הערך שונה במסמך without inventing a value",
+      "offers the current source replacement after לא ניתן לקרוא את השדה without inventing a value"
+    ]
+  },
+  "after": {
+    "focusedTests": 66,
+    "typecheck": "PASS",
+    "changedSourceLint": "PASS"
+  },
+  "scope": "Source navigation and current-version binding; actual hosted replacement proof pending exact source deployment.",
+  "productionChanged": false
+}

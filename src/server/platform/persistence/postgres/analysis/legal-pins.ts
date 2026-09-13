@@ -1,3 +1,4 @@
+import {WAVE3_TOPICS,type Wave3Topic} from '../../../../../engine/wave3/contracts';
 import type { PinnedAnalysisDependencies } from "../../../../../engine/case-analysis/contracts";
 import { canonicalSha256 } from "../../../../../engine/rule-runtime/canonical";
 import type { LegalCatalogSelection } from "../../../../../engine/wave3/contracts";
@@ -16,8 +17,9 @@ export type LegalVersionPin = Readonly<{
 export function dependencyPins(
   dependencies: PinnedAnalysisDependencies,
   selections: readonly LegalCatalogSelection[],
+  expectedTopics: readonly Wave3Topic[] = WAVE3_TOPICS,
 ): readonly LegalVersionPin[] {
-  validateSelections(selections);
+  validateSelections(selections, expectedTopics);
   const pins: LegalVersionPin[] = [];
   pins.push({ pin_kind: "catalog", version_id: selections[0]!.catalog_id, version_sha256: dependencies.catalog_sha256 });
   for (const versionId of dependencies.source_version_ids) pins.push(pin("source", versionId));
@@ -50,8 +52,9 @@ export class PostgresLegalPinsRepository {
     analysis_run_id: string;
     dependencies: PinnedAnalysisDependencies;
     selections: readonly LegalCatalogSelection[];
+    expected_topics?: readonly Wave3Topic[];
   }>): Promise<void> {
-    const pins = dependencyPins(input.dependencies, input.selections);
+    const pins = dependencyPins(input.dependencies, input.selections, input.expected_topics);
     try {
       for (const entry of pins) {
         const result = await this.context.client.query(statement(

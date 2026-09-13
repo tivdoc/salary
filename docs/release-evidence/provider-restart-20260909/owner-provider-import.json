@@ -1,0 +1,21 @@
+{
+  "at": "2026-09-09T20:13:42.210Z",
+  "sourceExplicitlyRead": true,
+  "txtAutoloadAssumed": false,
+  "duplicateOpenaiDefinitions": 2,
+  "unrecognizedDuplicateNotImported": true,
+  "providers": [
+    "openai"
+  ],
+  "settings": [
+    "OPENAI_API_KEY",
+    "OPENAI_EXTRACTION_MODEL"
+  ],
+  "privateApplicationWritten": true,
+  "privateWorkerWritten": true,
+  "gitIgnoredApplicationEnv": true,
+  "publicSecretVariablesWritten": false,
+  "priorEncryptionAndRecipientPreserved": true,
+  "modelAvailable": false,
+  "providerCalled": false
+}

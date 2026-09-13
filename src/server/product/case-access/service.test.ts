@@ -5,6 +5,8 @@
 // ceiling holds; an unknown contact answers like a known one; the token is in
 // the message alone.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+// Server adapter marker is mocked only in this hermetic test module.
+vi.mock('server-only',()=>({}));
 import { productOffer } from "@/lib/product-offer";
 import { hashToken } from "./crypto.ts";
 import { fakeCaseAccessDb, type FakeCase } from "./fake-db.ts";
@@ -127,8 +129,8 @@ describe("the case link on a verified payment (U4)", () => {
     const sent = capturingProvider();
     const first = await sweepPendingCaseLinks(50, db);
     const second = await sweepPendingCaseLinks(50, db);
-    expect(first).toEqual({ examined: 1, sent: 1, failed: 0, refused: 0, already_sent: 0 });
-    expect(second).toEqual({ examined: 0, sent: 0, failed: 0, refused: 0, already_sent: 0 });
+    expect(first).toEqual({ examined: 1, queued: 0, sent: 1, failed: 0, refused: 0, already_sent: 0 });
+    expect(second).toEqual({ examined: 0, queued: 0, sent: 0, failed: 0, refused: 0, already_sent: 0 });
     expect(sent).toHaveLength(1);
     expect(sent[0]!.template).toBe("case_link");
     expect(sent[0]!.to).toBe("dana.test@example.com");
@@ -251,4 +253,16 @@ describe("login and recovery by contact (U2)", () => {
     expect((await resendCaseLink(CASE.id, db)).outcome).toBe("sent");
     expect((await resendCaseLink(CASE.id, db)).outcome).toBe("resend_limited");
   });
+});
+
+it('passes actual direct provider acceptance IDs to the durable receipt boundary',async()=>{
+ const base=fakeCaseAccessDb([UNVERIFIED]);const providerId='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';const records:Record<string,unknown>[]=[];
+ const db={provider:'fake' as const,async rpc<T>(fn:string,args:Readonly<Record<string,unknown>>):Promise<readonly T[]>{
+  if(fn==='case_notification_record_provider'){records.push({...args});const {target_provider_message_id,...legacy}=args;expect(target_provider_message_id).toBe(providerId);return base.rpc<T>('case_notification_record',legacy);}
+  return base.rpc<T>(fn,args);
+ }};
+ installNotificationProviderForTests({id:'resend',async send(){return {ok:true,provider_message_id:providerId};}});
+ await requestFunnelCode({caseId:UNVERIFIED.id,request:requestWithIp('203.0.113.20')},db);
+ expect(records).toHaveLength(1);expect(records[0]).toMatchObject({target_case:UNVERIFIED.id,target_provider:'resend',target_state:'sent',target_template:'access_code',target_provider_message_id:providerId});
+ expect(JSON.stringify(records)).not.toContain('קוד הכניסה');
 });

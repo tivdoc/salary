@@ -1,0 +1,186 @@
+{
+  "checkedAt": "2026-09-09T22:19:16.075Z",
+  "gitSha": "a30f881dca092bbec91cb48aae7fdfc670d0ee5f",
+  "preview": "https://salary-ivlzv8ge9-tivdoccom-5042s-projects.vercel.app",
+  "schema": 131,
+  "identityFixture": true,
+  "caseSeeded": false,
+  "codeSeeded": false,
+  "sessionSeeded": false,
+  "browserLogin": true,
+  "browserRefresh": true,
+  "mailFolder": "Spam",
+  "codes": [
+    {
+      "id": "3bc4fa12-9b4b-4238-a0ed-27a50b60574c",
+      "created_at": "2026-09-09T21:16:57.389Z",
+      "expires_at": "2026-09-09T21:26:57.389Z",
+      "consumed_at": "2026-09-09T21:17:34.572Z",
+      "attempts": 1
+    },
+    {
+      "id": "b78a9182-0175-4827-afaa-3adfeb2c3c65",
+      "created_at": "2026-09-09T21:45:10.116Z",
+      "expires_at": "2026-09-09T21:55:10.116Z",
+      "consumed_at": "2026-09-09T21:45:43.781Z",
+      "attempts": 1
+    },
+    {
+      "id": "2e498c30-e334-40ad-8df7-63c910699123",
+      "created_at": "2026-09-09T22:06:10.685Z",
+      "expires_at": "2026-09-09T22:16:10.685Z",
+      "consumed_at": "2026-09-09T22:09:52.753Z",
+      "attempts": 1
+    },
+    {
+      "id": "22c555c0-dae5-48ee-a305-b11cc830b40e",
+      "created_at": "2026-09-09T22:09:52.753Z",
+      "expires_at": "2026-09-09T22:19:52.753Z",
+      "consumed_at": "2026-09-09T22:10:34.816Z",
+      "attempts": 1
+    }
+  ],
+  "sessions": [
+    {
+      "id": "f5650ef3-35bc-4b02-8116-a47496e53900",
+      "created_at": "2026-09-09T22:10:34.913Z",
+      "expires_at": "2026-10-09T22:10:34.913Z",
+      "last_seen_at": "2026-09-09T22:10:34.913Z",
+      "revoked_at": null
+    },
+    {
+      "id": "c419e421-dfb7-4a4c-8d20-84a95ec5c95b",
+      "created_at": "2026-09-09T21:45:43.882Z",
+      "expires_at": "2026-10-09T21:45:43.882Z",
+      "last_seen_at": "2026-09-09T21:45:43.882Z",
+      "revoked_at": null
+    },
+    {
+      "id": "242cb656-19b4-4f31-a9ab-3e77d3df3048",
+      "created_at": "2026-09-09T21:17:34.686Z",
+      "expires_at": "2026-10-09T21:17:34.686Z",
+      "last_seen_at": "2026-09-09T21:17:34.686Z",
+      "revoked_at": null
+    }
+  ],
+  "notifications": [
+    {
+      "id": "e4040cce-a343-4d3f-995a-854e6a1e7c96",
+      "template": "access_code",
+      "state": "delivered",
+      "provider": "resend",
+      "provider_message_id": "def61c9d-a7d6-4696-8a2f-83edd9d6811f",
+      "error_code": null,
+      "created_at": "2026-09-09T22:09:53.685Z"
+    },
+    {
+      "id": "24446df2-75a1-44ff-adc5-75cb8bfc5a3c",
+      "template": "access_code",
+      "state": "sent",
+      "provider": "resend",
+      "provider_message_id": null,
+      "error_code": null,
+      "created_at": "2026-09-09T21:16:57.772Z"
+    },
+    {
+      "id": "d2444d62-7607-4929-8e59-8a52e3d64c89",
+      "template": "access_code",
+      "state": "delivered",
+      "provider": "resend",
+      "provider_message_id": "15de2ddd-9083-41ed-89a7-a94c1eadee91",
+      "error_code": null,
+      "created_at": "2026-09-09T21:45:10.465Z"
+    },
+    {
+      "id": "e4470f30-7673-47e4-8627-9d1036f7fc0d",
+      "template": "access_code",
+      "state": "delivered",
+      "provider": "resend",
+      "provider_message_id": "b31dc5b9-99a6-47ad-830b-bcd52f8da1e0",
+      "error_code": null,
+      "created_at": "2026-09-09T22:06:10.993Z"
+    }
+  ],
+  "events": [
+    {
+      "event_id": "msg_3J6nJFizdb61RjRmXwl4fhnjvdX",
+      "provider_message_id": "15de2ddd-9083-41ed-89a7-a94c1eadee91",
+      "kind": "email.sent",
+      "occurred_at": "2026-09-09T21:45:10.647Z",
+      "received_at": "2026-09-09T21:45:13.351Z"
+    },
+    {
+      "event_id": "msg_3J6nJLSDHIdNyooMLt3nsRCQIsJ",
+      "provider_message_id": "15de2ddd-9083-41ed-89a7-a94c1eadee91",
+      "kind": "email.delivered",
+      "occurred_at": "2026-09-09T21:45:11.334Z",
+      "received_at": "2026-09-09T21:45:13.726Z"
+    },
+    {
+      "event_id": "msg_3J6predxaAtS7gStG6gzEyh8COF",
+      "provider_message_id": "b31dc5b9-99a6-47ad-830b-bcd52f8da1e0",
+      "kind": "email.sent",
+      "occurred_at": "2026-09-09T22:06:11.239Z",
+      "received_at": "2026-09-09T22:06:14.137Z"
+    },
+    {
+      "event_id": "msg_3J6pruEy39Dw7TheOhQ5ziopO7b",
+      "provider_message_id": "b31dc5b9-99a6-47ad-830b-bcd52f8da1e0",
+      "kind": "email.delivered",
+      "occurred_at": "2026-09-09T22:06:12.946Z",
+      "received_at": "2026-09-09T22:06:14.953Z"
+    },
+    {
+      "event_id": "msg_3J6qJeFly4V2VRistLwKQ1SAGGF",
+      "provider_message_id": "def61c9d-a7d6-4696-8a2f-83edd9d6811f",
+      "kind": "email.sent",
+      "occurred_at": "2026-09-09T22:09:53.896Z",
+      "received_at": "2026-09-09T22:09:56.767Z"
+    },
+    {
+      "event_id": "msg_3J6qJmsst0Hzx2x7zpjZmzrw4AZ",
+      "provider_message_id": "def61c9d-a7d6-4696-8a2f-83edd9d6811f",
+      "kind": "email.delivered",
+      "occurred_at": "2026-09-09T22:09:54.514Z",
+      "received_at": "2026-09-09T22:09:57.186Z"
+    }
+  ],
+  "consumedCodeReplay": [
+    {
+      "outcome": "none",
+      "code_id": null,
+      "token_id": null
+    }
+  ],
+  "directDeliveryLimitation": null,
+  "currentProductReceipt": [
+    {
+      "id": "e4040cce-a343-4d3f-995a-854e6a1e7c96",
+      "template": "access_code",
+      "state": "delivered",
+      "provider": "resend",
+      "provider_message_id": "def61c9d-a7d6-4696-8a2f-83edd9d6811f",
+      "error_code": null,
+      "created_at": "2026-09-09T22:09:53.685Z"
+    },
+    {
+      "id": "d2444d62-7607-4929-8e59-8a52e3d64c89",
+      "template": "access_code",
+      "state": "delivered",
+      "provider": "resend",
+      "provider_message_id": "15de2ddd-9083-41ed-89a7-a94c1eadee91",
+      "error_code": null,
+      "created_at": "2026-09-09T21:45:10.465Z"
+    },
+    {
+      "id": "e4470f30-7673-47e4-8627-9d1036f7fc0d",
+      "template": "access_code",
+      "state": "delivered",
+      "provider": "resend",
+      "provider_message_id": "b31dc5b9-99a6-47ad-830b-bcd52f8da1e0",
+      "error_code": null,
+      "created_at": "2026-09-09T22:06:10.993Z"
+    }
+  ],
+  "outboxProof": false
+}

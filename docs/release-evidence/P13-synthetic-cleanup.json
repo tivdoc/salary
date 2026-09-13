@@ -1,0 +1,17 @@
+{
+  "at": "2026-09-07T19:12:41.355Z",
+  "database": "tivdoc_release_replay_20260907",
+  "syntheticCasesRemoved": 2,
+  "syntheticIdentitiesRemoved": 2,
+  "currentBytesVerified": 7,
+  "retainedBytesVerified": 1,
+  "verificationNote": "First same-URL GET immediately after DELETE returned cached bytes; both case-prefix inventories were empty and cache-busted authenticated GETs confirmed all ten absent. CDN invalidation latency is not proved zero.",
+  "knownPaths": 10,
+  "uploadedPaths": 9,
+  "checks": [
+    "two exclusively owned synthetic cases, dependent rows and identities removed before Storage deletion",
+    "all ten exact owned Storage paths confirmed absent after removal"
+  ],
+  "productionChanged": false,
+  "realCustomerCasesChanged": 0
+}

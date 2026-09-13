@@ -1,0 +1,4 @@
+# Preserve exact source transcription/metadata bytes and their original CRLF.
+# Ordinary trailing-blank and indentation checks remain enabled.
+*.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+*.txt -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

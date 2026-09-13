@@ -1,0 +1,12 @@
+[
+  {
+    "id": "31ec4bb0-a0c0-445d-8bab-0373d9400288",
+    "template": "access_code",
+    "state": "sent",
+    "provider": "resend",
+    "error_code": null,
+    "provider_message_id": "b3d9666a-404b-40f1-9677-c0d28a66f986",
+    "created_at": "2026-09-10T18:39:05.101Z",
+    "delivered_at": null
+  }
+]

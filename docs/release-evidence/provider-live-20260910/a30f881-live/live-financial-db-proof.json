@@ -1,0 +1,431 @@
+{
+  "verdict": "FAIL",
+  "checkedAt": "2026-09-09T22:10:05.806Z",
+  "gitSha": "a30f881dca092bbec91cb48aae7fdfc670d0ee5f",
+  "gitWorktreeDirty": false,
+  "schemaEvidence": [
+    {
+      "signature": "private.dev_financial_admit(uuid,uuid,integer,text)",
+      "definitionSha256": "1fbfbeb81831ad41248cbbede42071556fe9f6e856be88f7c80d43a2976f45e9"
+    },
+    {
+      "signature": "private.dev_financial_request_open(uuid,uuid,integer,text)",
+      "definitionSha256": "ab061d274c579ec48ef978f6f1cc7001c1fdaff79ef311d4ed91b9caddd97c0e"
+    },
+    {
+      "signature": "private.dev_financial_save(jsonb,text,text,text)",
+      "definitionSha256": "60da1bc5845622c76546a98ae4e64aa35cee903f023984fc174e55e91e8c8f46"
+    }
+  ],
+  "checks": [
+    "actual web reservation, non-upsert signed Storage transfer, byte validation and commit feed the actual durable V2 extraction adapter and saved receipt; provider response is from the actual SDK, with persisted response/model/request/source receipts",
+    "the actual SQL write boundary refuses a missing-hours question when the persisted extraction already contains regular hours",
+    "raw V2 high-confidence candidates remain unconfirmed and cannot produce a financial run; the original canonical confirmation gate refuses them",
+    "failure immediately before financial save rolls back parent analysis, financial result and finding while the committed source and extraction receipt remain available",
+    "a hand-set independent 100-hour and 3300-ILS fixture produces 3540 ILS expected and 240 ILS difference from its actual canonical parent and exact saved document version; no finding or report was seeded",
+    "concurrent retries and a newly opened independent worker connection return the identical committed report without duplicate findings or another provider pass; this is connection restart, not process restart",
+    "a foreign customer cannot obtain the report payload or its source reference; the worker cannot use the customer RPC, web cannot read private rows, and the case worker cannot analyze another case",
+    "explicit upload replacement preserves old bytes and history but immediately makes the old result non-current and refuses old-job publication"
+  ],
+  "confirmationChecks": [
+    {
+      "versionId": "15597edc-5c38-4edb-ba91-71125bb307ae",
+      "fields": [
+        "base_monthly_salary",
+        "gross_salary",
+        "hourly_rate",
+        "net_salary",
+        "regular_hours",
+        "salary_period",
+        "salary_type"
+      ],
+      "actor": "automated_known_synthetic_fixture_identity",
+      "humanReview": false,
+      "ocrConfidenceModified": false,
+      "receiptReused": true
+    }
+  ],
+  "provenanceChecks": [
+    {
+      "label": "initial",
+      "versionId": "15597edc-5c38-4edb-ba91-71125bb307ae",
+      "kind": "openai_live",
+      "providerAttempted": true,
+      "allPassesSucceeded": true,
+      "checkpointResultSha256": "6523ffa2c0092951dc3845dc64883d1a2479f3d463e774dcb597d764c53b5c7d",
+      "receipts": [
+        {
+          "schema_version": "tivdoc-openai-provider-receipt-v1",
+          "origin": "openai_live",
+          "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+          "analysis_run_id": "0433b91a-69e5-4a18-8a96-9ca4fdd6f364",
+          "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+          "extraction_id": "db16edf7-0dd7-46d4-baea-0f61a8632a8b",
+          "source_sha256": "4a1749471e064555bcd72a265aba80191ef6f3fe8f1d1f3e5613730e360558fb",
+          "source_size_bytes": 3512,
+          "source_mime_type": "application/pdf",
+          "source_page_count": 1,
+          "request_sha256": "361410d321f77a59322ae8e17e4769b3839662235d457f14b0d2e1c733502e77",
+          "raw_extraction_sha256": "dd73a1e081b6756af2ae4cf8db442d35a819526a2d95d7ba18cd947f1a6d8073",
+          "pass_kind": "first_pass",
+          "requested_model": "gpt-4o-mini-2024-07-18",
+          "actual_model": "gpt-4o-mini-2024-07-18",
+          "extractor_version": "2.1",
+          "prompt_version": "payslip-extraction-openai-v2-first-r3",
+          "provider_response_id": "resp_07d4caa4093effb5016aa1d90091fc87d2a0997cbe1208775b",
+          "provider_request_id": "req_7d7ae0415c3a43c98e350a57d7976c22",
+          "provider_attempted": true,
+          "status": "completed",
+          "error_code": null,
+          "http_status": null,
+          "duration_ms": 6240,
+          "token_usage": {
+            "input_tokens": 40323,
+            "output_tokens": 460,
+            "total_tokens": 40783
+          },
+          "cost": {
+            "status": "not_returned_by_provider",
+            "amount_usd": null
+          },
+          "created_at": "2026-09-09T22:09:10.111Z",
+          "receipt_sha256": "64afcb0ebf60cb4c9e6bca171cabb571d50007fa2b263db5a4d35358752ad5e7"
+        }
+      ]
+    },
+    {
+      "label": "missing",
+      "versionId": "2c9f4382-734a-42ba-9f17-ceb427acc836",
+      "kind": "openai_live",
+      "providerAttempted": true,
+      "allPassesSucceeded": true,
+      "checkpointResultSha256": "ad86e2da0337294e6e0fa9cfdeb910519cca6fd79f3e85f1e71080114d584dff",
+      "receipts": [
+        {
+          "schema_version": "tivdoc-openai-provider-receipt-v1",
+          "origin": "openai_live",
+          "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+          "analysis_run_id": "b7e70c4c-f4e3-4021-832d-1087566a1f03",
+          "document_id": "2c9f4382-734a-42ba-9f17-ceb427acc836",
+          "extraction_id": "32b82032-fc63-476f-8c6e-b00fcbb128f8",
+          "source_sha256": "520ff4644bedc7c4e1fe333f30662027e2bd4d94721e6338d325b03f175b18f5",
+          "source_size_bytes": 3623,
+          "source_mime_type": "application/pdf",
+          "source_page_count": 1,
+          "request_sha256": "1a0211b3e9212ea132b5cab97e157f8e4ff0cbbe173a432007ec190dcd17e949",
+          "raw_extraction_sha256": "e4e35639dd4d57af5383ba95169c9720411f7009a651c0247f4108b8c7204f2a",
+          "pass_kind": "first_pass",
+          "requested_model": "gpt-4o-mini-2024-07-18",
+          "actual_model": "gpt-4o-mini-2024-07-18",
+          "extractor_version": "2.1",
+          "prompt_version": "payslip-extraction-openai-v2-first-r3",
+          "provider_response_id": "resp_0ea37fab7a1867e5016aa1d92c84a887d2b7e0ec061ee95e39",
+          "provider_request_id": "req_a690221cb81c45bf81e05f9741d2b803",
+          "provider_attempted": true,
+          "status": "completed",
+          "error_code": null,
+          "http_status": null,
+          "duration_ms": 7671,
+          "token_usage": {
+            "input_tokens": 40332,
+            "output_tokens": 755,
+            "total_tokens": 41087
+          },
+          "cost": {
+            "status": "not_returned_by_provider",
+            "amount_usd": null
+          },
+          "created_at": "2026-09-09T22:09:55.745Z",
+          "receipt_sha256": "0a80adb5d9c8aa325705a7b52306b16fa6245df8027b2c584bf98911587fcb0e"
+        },
+        {
+          "schema_version": "tivdoc-openai-provider-receipt-v1",
+          "origin": "openai_live",
+          "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+          "analysis_run_id": "b7e70c4c-f4e3-4021-832d-1087566a1f03",
+          "document_id": "2c9f4382-734a-42ba-9f17-ceb427acc836",
+          "extraction_id": "43ce39ad-132f-494b-9748-27a82b803ac5",
+          "source_sha256": "520ff4644bedc7c4e1fe333f30662027e2bd4d94721e6338d325b03f175b18f5",
+          "source_size_bytes": 3623,
+          "source_mime_type": "application/pdf",
+          "source_page_count": 1,
+          "request_sha256": "c103b52aee4b216603ed164303d3f11e8edce6325f00e0cf804452a08a9f23f0",
+          "raw_extraction_sha256": "8b712f264529c4dde162973b3f5bd4c4ec81601879316d6a2737098f13647b23",
+          "pass_kind": "targeted_recovery",
+          "requested_model": "gpt-4o-mini-2024-07-18",
+          "actual_model": "gpt-4o-mini-2024-07-18",
+          "extractor_version": "2.1",
+          "prompt_version": "payslip-extraction-openai-v2-recovery-r3",
+          "provider_response_id": "resp_0115d16797f27e16016aa1d934281887d284694266b9c14caf",
+          "provider_request_id": "req_8613bae3e443402da4c9736dd7fb40ad",
+          "provider_attempted": true,
+          "status": "completed",
+          "error_code": null,
+          "http_status": null,
+          "duration_ms": 5314,
+          "token_usage": {
+            "input_tokens": 40367,
+            "output_tokens": 383,
+            "total_tokens": 40750
+          },
+          "cost": {
+            "status": "not_returned_by_provider",
+            "amount_usd": null
+          },
+          "created_at": "2026-09-09T22:10:01.099Z",
+          "receipt_sha256": "de7552ecef53d4904b432d8b9dab99a3238bd4826330fa8ca637800c4c788464"
+        }
+      ]
+    }
+  ],
+  "failure": {
+    "phase": "missing-confirmations",
+    "errorKind": "AssertionError",
+    "code": null
+  },
+  "cleanupFailure": null,
+  "runs": [
+    {
+      "runId": "0fd6c29d-cfb2-4349-80a7-c5383a25a056",
+      "inputRevision": 16,
+      "state": "calculated"
+    }
+  ],
+  "notificationEvidence": [],
+  "browserAnswerRequested": true,
+  "providerKind": "openai_live",
+  "providerInvocationEntered": 3,
+  "providerReceiptConfirmedCalls": 3,
+  "providerCalled": true,
+  "providerReceipts": [
+    {
+      "schema_version": "tivdoc-openai-provider-receipt-v1",
+      "origin": "openai_live",
+      "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+      "analysis_run_id": "0433b91a-69e5-4a18-8a96-9ca4fdd6f364",
+      "document_id": "15597edc-5c38-4edb-ba91-71125bb307ae",
+      "extraction_id": "db16edf7-0dd7-46d4-baea-0f61a8632a8b",
+      "source_sha256": "4a1749471e064555bcd72a265aba80191ef6f3fe8f1d1f3e5613730e360558fb",
+      "source_size_bytes": 3512,
+      "source_mime_type": "application/pdf",
+      "source_page_count": 1,
+      "request_sha256": "361410d321f77a59322ae8e17e4769b3839662235d457f14b0d2e1c733502e77",
+      "raw_extraction_sha256": "dd73a1e081b6756af2ae4cf8db442d35a819526a2d95d7ba18cd947f1a6d8073",
+      "pass_kind": "first_pass",
+      "requested_model": "gpt-4o-mini-2024-07-18",
+      "actual_model": "gpt-4o-mini-2024-07-18",
+      "extractor_version": "2.1",
+      "prompt_version": "payslip-extraction-openai-v2-first-r3",
+      "provider_response_id": "resp_07d4caa4093effb5016aa1d90091fc87d2a0997cbe1208775b",
+      "provider_request_id": "req_7d7ae0415c3a43c98e350a57d7976c22",
+      "provider_attempted": true,
+      "status": "completed",
+      "error_code": null,
+      "http_status": null,
+      "duration_ms": 6240,
+      "token_usage": {
+        "input_tokens": 40323,
+        "output_tokens": 460,
+        "total_tokens": 40783
+      },
+      "cost": {
+        "status": "not_returned_by_provider",
+        "amount_usd": null
+      },
+      "created_at": "2026-09-09T22:09:10.111Z",
+      "receipt_sha256": "64afcb0ebf60cb4c9e6bca171cabb571d50007fa2b263db5a4d35358752ad5e7"
+    },
+    {
+      "schema_version": "tivdoc-openai-provider-receipt-v1",
+      "origin": "openai_live",
+      "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+      "analysis_run_id": "b7e70c4c-f4e3-4021-832d-1087566a1f03",
+      "document_id": "2c9f4382-734a-42ba-9f17-ceb427acc836",
+      "extraction_id": "32b82032-fc63-476f-8c6e-b00fcbb128f8",
+      "source_sha256": "520ff4644bedc7c4e1fe333f30662027e2bd4d94721e6338d325b03f175b18f5",
+      "source_size_bytes": 3623,
+      "source_mime_type": "application/pdf",
+      "source_page_count": 1,
+      "request_sha256": "1a0211b3e9212ea132b5cab97e157f8e4ff0cbbe173a432007ec190dcd17e949",
+      "raw_extraction_sha256": "e4e35639dd4d57af5383ba95169c9720411f7009a651c0247f4108b8c7204f2a",
+      "pass_kind": "first_pass",
+      "requested_model": "gpt-4o-mini-2024-07-18",
+      "actual_model": "gpt-4o-mini-2024-07-18",
+      "extractor_version": "2.1",
+      "prompt_version": "payslip-extraction-openai-v2-first-r3",
+      "provider_response_id": "resp_0ea37fab7a1867e5016aa1d92c84a887d2b7e0ec061ee95e39",
+      "provider_request_id": "req_a690221cb81c45bf81e05f9741d2b803",
+      "provider_attempted": true,
+      "status": "completed",
+      "error_code": null,
+      "http_status": null,
+      "duration_ms": 7671,
+      "token_usage": {
+        "input_tokens": 40332,
+        "output_tokens": 755,
+        "total_tokens": 41087
+      },
+      "cost": {
+        "status": "not_returned_by_provider",
+        "amount_usd": null
+      },
+      "created_at": "2026-09-09T22:09:55.745Z",
+      "receipt_sha256": "0a80adb5d9c8aa325705a7b52306b16fa6245df8027b2c584bf98911587fcb0e"
+    },
+    {
+      "schema_version": "tivdoc-openai-provider-receipt-v1",
+      "origin": "openai_live",
+      "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+      "analysis_run_id": "b7e70c4c-f4e3-4021-832d-1087566a1f03",
+      "document_id": "2c9f4382-734a-42ba-9f17-ceb427acc836",
+      "extraction_id": "43ce39ad-132f-494b-9748-27a82b803ac5",
+      "source_sha256": "520ff4644bedc7c4e1fe333f30662027e2bd4d94721e6338d325b03f175b18f5",
+      "source_size_bytes": 3623,
+      "source_mime_type": "application/pdf",
+      "source_page_count": 1,
+      "request_sha256": "c103b52aee4b216603ed164303d3f11e8edce6325f00e0cf804452a08a9f23f0",
+      "raw_extraction_sha256": "8b712f264529c4dde162973b3f5bd4c4ec81601879316d6a2737098f13647b23",
+      "pass_kind": "targeted_recovery",
+      "requested_model": "gpt-4o-mini-2024-07-18",
+      "actual_model": "gpt-4o-mini-2024-07-18",
+      "extractor_version": "2.1",
+      "prompt_version": "payslip-extraction-openai-v2-recovery-r3",
+      "provider_response_id": "resp_0115d16797f27e16016aa1d934281887d284694266b9c14caf",
+      "provider_request_id": "req_8613bae3e443402da4c9736dd7fb40ad",
+      "provider_attempted": true,
+      "status": "completed",
+      "error_code": null,
+      "http_status": null,
+      "duration_ms": 5314,
+      "token_usage": {
+        "input_tokens": 40367,
+        "output_tokens": 383,
+        "total_tokens": 40750
+      },
+      "cost": {
+        "status": "not_returned_by_provider",
+        "amount_usd": null
+      },
+      "created_at": "2026-09-09T22:10:01.099Z",
+      "receipt_sha256": "de7552ecef53d4904b432d8b9dab99a3238bd4826330fa8ca637800c4c788464"
+    }
+  ],
+  "distinctProviderInputs": [
+    "4a1749471e064555bcd72a265aba80191ef6f3fe8f1d1f3e5613730e360558fb",
+    "520ff4644bedc7c4e1fe333f30662027e2bd4d94721e6338d325b03f175b18f5"
+  ],
+  "budgetBefore": {
+    "policy": {
+      "version": "tivdoc-live-corpus-budget-v1",
+      "model": "gpt-4o-mini-2024-07-18",
+      "pricingSource": "https://developers.openai.com/api/docs/models/gpt-4o-mini",
+      "pricingCheckedAt": "2026-09-09",
+      "pricingValidUntil": "2026-09-16T00:00:00Z",
+      "inputTokenCeiling": 128000,
+      "outputTokenCeiling": 10000,
+      "inputUsdPerMillion": 0.15,
+      "outputUsdPerMillion": 0.6,
+      "perPassReservedMicroUsd": 25200,
+      "maxReservedMicroUsd": 5000000,
+      "maxPasses": 22,
+      "maxSourceBytes": 1048576,
+      "maxPages": 1,
+      "maxRasterWidth": 2500,
+      "maxRasterHeight": 3600,
+      "maxRasterPixels": 9000000,
+      "maxImagesPerRequest": 5,
+      "maxImageBytes": 2097152,
+      "maxRequestTextBytes": 64000,
+      "sdkRetries": 0
+    },
+    "reservedPasses": 16,
+    "reservedUpperBoundUsd": 0.4032,
+    "supplierReturnedCost": {
+      "status": "not_returned_by_provider",
+      "amountUsd": null
+    },
+    "unknownOutcomes": 0
+  },
+  "budgetAfter": {
+    "policy": {
+      "version": "tivdoc-live-corpus-budget-v1",
+      "model": "gpt-4o-mini-2024-07-18",
+      "pricingSource": "https://developers.openai.com/api/docs/models/gpt-4o-mini",
+      "pricingCheckedAt": "2026-09-09",
+      "pricingValidUntil": "2026-09-16T00:00:00Z",
+      "inputTokenCeiling": 128000,
+      "outputTokenCeiling": 10000,
+      "inputUsdPerMillion": 0.15,
+      "outputUsdPerMillion": 0.6,
+      "perPassReservedMicroUsd": 25200,
+      "maxReservedMicroUsd": 5000000,
+      "maxPasses": 22,
+      "maxSourceBytes": 1048576,
+      "maxPages": 1,
+      "maxRasterWidth": 2500,
+      "maxRasterHeight": 3600,
+      "maxRasterPixels": 9000000,
+      "maxImagesPerRequest": 5,
+      "maxImageBytes": 2097152,
+      "maxRequestTextBytes": 64000,
+      "sdkRetries": 0
+    },
+    "reservedPasses": 19,
+    "reservedUpperBoundUsd": 0.4788,
+    "supplierReturnedCost": {
+      "status": "not_returned_by_provider",
+      "amountUsd": null
+    },
+    "unknownOutcomes": 0
+  },
+  "reviewedRetry": {
+    "version": "tivdoc-live-reviewed-attempt-v1",
+    "attemptRevision": 4,
+    "reasonCode": "identified_recovery_confirmation_after_c521776",
+    "codeRevision": "a30f881dca092bbec91cb48aae7fdfc670d0ee5f"
+  },
+  "independentExpected": {
+    "month": "2026-06",
+    "regularHours": "100",
+    "hourlyRateMinor": 3300,
+    "baseMinor": 330000,
+    "grossMinor": 330000,
+    "deductionsMinor": 0,
+    "netMinor": 330000,
+    "expectedMinor": 354000,
+    "gapMinor": 24000,
+    "independentCalculation": "100 * 3540 minor units - 330000 minor units = 24000 minor units",
+    "humanLegalApproval": false,
+    "sourceIsSynthetic": true
+  },
+  "syntheticCasesRemoved": 1,
+  "syntheticIdentitiesRemoved": 1,
+  "machineSessionsRevoked": 2,
+  "storageObjectsRemoved": 0,
+  "sourceFiles": [
+    {
+      "name": "synthetic-live-table-june-2026-clear.pdf",
+      "sha256": "4a1749471e064555bcd72a265aba80191ef6f3fe8f1d1f3e5613730e360558fb"
+    },
+    {
+      "name": "synthetic-live-table-june-2026-missing-hours.pdf",
+      "sha256": "520ff4644bedc7c4e1fe333f30662027e2bd4d94721e6338d325b03f175b18f5"
+    }
+  ],
+  "canonicalAuditRetained": true,
+  "retainedForOwnerBrowser": true,
+  "retainedCaseId": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+  "retainedPublicId": "TV-73299C08",
+  "cleanupManifestPrivate": true,
+  "uploadProof": "Actual web-role reserve/commit and signed private Storage bytes; HTTP/browser upload is outside this proof",
+  "browserProof": false,
+  "customerSessionInjected": false,
+  "processRestartProof": false,
+  "connectionRestartProof": false,
+  "liveSdkExtractionProof": true,
+  "liveFinancialFlowProof": false,
+  "actualEmployeePayslipProof": false,
+  "humanLegalApproval": false,
+  "customerLegalAnalysisReady": false,
+  "productionChanged": false
+}

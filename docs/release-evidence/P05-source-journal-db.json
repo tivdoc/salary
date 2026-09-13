@@ -1,0 +1,16 @@
+{
+  "checks": [
+    "source write commits immutable input and dispatch intent together",
+    "unchanged retry creates no new revision or work",
+    "crash/rollback loses neither original source nor original dispatch and exposes no partial revision",
+    "parallel independent input updates converge without losing either change",
+    "two synthetic cases keep independent revisions",
+    "fresh actual worker connection reads committed journal after controller transaction ended",
+    "browser roles cannot read journal and service route cannot forge input captures",
+    "prior input snapshots survive later updates with distinct digests"
+  ],
+  "database": "tivdoc_release_replay_20260907",
+  "migration_sha256_lf": "d6acb662f9d12b437b4ae0742c8bc059ceb24e7a41ec38fd232a9ba65b078719",
+  "scope": "actual PostgreSQL source journal; no provider, Storage or full composition claimed",
+  "production": "untouched"
+}

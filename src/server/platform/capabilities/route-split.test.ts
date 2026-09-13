@@ -42,14 +42,16 @@ describe("the product/engine route split (D3)", () => {
       if (entry.half === "product") expect(entry.probes?.length ?? 0, entry.entrypoint_id).toBeGreaterThan(0);
       else expect(entry.probes, entry.entrypoint_id).toBeUndefined();
     }
-    expect(productAssignments()).toHaveLength(33);
-    expect(engineAssignments()).toHaveLength(7);
+    expect(productAssignments()).toHaveLength(39);
+    expect(engineAssignments()).toHaveLength(9);
   });
 
   it("an unassigned id has no half", () => {
     expect(routeHalfOf("CEP-999")).toBeNull();
     expect(routeHalfOf("CEP-024")).toBe("product");
     expect(routeHalfOf("CEP-020")).toBe("engine");
+    expect(routeHalfOf("CEP-115")).toBe("engine");
+    expect(routeHalfOf("CEP-116")).toBe("engine");
   });
 });
 
@@ -80,6 +82,12 @@ describe("the differential against main's own route inventory (D4)", () => {
     // must be named here, with its reason, to pass.
     // UX Run 1 (S1): the six customer-access routes, product half, each with the reason route-split.ts carries.
     const productAddedOnBranch: Record<string, string> = {
+      "src/app/accessibility/page.tsx": "P11 public accessibility information, contact and honest verification scope; no claim of certified compliance.",
+      "src/app/account/page.tsx": "P10 authenticated account and privacy request history.",
+      "src/app/api/account/route.ts": "P10 scoped privacy intake and fresh-session personal data export.",
+      "src/app/case/[token]/orders/page.tsx": "P09 identity-scoped order history and purchase quote.",
+      "src/app/api/cases/[token]/reports/route.ts": "P08 identity-scoped saved report artifacts and correction intake; no calculation or publication.",
+      "src/app/api/notifications/resend/route.ts": "P07 authenticated provider event inbox, disabled until configured; no customer or send authority.",
       "src/app/case/[token]/page.tsx": "UX Run 1 / D-1.2: the code challenge the sent link opens, and the case view for a verified identity session; it reaches no legal computation.",
       "src/app/login/page.tsx": "UX Run 1 / D-1.4: phone or email, then a code, then the identity's cases; login and recovery in one route.",
       "src/app/cases/page.tsx": "UX Run 1 / D-1.5: the identity's case list, rendered only with more than one case; without a session it sends the visitor to /login.",
@@ -89,7 +97,7 @@ describe("the differential against main's own route inventory (D4)", () => {
       "src/app/case/[token]/thread/page.tsx": "Site S3.4 / D-2: the thread where a refusal became a question; without a session it sends the visitor to /login.",
       "src/app/case/[token]/documents/page.tsx": "Site S3.4 + S2.3: the case's own documents, behind the verified identity session.",
       "src/app/case/[token]/reports/page.tsx": "Site S3.4: renders the case_report_projection and computes nothing; today every topic reads awaiting_verification.",
-      "src/app/api/cases/[token]/requests/route.ts": "Site S3.4 / D-2: answers one open request; it cannot open one, and the case comes from the session rather than the body.",
+      "src/app/api/cases/[token]/requests/route.ts": "P06/P08: session-scoped answers, support and exact request-source bytes. Mutations require same Origin; scope and actor come from the verified session.",
       "src/app/api/cases/[token]/upload-session/route.ts": "Site S2.3: points the funnel's case cookie at a case the verified identity owns, so a document added after payment walks the same review screen; it accepts no file.",
       "src/app/check/reminders/off/page.tsx": "Site S4 (ב.12): where the reminder's opt-out link lands. It asks once and posts, so a mail client's link prefetcher cannot opt anyone out; it resolves no token and reveals nothing.",
       "src/app/api/cases/reminders/off/route.ts": "Site S4 (ב.12): records the opt-out for the case a reminder token names. It peeks at the token rather than spending it, and answers ok for every token so liveness cannot be probed.",

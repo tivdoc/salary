@@ -1,4 +1,5 @@
 import { canonicalSha256, canonicalStringify } from "../../../engine/rule-runtime/canonical";
+import {resolvedPayslipFactPaths} from "../../../engine/extraction/resolver";
 import { CASE_ANALYSIS_STAGES, CaseAnalysisError } from "../../../engine/case-analysis/contracts";
 import {
   PROHIBITED_BOUNDARY_OPERATIONS,
@@ -111,13 +112,14 @@ export async function runFullSystemAcceptanceMatrix() {
     snapshot_loads_before: firstAccesses.loads,
     snapshot_loads_after: completeHarness.snapshots.counters.loads,
   }, Object.values(stableDimensions).every(Boolean) && completeHarness.repository.runCount() === 1));
-  cases.push(caseRow("INT_E2E_003", { extraction_source: "stored_provider_independent_snapshot" }, { openai_calls: 0, canonical_fact_count: 7 }, {
+  cases.push(caseRow("INT_E2E_003", { extraction_source: "stored_provider_independent_snapshot" }, { openai_calls: 0, canonical_fact_count: resolvedPayslipFactPaths.length }, {
     snapshot_loads: completeHarness.snapshots.counters.loads,
     openai_calls: completeHarness.snapshots.counters.openai_calls,
     provider_calls: completeHarness.snapshots.counters.provider_calls,
     canonical_fact_count: complete.facts.length,
     facts_snapshot_sha256: complete.facts_snapshot_sha256,
-  }, completeHarness.snapshots.counters.openai_calls === 0 && complete.facts.length === 7));
+  }, completeHarness.snapshots.counters.openai_calls === 0 && complete.facts.length === resolvedPayslipFactPaths.length
+    && resolvedPayslipFactPaths.every(path=>complete.facts.some(fact=>fact.path===path))));
 
   for (const [index, topicName] of COMPLETE_THREE_PERIOD_FIXTURE.command.requested_topics.entries()) {
     const fixture = buildSyntheticCaseFixture({ fixture_id: `missing-${topicName}`, missing_topic: topicName });

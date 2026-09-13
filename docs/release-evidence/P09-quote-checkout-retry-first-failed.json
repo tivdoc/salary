@@ -1,0 +1,20 @@
+{
+  "verdict": "FAIL",
+  "checks": [
+    "foreign identity/case and actual non-worker roles cannot cancel or release a credit",
+    "failure before commit restores both the awaiting order and its credit reservation",
+    "concurrent cancellation is idempotent, appends one event and retains the original quote/credit history",
+    "a fresh quote reuses the initial credit for the same scope while the cancelled order remains immutable history",
+    "a real web checkout claim, including creating/uncertain/ready fixture outcomes, prevents credit release",
+    "actual web checkout racing worker cancellation cannot both create a provider attempt and release credit"
+  ],
+  "failure": "Existing ready checkout was returned after source change; expected ORDER_QUOTE_SOURCE_CHANGED. Raw synthetic result retained privately; owned fixtures were cleaned.",
+  "cleanupFailure": null,
+  "database": "tivdoc_release_replay_20260907",
+  "migration": "20260908153942_quote_unstarted_cancellation.sql",
+  "migration_sha256": "1eb0f99dcc5143fa27d288d2664413aa6d20fccb4d284d1293dfc7c62bd6f822",
+  "syntheticCasesRemoved": 2,
+  "machineSessionRevoked": true,
+  "scope": "Actual worker/peer/web roles; injected synthetic monetary basis and synthetic verified payment row. Synthetic payslip metadata only; no Storage/provider transport. Actual web checkout-claim function is exercised, not customer HTTP/browser or provider settlement. No canonical monetary proof or production change.",
+  "productionChanged": false
+}

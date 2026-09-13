@@ -28,6 +28,8 @@ export const candidateSourceSchema = z
     page: z.number().int().positive(),
     text_fragment: z.string().trim().min(1).max(500).optional(),
     bounding_box: boundingBoxSchema.optional(),
+    region:z.enum(["header","earnings","totals","pension"]).optional(),
+    source_scope:z.object({period_kind:z.enum(['current','cumulative','retroactive','unknown']),fund_kind:z.enum(['pension','study','severance','combined','unknown']),column_label:z.string().min(1).max(160).nullable()}).strict().optional(),
   })
   .strict();
 
@@ -113,6 +115,21 @@ export const rawAdditionalComponentSchema = z
     { message: "An additional component requires quantity, rate, percentage, or amount" },
   );
 
+/** A redundant aggregate row remains auditable without being represented as
+ * earnings. Both original observations are retained; this is classification
+ * metadata, never a human approval or a replacement candidate value. */
+export const aggregateTotalObservationSchema=z.object({
+  policy_version:z.literal('payslip-explicit-aggregate-total-v1'),
+  total_field:z.enum(['gross_salary','total_deductions','net_salary']),
+  total_candidate_id:uuidSchema,total_candidate:rawCandidateFieldSchema,row:rawAdditionalComponentSchema,
+}).strict().superRefine((value,context)=>{
+  if(value.total_candidate_id!==value.total_candidate.candidate_id||value.total_field!==value.total_candidate.field
+    ||value.row.source.document_id!==value.total_candidate.source.document_id||value.row.source.page!==value.total_candidate.source.page
+    ||value.row.amount_raw?.trim()!==value.total_candidate.raw_value.trim()
+    ||value.row.quantity_raw!==null||value.row.rate_raw!==null||value.row.percentage_raw!==null
+    ||!['unknown','other'].includes(value.row.semantic_kind))context.addIssue({code:'custom',message:'Aggregate row must retain matching original total evidence'});
+});
+
 export const sensitiveMetadataKindSchema = z.enum(["employee_name", "employer_name", "national_id"]);
 
 export const sensitiveMetadataCandidateSchema = z
@@ -178,6 +195,14 @@ export const documentQualityMetricsSchema = z
   })
   .strict();
 
+/** Literal source classifications excluded from a canonical monthly scalar.
+ * Keep the full raw candidate for audit; absence never means numeric zero. */
+export const sourceScopeObservationSchema=z.object({
+ policy_version:z.literal('payslip-explicit-source-scope-v1'),
+ scope:z.enum(['study_fund','cumulative','retroactive','voluntary_deduction','final_payable','mandatory_deduction_subtotal','attendance_total','tax_exemption_reference','combined_employer_funds','severance_fund']),
+ source_label:z.string().min(1).max(160),candidate:rawCandidateFieldSchema,
+}).strict();
+
 export const extractionResultSchema = z
   .object({
     extraction_id: uuidSchema,
@@ -188,6 +213,8 @@ export const extractionResultSchema = z
     quality_metrics: documentQualityMetricsSchema,
     fields: z.array(rawCandidateFieldSchema),
     additional_components: z.array(rawAdditionalComponentSchema),
+    aggregate_total_observations:z.array(aggregateTotalObservationSchema).max(3).optional(),
+    source_scope_observations:z.array(sourceScopeObservationSchema).max(300).optional(),
     sensitive_metadata: z.array(sensitiveMetadataCandidateSchema),
     earnings_components_complete: z.boolean(),
     warnings: z.array(candidateWarningSchema),
@@ -200,17 +227,20 @@ export const extractionResultSchema = z
   .superRefine((result, context) => {
     const candidateIds = [
       ...result.fields.map((field) => field.candidate_id),
+      ...(result.source_scope_observations??[]).map(observation=>observation.candidate.candidate_id),
       ...result.additional_components.map((component) => component.component_id),
+      ...(result.aggregate_total_observations??[]).map(observation=>observation.row.component_id),
       ...result.sensitive_metadata.map((metadata) => metadata.metadata_id),
     ];
     if (new Set(candidateIds).size !== candidateIds.length) {
       context.addIssue({ code: "custom", message: "Extraction candidate IDs must be unique", path: ["fields"] });
     }
-    if (result.fields.some((field) => field.source.document_id !== result.document_id)) {
+    if (result.fields.some((field) => field.source.document_id !== result.document_id) || (result.source_scope_observations??[]).some(observation=>observation.candidate.source.document_id!==result.document_id)) {
       context.addIssue({ code: "custom", message: "Every field source must reference the extracted document", path: ["fields"] });
     }
     if (
       result.additional_components.some((component) => component.source.document_id !== result.document_id) ||
+      (result.aggregate_total_observations??[]).some(observation=>observation.row.source.document_id!==result.document_id) ||
       result.sensitive_metadata.some((metadata) => metadata.source.document_id !== result.document_id)
     ) {
       context.addIssue({ code: "custom", message: "Every extraction source must reference the extracted document", path: ["document_id"] });
@@ -218,7 +248,7 @@ export const extractionResultSchema = z
     if ((result.status === "failed") !== (result.error_code !== null)) {
       context.addIssue({ code: "custom", message: "Only failed extractions carry an error code", path: ["error_code"] });
     }
-    if (result.status === "failed" && (result.fields.length > 0 || result.additional_components.length > 0)) {
+    if (result.status === "failed" && (result.fields.length > 0 || result.additional_components.length > 0 || (result.aggregate_total_observations?.length??0)>0 || (result.source_scope_observations?.length??0)>0)) {
       context.addIssue({ code: "custom", message: "Failed extractions cannot emit candidate values", path: ["fields"] });
     }
   });

@@ -1,9 +1,9 @@
-import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
 import {
+  sqlSha256,
   EXPECTED_MIGRATION_CHAIN,
   EXPECTED_MIGRATION_SHA256,
 } from "../../../scripts/canonical-persistence-v091/foundation/migrations.mts";
@@ -17,7 +17,7 @@ describe("V0.10.2 governance function-owner schema repair", () => {
     const index = EXPECTED_MIGRATION_CHAIN.indexOf(NAME);
     expect(index).toBeGreaterThan(0);
     expect(EXPECTED_MIGRATION_CHAIN[index - 1]).toBe("202609010008_runtime_product_forward_repair.sql");
-    expect(createHash("sha256").update(bytes).digest("hex")).toBe(EXPECTED_MIGRATION_SHA256[NAME]);
+    expect(sqlSha256(bytes, EXPECTED_MIGRATION_SHA256[NAME])).toBe(EXPECTED_MIGRATION_SHA256[NAME]);
   });
 
   it("grants only the function owner the schema resolution privilege", () => {

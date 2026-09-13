@@ -1,0 +1,99 @@
+{
+  "schema_version": "document-review-product-delivery-v1",
+  "recorded_at": "2026-09-11T15:35:13.799823+00:00",
+  "base": "3a2456242f86e9867cff76109b36c2588839f23a",
+  "branch": "codex/tivdoc-release-completion",
+  "application_commit": "3ccb33b5f0c7872167d1f22213f011c59131cca8",
+  "ci": {
+    "state": "PASS",
+    "runs": [
+      34616077301,
+      34616072546
+    ],
+    "typecheck": "PASS",
+    "lint": "PASS",
+    "unit_tests_passed": 4502,
+    "unit_tests_skipped": 102,
+    "test_files_passed": 478,
+    "test_files_skipped": 48,
+    "build": "PASS",
+    "production_closure_checks": 48,
+    "production_closure": "PASS"
+  },
+  "database": {
+    "application_commit": "e54b3c65c813cb491753dc23662796b8e9d7d489",
+    "dirty": false,
+    "schema": 159,
+    "target": "tivdoc_release_replay_20260907",
+    "state": "PASS",
+    "checks": 10,
+    "receipt": "db-proof-e54b3c6.json",
+    "synthetic_fixture": true,
+    "actual_worker_web_roles": true,
+    "subsequent_change": "first-import quote, canonical import extension and test/inventory corrections only; no SQL or calculation change"
+  },
+  "private_drafts": {
+    "application_commit": "3ccb33b5f0c7872167d1f22213f011c59131cca8",
+    "dirty": false,
+    "reports": 5,
+    "checks": 87,
+    "calculated": 76,
+    "blocked": 11,
+    "independent_source_expectations_passed": 12,
+    "pdf_pages_visually_reviewed": 26,
+    "local_chrome_reports_verified": 5,
+    "final_html_pdf_identical_to_visually_reviewed": true,
+    "origin": "private AI source readings; not automatic OCR, not human attestation",
+    "artifacts": "private owner workspace only; no customer identifiers or artifacts in this public receipt"
+  },
+  "provider": {
+    "model": "gpt-5.6-sol",
+    "effort": "medium",
+    "new_successful_live_generations": 2,
+    "cumulative_content_requests": 8,
+    "cumulative_reserved_micro_usd": 2848000,
+    "historical_unknown_generation_costs": 2,
+    "new_generation_token_based_cost_estimate_usd": 0.293916,
+    "provider_actual_charge_available": false,
+    "ledger_reset": false,
+    "ordinary_adapter_replay": "partial blocked reports; zero monetary checks until identified period reading",
+    "quality": "not PASS; reading/classification/mixed-scope/missing-field failures retained",
+    "authorization_enabled": false
+  },
+  "preview": {
+    "application_commit": "3ccb33b5f0c7872167d1f22213f011c59131cca8",
+    "github_deployment_id": 6396256390,
+    "github_deployment_state": "success",
+    "url": "https://salary-fritfddj1-tivdoccom-5042s-projects.vercel.app",
+    "access_probe": {
+      "method": "HEAD",
+      "status": 302,
+      "redirect_origin": "https://vercel.com",
+      "redirect_path": "/sso-api"
+    },
+    "connected_vercel_tool": "403/404 permission refusal",
+    "authenticated_browser_verified": false,
+    "deployed_database_schema_verified": false
+  },
+  "stop": {
+    "tivdoc_scheduled_tasks_disabled": 3,
+    "proof_machines_revoked": true,
+    "customer_notifications_sent": 0,
+    "customer_publications": 0,
+    "customer_charges": 0,
+    "production_changed": false,
+    "parallel_ui_changed": false
+  },
+  "remaining_software": [
+    "identified upload fulfillment for document-review targets",
+    "broader row/component reading verification and provider quality correction",
+    "missing rights rules/catalog/executor coverage explicitly classified per check",
+    "legacy paid-order-to-saved-order migration was not performed"
+  ],
+  "remaining_external": [
+    "specific missing/full source documents",
+    "source-bound customer facts",
+    "source/rounding/applicability and authentic REAL authority decisions",
+    "authorized protected Preview access"
+  ]
+}

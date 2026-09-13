@@ -1,0 +1,24 @@
+{
+  "checkedAt": "2026-09-09T22:18:46.950Z",
+  "applicationGitSha": "a30f881dca092bbec91cb48aae7fdfc670d0ee5f",
+  "schema": 131,
+  "preview": "https://salary-ivlzv8ge9-tivdoccom-5042s-projects.vercel.app",
+  "deploymentId": "dpl_BhassBYLKav3j3huRTktvTYoeD7g",
+  "casePublicId": "TV-73299C08",
+  "runId": "0fd6c29d-cfb2-4349-80a7-c5383a25a056",
+  "browserAuthenticatedWithActualOtp": true,
+  "htmlDisplayed": true,
+  "historicalAfterReplacement": true,
+  "htmlAmounts": [
+    "3540.00",
+    "3300.00",
+    "240.00"
+  ],
+  "pdfBrowserResult": "ERR_BLOCKED_BY_CLIENT",
+  "pdfServerStatus": 200,
+  "pdfServerRequestId": "4tzln-1788991950444-713eaabed442",
+  "pdfServerTimestamp": "2026-09-09T22:12:30.444Z",
+  "pdfActualBrowserDownload": false,
+  "pdfSavedDbAndLocalTextValidated": true,
+  "limitation": "Server returned200 to the actual protected PDF request; Chrome blocked the attachment. Do not count this as a browser PDF download success."
+}

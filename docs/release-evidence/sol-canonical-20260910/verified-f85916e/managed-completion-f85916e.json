@@ -1,0 +1,68 @@
+{
+  "completed": {
+    "completion": {
+      "manifest": {
+        "schema_version": "saved_analysis_draft_ready_v1",
+        "job_id": "saved_4072a2f879e24b4be8da666cb0e9e8324282204607ff89a737c3b9e111facd71",
+        "source": {
+          "schema_version": "saved-case-work-v1",
+          "case_id": "e6cc9d3f-4c27-4163-a2ea-b2f0b8a5df23",
+          "revision": 30,
+          "input_sha256": "189675b450fd80aad7ebee14e9b5456bbcb6a039e57dc08e43187caace8cd93a",
+          "mode": "draft",
+          "authority_dependency_sha256": "c5a6e2647d1dbbeffd8c63eedbc47db4309020e20276445c21ff5cee58e72910"
+        },
+        "publication": "draft",
+        "months": [
+          {
+            "order_id": "5f1c1930-dc9f-4ea6-a4ab-88514708c79d",
+            "offer_sha256": "d61d4ad6f28085eca18ad20f56dcf61067092124309cb9b74c04bfbbf656b615",
+            "month": "2026-06",
+            "analysis_run_id": "67c39f84-02e1-420c-8c31-041d9081ac87",
+            "result_sha256": "4819c2fbc7652559e5289d6a836995b6c18322adac36ef8ef6ed75b281eb3b37",
+            "report_id": "dd508456-593d-49b2-a97a-8430ec83f331",
+            "report_revision": 1,
+            "report_sha256": "572f645f38bea44447e3226ff1a5da0ae2c6403aa74adb3ebf4c09ee83788b80"
+          }
+        ]
+      },
+      "sha256": "01513201932da8e2834f7a3ad0af2b74c4a61e614e4f363b63c32c00c6065a06",
+      "replayed": false
+    },
+    "extractedVersions": 1,
+    "analyzedMonths": 1
+  },
+  "restarted": {
+    "completion": {
+      "manifest": {
+        "schema_version": "saved_analysis_draft_ready_v1",
+        "job_id": "saved_4072a2f879e24b4be8da666cb0e9e8324282204607ff89a737c3b9e111facd71",
+        "source": {
+          "schema_version": "saved-case-work-v1",
+          "case_id": "e6cc9d3f-4c27-4163-a2ea-b2f0b8a5df23",
+          "revision": 30,
+          "input_sha256": "189675b450fd80aad7ebee14e9b5456bbcb6a039e57dc08e43187caace8cd93a",
+          "mode": "draft",
+          "authority_dependency_sha256": "c5a6e2647d1dbbeffd8c63eedbc47db4309020e20276445c21ff5cee58e72910"
+        },
+        "publication": "draft",
+        "months": [
+          {
+            "order_id": "5f1c1930-dc9f-4ea6-a4ab-88514708c79d",
+            "offer_sha256": "d61d4ad6f28085eca18ad20f56dcf61067092124309cb9b74c04bfbbf656b615",
+            "month": "2026-06",
+            "analysis_run_id": "67c39f84-02e1-420c-8c31-041d9081ac87",
+            "result_sha256": "4819c2fbc7652559e5289d6a836995b6c18322adac36ef8ef6ed75b281eb3b37",
+            "report_id": "dd508456-593d-49b2-a97a-8430ec83f331",
+            "report_revision": 1,
+            "report_sha256": "572f645f38bea44447e3226ff1a5da0ae2c6403aa74adb3ebf4c09ee83788b80"
+          }
+        ]
+      },
+      "sha256": "01513201932da8e2834f7a3ad0af2b74c4a61e614e4f363b63c32c00c6065a06",
+      "replayed": true
+    },
+    "extractedVersions": 0,
+    "analyzedMonths": 0
+  }
+}

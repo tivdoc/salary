@@ -1,6 +1,19 @@
 import { z } from "zod";
 
 export const knownFactPaths = [
+  "employment.start_month",
+  "employment.still_employed",
+  "employment.managerial_or_trust_role_declared",
+  "person.birth_year",
+  "person.sex",
+  "work.days_per_week",
+  "work.typical_hours_per_day",
+  "work.works_friday",
+  "work.works_saturday",
+  "pension.fund_at_hire",
+  "travel.employer_provides_transport",
+  "travel.commute_over_500m",
+
   "employment.start_date",
   "employment.end_date",
   // L8-4 / D5: the population the month belongs to — an adult, a working

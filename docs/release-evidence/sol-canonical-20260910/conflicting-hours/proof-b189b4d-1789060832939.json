@@ -1,0 +1,54 @@
+{
+  "gitSha": "b189b4d33f1427791d02abafae15410392caba64",
+  "caseId": "58933f19-d702-498f-b390-40dfdcd69e07",
+  "publicId": "TV-050ED825",
+  "orderId": "1d463281-e301-44e6-9b75-333a78df33d9",
+  "kind": "conflicting-hours",
+  "phase": "actual-live-extraction",
+  "state": "PASS",
+  "error": null,
+  "checks": [
+    "REAL_without_authority_blocked",
+    "conflicting_hours_not_verified",
+    "owned_job_lease_released_with_fence"
+  ],
+  "runs": [],
+  "answers": [],
+  "sourceSha256": "9685e7123013cbfa83cb777b1bf9217c236ef9114faa8ee316a925878633ad00",
+  "budget": {
+    "policy": {
+      "version": "tivdoc-sol-comparison-budget-v1",
+      "model": "gpt-5.6-sol",
+      "executionProfile": "sol-medium-comparison-v1",
+      "reasoningEffort": "medium",
+      "serviceTier": "default",
+      "pricingSource": "https://developers.openai.com/api/docs/models/gpt-5.6-sol",
+      "pricingCheckedAt": "2026-09-10",
+      "pricingValidUntil": "2026-09-17T00:00:00Z",
+      "inputUsdPerMillion": 4,
+      "outputUsdPerMillion": 20,
+      "inputTokenCeiling": 64000,
+      "outputTokenCeiling": 10000,
+      "maxRequests": 12,
+      "maxReservedMicroUsd": 5000000,
+      "countReservedMicroUsd": 256000,
+      "generationReservedMicroUsd": 456000,
+      "sdkRetries": 0
+    },
+    "contentRequests": 12,
+    "generations": 6,
+    "countRequests": 6,
+    "reservedUpperBoundUsd": 4.272,
+    "unknownOutcomes": 1,
+    "supplierReturnedCost": {
+      "status": "not_returned_by_provider",
+      "amountUsd": null
+    },
+    "countEndpointTariff": "not_separately_documented_reserved_at_full_input_price",
+    "instanceGenerations": 1
+  },
+  "payment": "synthetic_paid_full_offer_no_payment_provider",
+  "authority": "isolated_test_only",
+  "humanApproval": false,
+  "productionChanged": false
+}

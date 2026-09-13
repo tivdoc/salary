@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "retained-live-completion-browser-proof-v1",
+  "applicationGitSha": "a30f881dca092bbec91cb48aae7fdfc670d0ee5f",
+  "driverGitSha": "f01d1ec941faca8bfd269a1519b00b084a8c4689",
+  "schema": 131,
+  "preview": "https://salary-ivlzv8ge9-tivdoccom-5042s-projects.vercel.app",
+  "casePublicId": "TV-73299C08",
+  "requestId": "59aa4632-0d35-47b2-b62d-4e744e79417b",
+  "providerId": "b748a1c1-30e8-4c0a-8df3-d867ff5616fc",
+  "mailObservedAt": "2026-09-09T22:32:00Z",
+  "mailObservation": "Actual owner Gmail Spam message opened through browser plugin; correct subject, case and protected request link",
+  "subject": "Tivdoc — נדרשת השלמה בתיק TV-73299C08",
+  "authenticatedByActualOtp": true,
+  "browserAnswerSubmitted": true,
+  "answer": "כן, בדקתי במסמך והערך נכון",
+  "fixtureGrossMinor": 330000,
+  "answerPersistedAfterRefresh": true,
+  "answerSource": "AI operator checked the known synthetic fixture; not an independent human review",
+  "customerSessionSeeded": false,
+  "sourceReportHistorical": true,
+  "newFinancialReport": false,
+  "originalDriverVerdict": "FAIL",
+  "driverFailure": "Date adapter at dispatch; tenant context missing during cleanup. Separate cleanup recovery succeeded with RLS unchanged.",
+  "reportPdfVisualReview": {
+    "page": 1,
+    "renderedLocally": true,
+    "amountsVisible": [
+      3540,
+      3300,
+      240
+    ],
+    "providerTraceVisible": true,
+    "browserDownload": false,
+    "minorTypography": "Mixed Hebrew/Latin source labels have spacing/direction issues; amounts and identifiers remain readable."
+  }
+}

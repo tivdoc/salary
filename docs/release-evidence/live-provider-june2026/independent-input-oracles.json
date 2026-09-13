@@ -1,0 +1,423 @@
+{
+  "schemaVersion": "tivdoc-live-extraction-corpus-v2",
+  "synthetic": true,
+  "humanReview": false,
+  "legalGoldenApproval": false,
+  "providerCalled": false,
+  "font": {
+    "file": "assets\\fonts\\DejaVuSans.ttf",
+    "sha256": "7da195a74c55bef988d0d48f9508bd5d849425c1770dba5d7bfc6ce9ed848954"
+  },
+  "files": [
+    {
+      "id": "he-clear",
+      "path": "docs/release-evidence/live-provider-june2026/he-clear-june-2026.pdf",
+      "sha256": "f74f83f18beed42de39c8fc02615a0d05e0f25bc53b2410314dd4f9a56c05a6b",
+      "sizeBytes": 28991,
+      "mimeType": "application/pdf",
+      "pageCount": 1,
+      "oracle": {
+        "language": "he",
+        "salaryType": "hourly",
+        "employmentStartDate": "2025-01-15",
+        "month": "2026-06",
+        "baseMinor": 354000,
+        "hourlyRateMinor": 3540,
+        "grossMinor": 460870,
+        "deductionsMinor": 41240,
+        "netMinor": 419630,
+        "overtime125Hours": "10",
+        "overtime150Hours": "2",
+        "travelMinor": 22000,
+        "pensionBaseMinor": 354000,
+        "pensionEmployeeMinor": 21240,
+        "pensionEmployerMinor": 23010,
+        "severanceMinor": 21240,
+        "pensionEmployeeBasisPoints": 600,
+        "pensionEmployerBasisPoints": 650,
+        "severanceBasisPoints": 600,
+        "expectedMinor": null,
+        "gapMinor": null,
+        "financialScenario": "outside_single_regular_base_engineering_scope",
+        "equation": "354000 + 44250 + 10620 + 22000 + 30000 = 460870; 460870 - 41240 = 419630. No legal gap oracle: extra wage components are outside the current engineering calculator scenario.",
+        "id": "he-clear",
+        "hours": [
+          "100"
+        ],
+        "outcome": "readable",
+        "components": [
+          {
+            "semanticKind": "hourly_base",
+            "sourceLabel": "שכר יסוד שעתי",
+            "quantity": "100",
+            "rateMinor": 3540,
+            "amountMinor": 354000,
+            "page": 1
+          },
+          {
+            "semanticKind": "overtime_125",
+            "sourceLabel": "שעות נוספות",
+            "quantity": "10",
+            "rateMinor": 4425,
+            "amountMinor": 44250,
+            "page": 1
+          },
+          {
+            "semanticKind": "overtime_150",
+            "sourceLabel": "שעות נוספות",
+            "quantity": "2",
+            "rateMinor": 5310,
+            "amountMinor": 10620,
+            "page": 1
+          },
+          {
+            "semanticKind": "travel",
+            "sourceLabel": "החזר נסיעות",
+            "quantity": "20",
+            "rateMinor": 1100,
+            "amountMinor": 22000,
+            "page": 1
+          },
+          {
+            "semanticKind": "bonus",
+            "sourceLabel": "בונוס חד פעמי",
+            "quantity": null,
+            "rateMinor": null,
+            "amountMinor": 30000,
+            "page": 1
+          }
+        ],
+        "deductions": [
+          {
+            "sourceLabel": "פנסיה עובד",
+            "amountMinor": 21240,
+            "page": 1
+          },
+          {
+            "sourceLabel": "ביטוח לאומי",
+            "amountMinor": 8000,
+            "page": 1
+          },
+          {
+            "sourceLabel": "ביטוח בריאות",
+            "amountMinor": 12000,
+            "page": 1
+          },
+          {
+            "sourceLabel": "מס הכנסה",
+            "amountMinor": 0,
+            "page": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "he-missing-hours",
+      "path": "docs/release-evidence/live-provider-june2026/he-missing-hours-june-2026.pdf",
+      "sha256": "69317b2aada6685daed1beeb78322b3bcbc3e23f70c618aafb0e1672cfc2841b",
+      "sizeBytes": 29155,
+      "mimeType": "application/pdf",
+      "pageCount": 1,
+      "oracle": {
+        "language": "he",
+        "salaryType": "hourly",
+        "employmentStartDate": "2025-01-15",
+        "month": "2026-06",
+        "baseMinor": 354000,
+        "hourlyRateMinor": 3540,
+        "grossMinor": 460870,
+        "deductionsMinor": 41240,
+        "netMinor": 419630,
+        "overtime125Hours": "10",
+        "overtime150Hours": "2",
+        "travelMinor": 22000,
+        "pensionBaseMinor": 354000,
+        "pensionEmployeeMinor": 21240,
+        "pensionEmployerMinor": 23010,
+        "severanceMinor": 21240,
+        "pensionEmployeeBasisPoints": 600,
+        "pensionEmployerBasisPoints": 650,
+        "severanceBasisPoints": 600,
+        "expectedMinor": null,
+        "gapMinor": null,
+        "financialScenario": "outside_single_regular_base_engineering_scope",
+        "equation": "354000 + 44250 + 10620 + 22000 + 30000 = 460870; 460870 - 41240 = 419630. No legal gap oracle: extra wage components are outside the current engineering calculator scenario.",
+        "id": "he-missing-hours",
+        "hours": [],
+        "outcome": "essential_input_missing",
+        "components": [
+          {
+            "semanticKind": "hourly_base",
+            "sourceLabel": "שכר יסוד שעתי",
+            "quantity": null,
+            "rateMinor": 3540,
+            "amountMinor": 354000,
+            "page": 1
+          },
+          {
+            "semanticKind": "overtime_125",
+            "sourceLabel": "שעות נוספות",
+            "quantity": "10",
+            "rateMinor": 4425,
+            "amountMinor": 44250,
+            "page": 1
+          },
+          {
+            "semanticKind": "overtime_150",
+            "sourceLabel": "שעות נוספות",
+            "quantity": "2",
+            "rateMinor": 5310,
+            "amountMinor": 10620,
+            "page": 1
+          },
+          {
+            "semanticKind": "travel",
+            "sourceLabel": "החזר נסיעות",
+            "quantity": "20",
+            "rateMinor": 1100,
+            "amountMinor": 22000,
+            "page": 1
+          },
+          {
+            "semanticKind": "bonus",
+            "sourceLabel": "בונוס חד פעמי",
+            "quantity": null,
+            "rateMinor": null,
+            "amountMinor": 30000,
+            "page": 1
+          }
+        ],
+        "deductions": [
+          {
+            "sourceLabel": "פנסיה עובד",
+            "amountMinor": 21240,
+            "page": 1
+          },
+          {
+            "sourceLabel": "ביטוח לאומי",
+            "amountMinor": 8000,
+            "page": 1
+          },
+          {
+            "sourceLabel": "ביטוח בריאות",
+            "amountMinor": 12000,
+            "page": 1
+          },
+          {
+            "sourceLabel": "מס הכנסה",
+            "amountMinor": 0,
+            "page": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "he-conflicting-hours",
+      "path": "docs/release-evidence/live-provider-june2026/he-conflicting-hours-june-2026.pdf",
+      "sha256": "35fff7dafe146dd3193c3b9accf2214f817c2be6ed9df70666228931b9b77893",
+      "sizeBytes": 29174,
+      "mimeType": "application/pdf",
+      "pageCount": 1,
+      "oracle": {
+        "language": "he",
+        "salaryType": "hourly",
+        "employmentStartDate": "2025-01-15",
+        "month": "2026-06",
+        "baseMinor": 354000,
+        "hourlyRateMinor": 3540,
+        "grossMinor": 460870,
+        "deductionsMinor": 41240,
+        "netMinor": 419630,
+        "overtime125Hours": "10",
+        "overtime150Hours": "2",
+        "travelMinor": 22000,
+        "pensionBaseMinor": 354000,
+        "pensionEmployeeMinor": 21240,
+        "pensionEmployerMinor": 23010,
+        "severanceMinor": 21240,
+        "pensionEmployeeBasisPoints": 600,
+        "pensionEmployerBasisPoints": 650,
+        "severanceBasisPoints": 600,
+        "expectedMinor": null,
+        "gapMinor": null,
+        "financialScenario": "outside_single_regular_base_engineering_scope",
+        "equation": "354000 + 44250 + 10620 + 22000 + 30000 = 460870; 460870 - 41240 = 419630. No legal gap oracle: extra wage components are outside the current engineering calculator scenario.",
+        "id": "he-conflicting-hours",
+        "hours": [
+          "100",
+          "110"
+        ],
+        "outcome": "conflicting_observations",
+        "components": [
+          {
+            "semanticKind": "hourly_base",
+            "sourceLabel": "שכר יסוד שעתי",
+            "quantity": "110",
+            "rateMinor": 3540,
+            "amountMinor": 354000,
+            "page": 1
+          },
+          {
+            "semanticKind": "overtime_125",
+            "sourceLabel": "שעות נוספות",
+            "quantity": "10",
+            "rateMinor": 4425,
+            "amountMinor": 44250,
+            "page": 1
+          },
+          {
+            "semanticKind": "overtime_150",
+            "sourceLabel": "שעות נוספות",
+            "quantity": "2",
+            "rateMinor": 5310,
+            "amountMinor": 10620,
+            "page": 1
+          },
+          {
+            "semanticKind": "travel",
+            "sourceLabel": "החזר נסיעות",
+            "quantity": "20",
+            "rateMinor": 1100,
+            "amountMinor": 22000,
+            "page": 1
+          },
+          {
+            "semanticKind": "bonus",
+            "sourceLabel": "בונוס חד פעמי",
+            "quantity": null,
+            "rateMinor": null,
+            "amountMinor": 30000,
+            "page": 1
+          }
+        ],
+        "deductions": [
+          {
+            "sourceLabel": "פנסיה עובד",
+            "amountMinor": 21240,
+            "page": 1
+          },
+          {
+            "sourceLabel": "ביטוח לאומי",
+            "amountMinor": 8000,
+            "page": 1
+          },
+          {
+            "sourceLabel": "ביטוח בריאות",
+            "amountMinor": 12000,
+            "page": 1
+          },
+          {
+            "sourceLabel": "מס הכנסה",
+            "amountMinor": 0,
+            "page": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "he-scan-clear",
+      "path": "docs/release-evidence/live-provider-june2026/he-scan-clear-june-2026.png",
+      "sha256": "6a7225348270f9b8351b053c8b274b9686e5d17ffdf547d3d456059911a9b526",
+      "sizeBytes": 70428,
+      "mimeType": "image/png",
+      "pageCount": 1,
+      "oracle": {
+        "language": "he",
+        "salaryType": "hourly",
+        "employmentStartDate": "2025-01-15",
+        "month": "2026-06",
+        "baseMinor": 354000,
+        "hourlyRateMinor": 3540,
+        "grossMinor": 460870,
+        "deductionsMinor": 41240,
+        "netMinor": 419630,
+        "overtime125Hours": "10",
+        "overtime150Hours": "2",
+        "travelMinor": 22000,
+        "pensionBaseMinor": 354000,
+        "pensionEmployeeMinor": 21240,
+        "pensionEmployerMinor": 23010,
+        "severanceMinor": 21240,
+        "pensionEmployeeBasisPoints": 600,
+        "pensionEmployerBasisPoints": 650,
+        "severanceBasisPoints": 600,
+        "expectedMinor": null,
+        "gapMinor": null,
+        "financialScenario": "outside_single_regular_base_engineering_scope",
+        "equation": "354000 + 44250 + 10620 + 22000 + 30000 = 460870; 460870 - 41240 = 419630. No legal gap oracle: extra wage components are outside the current engineering calculator scenario.",
+        "id": "he-scan-clear",
+        "hours": [
+          "100"
+        ],
+        "outcome": "readable",
+        "components": [
+          {
+            "semanticKind": "hourly_base",
+            "sourceLabel": "שכר יסוד שעתי",
+            "quantity": "100",
+            "rateMinor": 3540,
+            "amountMinor": 354000,
+            "page": 1
+          },
+          {
+            "semanticKind": "overtime_125",
+            "sourceLabel": "שעות נוספות",
+            "quantity": "10",
+            "rateMinor": 4425,
+            "amountMinor": 44250,
+            "page": 1
+          },
+          {
+            "semanticKind": "overtime_150",
+            "sourceLabel": "שעות נוספות",
+            "quantity": "2",
+            "rateMinor": 5310,
+            "amountMinor": 10620,
+            "page": 1
+          },
+          {
+            "semanticKind": "travel",
+            "sourceLabel": "החזר נסיעות",
+            "quantity": "20",
+            "rateMinor": 1100,
+            "amountMinor": 22000,
+            "page": 1
+          },
+          {
+            "semanticKind": "bonus",
+            "sourceLabel": "בונוס חד פעמי",
+            "quantity": null,
+            "rateMinor": null,
+            "amountMinor": 30000,
+            "page": 1
+          }
+        ],
+        "deductions": [
+          {
+            "sourceLabel": "פנסיה עובד",
+            "amountMinor": 21240,
+            "page": 1
+          },
+          {
+            "sourceLabel": "ביטוח לאומי",
+            "amountMinor": 8000,
+            "page": 1
+          },
+          {
+            "sourceLabel": "ביטוח בריאות",
+            "amountMinor": 12000,
+            "page": 1
+          },
+          {
+            "sourceLabel": "מס הכנסה",
+            "amountMinor": 0,
+            "page": 1
+          }
+        ]
+      },
+      "derivedFromSha256": "f74f83f18beed42de39c8fc02615a0d05e0f25bc53b2410314dd4f9a56c05a6b",
+      "syntheticRasterSimulation": true,
+      "actualScannerCapture": false
+    }
+  ]
+}

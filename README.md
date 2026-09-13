@@ -1,10 +1,12 @@
 # Tivdoc Salary
 
+Release branch status (2026-09-09): the bounded [DEV financial-flow task](docs/dev-financial-flow-handoff-2026-09-09-he.md) is delivered with12 actual DB/Storage and11 hosted Preview checks, computed same-run financial HTML/PDF and saved synthetic examples. It is engineering-only: live OCR, legally activated customer analysis and production readiness remain unproven. Work stops at this delivery; historical website scope below remains historical.
+
 Hebrew RTL MVP for the Tivdoc Salary validation funnel:
 
 `Landing → questionnaire → private document upload → Invoice4u hosted payment → verified status`
 
-The project intentionally does not include OCR, a salary-law engine, AI analysis, user accounts, dashboards or the future ₪99 report product.
+The project intentionally does not include OCR, a salary-law engine, AI analysis, user accounts or dashboards. The website shows the planned ₪149 full report as unavailable for purchase. See [website v1.3 handoff](docs/website-v1.3-handoff.md) for the local redesign, verification and outstanding product dependencies.
 
 ## Stack
 

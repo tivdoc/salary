@@ -1,0 +1,399 @@
+{
+  "capturedAt": "2026-09-09T16:59:48.4664914Z",
+  "taskName": "Tivdoc-AutomaticDev-Proof-20260909",
+  "stateBeforeStop": "Ready",
+  "stateAfterStop": "Disabled",
+  "enabledAfterStop": false,
+  "manifestEnabledAfterCleanup": false,
+  "lastRunTime": "2026-09-09T16:59:35.0000000Z",
+  "lastTaskResult": 0,
+  "overlapPolicy": "IgnoreNew",
+  "executionTimeLimit": "PT8M",
+  "taskHidden": false,
+  "actionWindowHidden": true,
+  "trigger": [
+    {
+      "interval": "PT1M",
+      "startBoundary": "2026-09-09T19:08:34+03:00",
+      "duration": "PT2H"
+    }
+  ],
+  "proofExecutable": "output/release-completion/managed-worker/synthetic-proof.cjs",
+  "liveExecutableActivated": false,
+  "providerKind": "injected_test_provider",
+  "observedExits": [
+    {
+      "supervisorPid": 27876,
+      "exitCode": 0,
+      "iteration": 0,
+      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
+      "at": "2026-09-09T16:23:38.125444Z"
+    },
+    {
+      "supervisorPid": 27876,
+      "exitCode": 86,
+      "iteration": 1,
+      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
+      "at": "2026-09-09T16:23:57.202052Z"
+    },
+    {
+      "supervisorPid": 27876,
+      "exitCode": 0,
+      "iteration": 2,
+      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
+      "at": "2026-09-09T16:24:13.6443622Z"
+    },
+    {
+      "supervisorPid": 3484,
+      "exitCode": 0,
+      "iteration": 0,
+      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
+      "at": "2026-09-09T16:24:37.7442434Z"
+    },
+    {
+      "supervisorPid": 3484,
+      "exitCode": 0,
+      "iteration": 1,
+      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
+      "at": "2026-09-09T16:24:54.2615246Z"
+    },
+    {
+      "supervisorPid": 3484,
+      "exitCode": 0,
+      "iteration": 2,
+      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
+      "at": "2026-09-09T16:25:10.8593048Z"
+    },
+    {
+      "supervisorPid": 16680,
+      "exitCode": 0,
+      "iteration": 0,
+      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
+      "at": "2026-09-09T16:25:37.8554878Z"
+    },
+    {
+      "supervisorPid": 16680,
+      "exitCode": 0,
+      "iteration": 1,
+      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
+      "at": "2026-09-09T16:25:54.3843397Z"
+    },
+    {
+      "supervisorPid": 16680,
+      "exitCode": 0,
+      "iteration": 2,
+      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
+      "at": "2026-09-09T16:26:10.8662781Z"
+    },
+    {
+      "supervisorPid": 27280,
+      "exitCode": 0,
+      "iteration": 0,
+      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
+      "at": "2026-09-09T16:26:37.7660519Z"
+    },
+    {
+      "supervisorPid": 27280,
+      "exitCode": 0,
+      "iteration": 1,
+      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
+      "at": "2026-09-09T16:26:54.2885659Z"
+    },
+    {
+      "supervisorPid": 27280,
+      "exitCode": 0,
+      "iteration": 2,
+      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
+      "at": "2026-09-09T16:27:26.8515729Z"
+    },
+    {
+      "supervisorPid": 26928,
+      "exitCode": 0,
+      "iteration": 0,
+      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
+      "at": "2026-09-09T16:27:50.6837766Z"
+    },
+    {
+      "supervisorPid": 26928,
+      "exitCode": 0,
+      "iteration": 1,
+      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
+      "at": "2026-09-09T16:28:07.185738Z"
+    },
+    {
+      "supervisorPid": 26928,
+      "exitCode": 0,
+      "iteration": 2,
+      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
+      "at": "2026-09-09T16:28:36.1404468Z"
+    },
+    {
+      "supervisorPid": 13408,
+      "exitCode": 0,
+      "iteration": 0,
+      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
+      "at": "2026-09-09T16:29:50.6182507Z"
+    },
+    {
+      "supervisorPid": 13408,
+      "exitCode": 0,
+      "iteration": 1,
+      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
+      "at": "2026-09-09T16:30:20.8203078Z"
+    },
+    {
+      "supervisorPid": 13408,
+      "exitCode": 0,
+      "iteration": 2,
+      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
+      "at": "2026-09-09T16:30:37.2357709Z"
+    },
+    {
+      "supervisorPid": 15600,
+      "exitCode": 0,
+      "iteration": 0,
+      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
+      "at": "2026-09-09T16:31:37.9296787Z"
+    },
+    {
+      "supervisorPid": 15600,
+      "exitCode": 0,
+      "iteration": 1,
+      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
+      "at": "2026-09-09T16:32:10.4234393Z"
+    },
+    {
+      "supervisorPid": 15600,
+      "exitCode": 0,
+      "iteration": 2,
+      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
+      "at": "2026-09-09T16:32:41.7456Z"
+    },
+    {
+      "supervisorPid": 13408,
+      "exitCode": 0,
+      "iteration": 0,
+      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
+      "at": "2026-09-09T16:33:53.8707334Z"
+    },
+    {
+      "supervisorPid": 13408,
+      "exitCode": 0,
+      "iteration": 1,
+      "runId": "386e5ed2-60d2-426b-af01-9939a93c3557",
+      "at": "2026-09-09T16:34:10.416882Z"
+    },
+    {
+      "supervisorPid": 25368,
+      "exitCode": 86,
+      "iteration": 0,
+      "runId": "6e5068c1-4aef-40c3-9044-8b35057f00d5",
+      "at": "2026-09-09T16:43:40.7682134Z"
+    },
+    {
+      "supervisorPid": 25368,
+      "exitCode": 0,
+      "iteration": 1,
+      "runId": "6e5068c1-4aef-40c3-9044-8b35057f00d5",
+      "at": "2026-09-09T16:44:12.268755Z"
+    },
+    {
+      "supervisorPid": 25368,
+      "exitCode": 0,
+      "iteration": 2,
+      "runId": "6e5068c1-4aef-40c3-9044-8b35057f00d5",
+      "at": "2026-09-09T16:44:42.5526245Z"
+    },
+    {
+      "supervisorPid": 22536,
+      "exitCode": 0,
+      "iteration": 0,
+      "runId": "6e5068c1-4aef-40c3-9044-8b35057f00d5",
+      "at": "2026-09-09T16:45:52.9613418Z"
+    },
+    {
+      "supervisorPid": 22536,
+      "exitCode": 0,
+      "iteration": 1,
+      "runId": "6e5068c1-4aef-40c3-9044-8b35057f00d5",
+      "at": "2026-09-09T16:46:09.4759186Z"
+    },
+    {
+      "supervisorPid": 22536,
+      "exitCode": 0,
+      "iteration": 2,
+      "runId": "6e5068c1-4aef-40c3-9044-8b35057f00d5",
+      "at": "2026-09-09T16:46:25.907786Z"
+    },
+    {
+      "supervisorPid": 3104,
+      "exitCode": 0,
+      "iteration": 0,
+      "runId": "6e5068c1-4aef-40c3-9044-8b35057f00d5",
+      "at": "2026-09-09T16:46:37.9284738Z"
+    },
+    {
+      "supervisorPid": 1612,
+      "exitCode": 0,
+      "iteration": 0,
+      "runId": "1116fc4c-933b-4a71-97fb-465b50f2c946",
+      "at": "2026-09-09T16:47:38.0638249Z"
+    },
+    {
+      "supervisorPid": 1612,
+      "exitCode": 86,
+      "iteration": 1,
+      "runId": "1116fc4c-933b-4a71-97fb-465b50f2c946",
+      "at": "2026-09-09T16:47:57.1379742Z"
+    },
+    {
+      "supervisorPid": 1612,
+      "exitCode": 0,
+      "iteration": 2,
+      "runId": "1116fc4c-933b-4a71-97fb-465b50f2c946",
+      "at": "2026-09-09T16:48:13.63361Z"
+    },
+    {
+      "supervisorPid": 17644,
+      "exitCode": 0,
+      "iteration": 0,
+      "runId": "1116fc4c-933b-4a71-97fb-465b50f2c946",
+      "at": "2026-09-09T16:48:38.073307Z"
+    },
+    {
+      "supervisorPid": 17644,
+      "exitCode": 0,
+      "iteration": 1,
+      "runId": "1116fc4c-933b-4a71-97fb-465b50f2c946",
+      "at": "2026-09-09T16:48:54.5934297Z"
+    },
+    {
+      "supervisorPid": 17644,
+      "exitCode": 0,
+      "iteration": 2,
+      "runId": "1116fc4c-933b-4a71-97fb-465b50f2c946",
+      "at": "2026-09-09T16:49:11.0892271Z"
+    },
+    {
+      "supervisorPid": 6896,
+      "exitCode": 0,
+      "iteration": 0,
+      "runId": "1116fc4c-933b-4a71-97fb-465b50f2c946",
+      "at": "2026-09-09T16:49:37.9975321Z"
+    },
+    {
+      "supervisorPid": 6896,
+      "exitCode": 0,
+      "iteration": 1,
+      "runId": "1116fc4c-933b-4a71-97fb-465b50f2c946",
+      "at": "2026-09-09T16:49:54.4845222Z"
+    },
+    {
+      "supervisorPid": 6896,
+      "exitCode": 0,
+      "iteration": 2,
+      "runId": "1116fc4c-933b-4a71-97fb-465b50f2c946",
+      "at": "2026-09-09T16:50:10.9433578Z"
+    },
+    {
+      "supervisorPid": 22196,
+      "exitCode": 0,
+      "iteration": 0,
+      "runId": "1116fc4c-933b-4a71-97fb-465b50f2c946",
+      "at": "2026-09-09T16:50:38.0029991Z"
+    },
+    {
+      "supervisorPid": 22196,
+      "exitCode": 0,
+      "iteration": 1,
+      "runId": "1116fc4c-933b-4a71-97fb-465b50f2c946",
+      "at": "2026-09-09T16:50:54.4915958Z"
+    },
+    {
+      "supervisorPid": 22196,
+      "exitCode": 0,
+      "iteration": 2,
+      "runId": "1116fc4c-933b-4a71-97fb-465b50f2c946",
+      "at": "2026-09-09T16:51:26.9055935Z"
+    },
+    {
+      "supervisorPid": 5568,
+      "exitCode": 0,
+      "iteration": 0,
+      "runId": "1116fc4c-933b-4a71-97fb-465b50f2c946",
+      "at": "2026-09-09T16:51:50.9979647Z"
+    },
+    {
+      "supervisorPid": 5568,
+      "exitCode": 0,
+      "iteration": 1,
+      "runId": "1116fc4c-933b-4a71-97fb-465b50f2c946",
+      "at": "2026-09-09T16:52:07.4974938Z"
+    },
+    {
+      "supervisorPid": 5568,
+      "exitCode": 0,
+      "iteration": 2,
+      "runId": "1116fc4c-933b-4a71-97fb-465b50f2c946",
+      "at": "2026-09-09T16:52:37.0175436Z"
+    },
+    {
+      "supervisorPid": 19028,
+      "exitCode": 0,
+      "iteration": 0,
+      "runId": "1116fc4c-933b-4a71-97fb-465b50f2c946",
+      "at": "2026-09-09T16:53:51.1599155Z"
+    },
+    {
+      "supervisorPid": 19028,
+      "exitCode": 0,
+      "iteration": 1,
+      "runId": "1116fc4c-933b-4a71-97fb-465b50f2c946",
+      "at": "2026-09-09T16:54:22.2078335Z"
+    },
+    {
+      "supervisorPid": 19028,
+      "exitCode": 0,
+      "iteration": 2,
+      "runId": "1116fc4c-933b-4a71-97fb-465b50f2c946",
+      "at": "2026-09-09T16:54:38.7544366Z"
+    },
+    {
+      "supervisorPid": 23504,
+      "exitCode": 0,
+      "iteration": 0,
+      "runId": "1116fc4c-933b-4a71-97fb-465b50f2c946",
+      "at": "2026-09-09T16:55:38.035431Z"
+    },
+    {
+      "supervisorPid": 23504,
+      "exitCode": 0,
+      "iteration": 1,
+      "runId": "1116fc4c-933b-4a71-97fb-465b50f2c946",
+      "at": "2026-09-09T16:56:10.4120446Z"
+    },
+    {
+      "supervisorPid": 23504,
+      "exitCode": 0,
+      "iteration": 2,
+      "runId": "1116fc4c-933b-4a71-97fb-465b50f2c946",
+      "at": "2026-09-09T16:56:41.1965382Z"
+    },
+    {
+      "supervisorPid": 23900,
+      "exitCode": 0,
+      "iteration": 0,
+      "runId": "1116fc4c-933b-4a71-97fb-465b50f2c946",
+      "at": "2026-09-09T16:57:53.9448272Z"
+    },
+    {
+      "supervisorPid": 23900,
+      "exitCode": 0,
+      "iteration": 1,
+      "runId": "1116fc4c-933b-4a71-97fb-465b50f2c946",
+      "at": "2026-09-09T16:58:10.4636797Z"
+    }
+  ],
+  "productionChanged": false,
+  "continuousCloudServiceClaimed": false
+}

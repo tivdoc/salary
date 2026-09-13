@@ -1,10 +1,12 @@
+import {runDocumentReview} from "../document-review/service.ts";
+import {JUNE2026_TEST_READINESS,decodeJune2026TestReadiness} from "../minimum-wage-june2026/test-catalog.ts";
 import { canonicalFactSchema, type CanonicalFact } from "../facts/contracts.ts";
 import { employmentSnapshotSchema, type EmploymentSnapshot } from "../facts/snapshot.ts";
-import { resolvedPayslipFactPaths, resolvePayslipSnapshot } from "../extraction/resolver.ts";
+import { resolvedPayslipFactPaths, resolvePayslipSnapshot,IDENTIFIED_AGREEING_CANDIDATES_POLICY } from "../extraction/resolver.ts";
 import { validatePayslipGate0 } from "../extraction/validation.ts";
 import { canonicalSha256, canonicalStringify, deepFreeze } from "../rule-runtime/canonical.ts";
-import { ruleInputSnapshotSchema, type RuleInputSnapshot } from "../wave1/contracts.ts";
-import { createCanonicalRuleInputSnapshot } from "../rule-input/snapshot.ts";
+import type { RuleInputSnapshot } from "../wave1/contracts.ts";
+import { createTopicRuleInputSnapshot } from "../rule-input/snapshot.ts";
 import { evaluateLegalReadiness, type LegalReadinessCandidate, type LegalReadinessCase } from "../legal-knowledge/canonical-readiness/evaluate-legal-readiness.ts";
 import type {
   AnalysisResultBundle,
@@ -23,6 +25,19 @@ import type {
 import { WAVE3_TOPICS } from "../wave3/contracts.ts";
 import {
   CaseAnalysisError,
+  CASE_ANALYSIS_CODE_VERSION,
+  CASE_ANALYSIS_DOCUMENT_REVIEW_CODE_VERSION,
+  CASE_ANALYSIS_AI_RELEASE_CODE_VERSION,
+  CASE_ANALYSIS_OWNER_ENGINEERING_CODE_VERSION,
+  createCaseAnalysisOwnerEngineering,
+  replayCaseAnalysisOwnerEngineering,
+  assertCaseAnalysisOwnerEngineeringScope,
+  type CaseAnalysisOwnerEngineering,
+  createCaseAnalysisAiRelease,
+  replayCaseAnalysisAiRelease,
+  assertCaseAnalysisAiReleaseScope,
+  type CaseAnalysisAiRelease,
+  CASE_ANALYSIS_IDENTIFIED_READING_CODE_VERSION,
   type CaseAnalysisLogPort,
   type CaseAnalysisRepositoryPort,
   type CaseAnalysisStage,
@@ -56,6 +71,26 @@ export type CaseAnalysisMetrics = {
   executor_calls: number;
 };
 
+export type PersistedCanonicalInputContext = Readonly<{
+  analysis_run_id: string;
+  case_id: string;
+  command_sha256: string;
+  facts_snapshot_sha256: string;
+  rule_inputs: readonly RuleInputSnapshot[];
+}>;
+
+export type CaseAnalysisAiReleaseContext=PersistedCanonicalInputContext & Readonly<{
+  command:CaseAnalysisCommand;
+  facts:EmploymentSnapshot;
+  document_review_input:import('../document-review/contracts.ts').DocumentReviewInput;
+  source_journal:StoredCaseInputSnapshot['source_journal']|null;
+  previous_ai_release:CaseAnalysisAiRelease|null;
+}>;
+export type CaseAnalysisAiReleasePreparation=Pick<import('../ai-release-runtime/contracts.ts').AiReleaseRuntimeInput,
+  'assessment_input'|'trusted_generator_pins'>;
+export type CaseAnalysisOwnerEngineeringContext=Omit<CaseAnalysisAiReleaseContext,'previous_ai_release'>&Readonly<{previous_owner_engineering:CaseAnalysisOwnerEngineering|null}>;
+export type CaseAnalysisOwnerEngineeringPreparation=Pick<import('../ai-release-runtime/owner-engineering.ts').OwnerEngineeringRuntimeInput,'assessment_input'|'trusted_generator_pins'>;
+
 export type CaseAnalysisServiceDependencies = Readonly<{
   clock: DeterministicClockPort;
   ids: DeterministicIdPort;
@@ -68,6 +103,21 @@ export type CaseAnalysisServiceDependencies = Readonly<{
   reportRegistration: ReportRegistrationPort;
   logs: CaseAnalysisLogPort;
   templateVersion: string;
+  readingPolicy?:typeof IDENTIFIED_AGREEING_CANDIDATES_POLICY;
+  /** Load authenticated current-source context after canonical input stages
+   * persist, before any executor or report. Failure aborts the caller's
+   * transaction. This hook cannot grant legal readiness or publication. */
+  authorizeIsolatedTest?: (command: CaseAnalysisCommand, selection: LegalCatalogSelection) => Promise<void>;
+  executionBlockers?: (topic: Wave3Topic) => Readonly<{status: "blocked_missing_facts" | "blocked_conflict" | "blocked_legal_readiness"; blockers: readonly string[]}> | null;
+  prepareExecutionContext?: (input: PersistedCanonicalInputContext) => Promise<void>;
+  /** Server-owned authority loader only. The calculator is fixed in this
+   * service. Null preserves the old path; errors stop before any executor. */
+  prepareAiRelease?: (input:CaseAnalysisAiReleaseContext)=>Promise<CaseAnalysisAiReleasePreparation|null>;
+  prepareOwnerEngineering?: (input:CaseAnalysisOwnerEngineeringContext)=>Promise<CaseAnalysisOwnerEngineeringPreparation|null>;
+  /** Optional review-only observations from the already verified snapshot.
+   * Persisted with the original immutable review stage; never activation,
+   * customer answers, findings or report publication authority. */
+  reviewDiagnostics?: (input: Readonly<{command:CaseAnalysisCommand;stored:StoredCaseInputSnapshot;facts:EmploymentSnapshot;bundle:AnalysisResultBundle}>) => unknown;
 }>;
 
 function sortStrings(values: readonly string[]) {
@@ -92,39 +142,49 @@ function aggregateFact(
   factId: string,
   createdAt: string,
 ): CanonicalFact {
-  const provenance = facts
+  // An absent reading is not a competing assertion. Preserve the input
+  // snapshots, but only attribute a known value to sources that supply one.
+  const assertions = facts.filter((fact) => fact.status !== "missing");
+  const supporting = assertions.length > 0 ? assertions : facts;
+  const provenance = supporting
     .flatMap((fact) => fact.provenance)
     .sort((left, right) => {
       const leftKey = canonicalStringify(left);
       const rightKey = canonicalStringify(right);
       return leftKey < rightKey ? -1 : leftKey > rightKey ? 1 : 0;
     });
-  const conflicts = sortStrings(facts.flatMap((fact) => [fact.fact_id, ...fact.conflicting_fact_ids]));
-  if (facts.length === 0 || facts.some((fact) => fact.status === "missing")) {
+  const conflicts = sortStrings(assertions.flatMap((fact) => [fact.fact_id, ...fact.conflicting_fact_ids]));
+  const hasMissingReading = facts.some((fact) => fact.status === "missing");
+  const hasDeclaration = assertions.some((fact) => fact.value !== null && fact.provenance.some((source) => source.source_type === "declared"));
+  const distinctValues = new Set(assertions.map((fact) => canonicalStringify(fact.value)));
+  const hasConflict = assertions.some((fact) => fact.status === "conflicted") || distinctValues.size > 1;
+  // Documentary coverage may span several periods: a value in one document
+  // cannot fill a missing period. An explicit declaration can remain visible
+  // as unconfirmed, but never converts that gap into verified coverage.
+  if (assertions.length === 0 || (hasMissingReading && !hasDeclaration && !hasConflict)) {
     return canonicalFactSchema.parse({
       fact_id: factId, case_id: caseId, path, value: null, status: "missing",
       provenance: provenance.length > 0 ? provenance : [], confidence: 1,
       conflicting_fact_ids: [], resolution: null, created_at: createdAt,
     });
   }
-  const distinctValues = new Set(facts.map((fact) => canonicalStringify(fact.value)));
-  if (facts.some((fact) => fact.status === "conflicted") || distinctValues.size > 1) {
+  if (hasConflict) {
     return canonicalFactSchema.parse({
       fact_id: factId, case_id: caseId, path, value: null, status: "conflicted",
-      provenance, confidence: Math.min(...facts.map((fact) => fact.confidence)),
+      provenance, confidence: Math.min(...assertions.map((fact) => fact.confidence)),
       conflicting_fact_ids: [...new Set(conflicts)].slice(0, Math.max(2, conflicts.length)),
       resolution: null, created_at: createdAt,
     });
   }
-  const first = facts[0]!;
-  const status = facts.every((fact) => fact.status === "confirmed") ? "confirmed" : "needs_confirmation";
+  const first = assertions[0]!;
+  const status = !hasMissingReading && assertions.every((fact) => fact.status === "confirmed") ? "confirmed" : "needs_confirmation";
   return canonicalFactSchema.parse({
     ...first,
     fact_id: factId,
     case_id: caseId,
     status,
     provenance,
-    confidence: Math.min(...facts.map((fact) => fact.confidence)),
+    confidence: Math.min(...assertions.map((fact) => fact.confidence)),
     conflicting_fact_ids: [],
     resolution: null,
     created_at: createdAt,
@@ -145,7 +205,24 @@ function verifyStoredSnapshot(command: CaseAnalysisCommand, stored: StoredCaseIn
       || actualDeclaredHash !== command.declared_fact_snapshot_sha256 || actualDeclaredHash !== stored.declared_fact_snapshot.snapshot_sha256) {
     throw new CaseAnalysisError("PINNED_SNAPSHOT_HASH_MISMATCH");
   }
-  if (stored.documents.length === 0 || stored.documents.length !== stored.extractions.length) {
+  if (stored.document_review_input || command.document_review_sha256) {
+    if (!stored.document_review_input || !command.document_review_sha256
+      || hashCanonical(stored.document_review_input) !== command.document_review_sha256
+      || stored.document_review_input.case_id !== command.case_id
+      || stored.document_review_input.period.from !== command.period.start_date
+      || stored.document_review_input.period.to !== command.period.end_date) throw new CaseAnalysisError("REVIEW_SNAPSHOT_PIN_MISMATCH");
+  }
+  const declaredPaths = new Set<CanonicalFact["path"]>();
+  const declaredIds = new Set<string>();
+  for (const candidate of stored.declared_fact_snapshot.facts) {
+    const fact = canonicalFactSchema.parse(candidate);
+    if (fact.case_id !== command.case_id) throw new CaseAnalysisError("DECLARED_FACT_CASE_MISMATCH");
+    if (declaredPaths.has(fact.path)) throw new CaseAnalysisError("DECLARED_FACT_PATH_DUPLICATE");
+    if (declaredIds.has(fact.fact_id)) throw new CaseAnalysisError("DECLARED_FACT_ID_DUPLICATE");
+    declaredPaths.add(fact.path);
+    declaredIds.add(fact.fact_id);
+  }
+  if ((stored.documents.length === 0 && !stored.document_review_input) || stored.documents.length !== stored.extractions.length) {
     throw new CaseAnalysisError("DOCUMENT_EXTRACTION_CARDINALITY_MISMATCH");
   }
 }
@@ -156,6 +233,7 @@ function projectFacts(input: Readonly<{
   analysisRunId: string;
   createdAt: string;
   ids: DeterministicIdPort;
+  readingPolicy?:typeof IDENTIFIED_AGREEING_CANDIDATES_POLICY;
 }>): EmploymentSnapshot {
   const documentFacts: CanonicalFact[][] = [];
   for (const [index, document] of input.stored.documents.entries()) {
@@ -172,6 +250,7 @@ function projectFacts(input: Readonly<{
       document,
       extraction,
       validation,
+      ...(input.readingPolicy?{reading_policy:input.readingPolicy}:{}),
       context: {
         snapshot_id: input.ids.derive("document-fact-snapshot", canonicalSha256({ analysis_run_id: input.analysisRunId, index })),
         case_id: input.command.case_id,
@@ -184,10 +263,25 @@ function projectFacts(input: Readonly<{
     documentFacts.push(snapshot.facts);
   }
   const declaredByPath = new Map(input.stored.declared_fact_snapshot.facts.map((fact) => [fact.path, fact] as const));
-  const facts = Object.values(criticalFactPath).map((path) => {
+  // Topic gate paths are not the complete calculation basis. Keep paid amounts,
+  // rates, period and other resolved document facts even without a declaration.
+  const paths = new Set([...Object.values(criticalFactPath), ...documentFacts.flatMap(entries => entries.map(fact => fact.path)), ...declaredByPath.keys()]);
+  const facts = [...paths].map((path) => {
     const declared = declaredByPath.get(path);
-    if (declared) return canonicalFactSchema.parse(declared);
     const candidates = documentFacts.flatMap((entries) => entries.filter((fact) => fact.path === path));
+    // A declaration is another assertion, never implicit permission to discard
+    // a saved document value or its provenance. Conflicts remain unresolved;
+    // agreement preserves the least-confirmed status across the sources.
+    if (declared) candidates.push(canonicalFactSchema.parse(declared));
+    if(candidates.length===0&&input.stored.document_review_input){
+      // The review stage has considered these sources, but has not admitted a
+      // canonical financial fact. Preserve the absence with actual provenance.
+      const source=input.stored.document_review_input.documents[0];
+      candidates.push(canonicalFactSchema.parse({fact_id:input.ids.derive('review-missing-fact',canonicalSha256({run:input.analysisRunId,path})),
+        case_id:input.command.case_id,path,value:null,status:'missing',confidence:0,
+        provenance:[{source_type:'documented',source_reference:{kind:'document',document_id:source.document_id},read_by:'machine',verified:false}],
+        conflicting_fact_ids:[],resolution:null,created_at:input.createdAt}));
+    }
     return aggregateFact(
       path,
       candidates,
@@ -209,15 +303,11 @@ function projectFacts(input: Readonly<{
 }
 
 function projectRuleInputs(facts: EmploymentSnapshot, topics: readonly Wave3Topic[]): readonly RuleInputSnapshot[] {
-  const canonical = createCanonicalRuleInputSnapshot(facts);
-  return topics.map((topic) => ruleInputSnapshotSchema.parse({
-    snapshot_id: `rule-input:${facts.analysis_run_id}:${topic}`,
-    snapshot_version: `${canonical.reference.snapshot_version}:${topic}`,
-    snapshot_sha256: canonicalSha256({ topic, canonical_rule_input: canonical.reference }),
-  }));
+  return topics.map((topic) => createTopicRuleInputSnapshot(facts, topic));
 }
 
 function independentlyEvaluateReadiness(selection: LegalCatalogSelection) {
+  if(selection.readiness.schema_version===JUNE2026_TEST_READINESS) return decodeJune2026TestReadiness(selection.readiness);
   const embedded = selection.readiness as EmbeddedReadinessDecision;
   const normalized = embedded.normalized_input;
   if (!normalized) throw new CaseAnalysisError("CATALOG_READINESS_INPUT_MISSING");
@@ -236,7 +326,7 @@ function topicResult(input: Readonly<{
   fact: CanonicalFact;
   ruleInput: RuleInputSnapshot;
   selection: LegalCatalogSelection;
-  readiness: ReturnType<typeof evaluateLegalReadiness>;
+  readiness: LegalCatalogSelection["readiness"];
   execution: Awaited<ReturnType<RuleSpecExecutorPort["execute"]>> | null;
 }>): TopicAnalysisResult {
   if (input.fact.status === "conflicted") return deepFreeze({
@@ -262,7 +352,8 @@ function topicResult(input: Readonly<{
   });
   if (input.execution.amount === null) return deepFreeze({
     topic: input.topic, status: "not_applicable", blockers: [],
-    rule_input_sha256: input.ruleInput.snapshot_sha256, amount: null, trace: input.execution.trace, legal_readiness: input.readiness,
+    rule_input_sha256: input.ruleInput.snapshot_sha256, amount: null, trace: input.execution.trace,
+    ...(input.execution.source_admission?{source_admission:input.execution.source_admission}:{}),legal_readiness: input.readiness,
   });
   if (input.execution.trace.output.kind !== "money"
       || canonicalStringify(input.execution.trace.output.value) !== canonicalStringify(input.execution.amount)) {
@@ -271,7 +362,7 @@ function topicResult(input: Readonly<{
   return deepFreeze({
     topic: input.topic, status: "calculated", blockers: [],
     rule_input_sha256: input.ruleInput.snapshot_sha256, amount: input.execution.amount,
-    trace: input.execution.trace, legal_readiness: input.readiness,
+    trace: input.execution.trace,...(input.execution.source_admission?{source_admission:input.execution.source_admission}:{}), legal_readiness: input.readiness,
   });
 }
 
@@ -362,24 +453,81 @@ export class CaseAnalysisService implements CaseAnalysisPort {
       created_at: createdAt,
       selections,
       provider_independent: true,
+      ...(stored.source_journal?{source_journal:stored.source_journal}:{}),
+      ...(stored.document_review_input ? {document_review_input:stored.document_review_input,document_review_sha256:command.document_review_sha256} : {}),
     });
 
-    const facts = projectFacts({ command, stored, analysisRunId, createdAt, ids: this.dependencies.ids });
+    const facts = projectFacts({ command, stored, analysisRunId, createdAt, ids: this.dependencies.ids,readingPolicy:this.dependencies.readingPolicy });
     const factsSnapshotSha256 = this.dependencies.hashes.hashCanonical(facts);
     await this.stage(analysisRunId, "canonical_facts", { facts, facts_snapshot_sha256: factsSnapshotSha256 });
 
     const ruleInputs = projectRuleInputs(facts, command.requested_topics);
     await this.stage(analysisRunId, "rule_inputs", { rule_inputs: ruleInputs });
 
-    const readiness = new Map<Wave3Topic, ReturnType<typeof evaluateLegalReadiness>>();
+    const readiness = new Map<Wave3Topic, LegalCatalogSelection["readiness"]>();
     for (const selection of selections) {
       const topic = selection.topic;
+      if(selection.readiness.schema_version===JUNE2026_TEST_READINESS){
+        if(command.mode!=="synthetic_test"||!this.dependencies.authorizeIsolatedTest) throw new CaseAnalysisError("ISOLATED_TEST_AUTHORITY_REQUIRED");
+        await this.dependencies.authorizeIsolatedTest(command,selection);
+      }
       readiness.set(topic, independentlyEvaluateReadiness(selection));
       this.metrics.canonical_readiness_calls += 1;
     }
     const catalogHashes = new Set(selections.map((selection) => selection.catalog_sha256));
     if (catalogHashes.size !== 1) throw new CaseAnalysisError("CATALOG_HASH_DIVERGENCE");
     const catalogSha256 = selections[0]!.catalog_sha256;
+    let aiRelease:CaseAnalysisAiRelease|undefined;
+    if(this.dependencies.prepareAiRelease&&this.dependencies.prepareOwnerEngineering)throw new CaseAnalysisError('CASE_ANALYSIS_PURPOSE_CONFLICT');
+    if(this.dependencies.prepareAiRelease){
+      if(!stored.document_review_input)throw new CaseAnalysisError('AI_RELEASE_REVIEW_INPUT_REQUIRED');
+      const priorStage=existing.stages.find(stage=>stage.stage==='topic_results')?.payload;
+      const priorValue=typeof priorStage==='object'&&priorStage!==null&&'bundle' in priorStage
+        &&typeof priorStage.bundle==='object'&&priorStage.bundle!==null&&'ai_release' in priorStage.bundle
+        ?priorStage.bundle.ai_release:undefined;
+      const previous=priorValue===undefined?null:replayCaseAnalysisAiRelease(priorValue);
+      const prepared=await this.dependencies.prepareAiRelease(deepFreeze({command,analysis_run_id:analysisRunId,
+        case_id:command.case_id,command_sha256:commandSha256,facts_snapshot_sha256:factsSnapshotSha256,
+        facts,rule_inputs:ruleInputs,document_review_input:stored.document_review_input,source_journal:stored.source_journal??null,previous_ai_release:previous}));
+      if(!prepared&&previous)throw new CaseAnalysisError('AI_RELEASE_RESUME_AUTHORITY_REQUIRED');
+      if(prepared){
+        const current=prepared.assessment_input.current.scope,purchase=stored.document_review_input.purchased_scope,journal=stored.source_journal;
+        if(!journal)throw new CaseAnalysisError('AI_RELEASE_SOURCE_JOURNAL_REQUIRED');
+        if(journal.case_id!==command.case_id||current.case_id!==command.case_id||current.input_revision!==journal.input_revision||current.input_sha256!==journal.input_sha256
+          ||current.period.from!==command.period.start_date||current.period.to!==command.period.end_date
+          ||current.facts_sha256!==factsSnapshotSha256||current.population!==command.population
+          ||current.order_id!==purchase.order_id||current.order_origin!==purchase.origin
+          ||current.order_receipt_sha256!==purchase.receipt_sha256)throw new CaseAnalysisError('AI_RELEASE_CANONICAL_SCOPE_MISMATCH');
+        aiRelease=createCaseAnalysisAiRelease({...prepared,source:stored.document_review_input,analysis_run_id:analysisRunId},
+          {engine_case_revision:command.case_revision,source_journal:journal});
+        if(previous&&canonicalSha256(aiRelease)!==canonicalSha256(previous))throw new CaseAnalysisError('AI_RELEASE_RESUME_INPUT_MISMATCH');
+      }
+    }
+    let ownerEngineering:CaseAnalysisOwnerEngineering|undefined;
+    if(this.dependencies.prepareOwnerEngineering){
+      if(!stored.document_review_input)throw new CaseAnalysisError('OWNER_ENGINEERING_REVIEW_INPUT_REQUIRED');
+      const priorStage=existing.stages.find(stage=>stage.stage==='topic_results')?.payload;
+      const priorValue=typeof priorStage==='object'&&priorStage!==null&&'bundle' in priorStage
+        &&typeof priorStage.bundle==='object'&&priorStage.bundle!==null&&'owner_engineering' in priorStage.bundle
+        ?priorStage.bundle.owner_engineering:undefined;
+      const previous=priorValue===undefined?null:replayCaseAnalysisOwnerEngineering(priorValue);
+      const prepared=await this.dependencies.prepareOwnerEngineering(deepFreeze({command,analysis_run_id:analysisRunId,
+        case_id:command.case_id,command_sha256:commandSha256,facts_snapshot_sha256:factsSnapshotSha256,
+        facts,rule_inputs:ruleInputs,document_review_input:stored.document_review_input,source_journal:stored.source_journal??null,previous_owner_engineering:previous}));
+      if(!prepared&&previous)throw new CaseAnalysisError('OWNER_ENGINEERING_RESUME_AUTHORITY_REQUIRED');
+      if(prepared){
+        const current=prepared.assessment_input.current.scope,purchase=stored.document_review_input.purchased_scope,journal=stored.source_journal;
+        if(!journal)throw new CaseAnalysisError('OWNER_ENGINEERING_SOURCE_JOURNAL_REQUIRED');
+        if(journal.case_id!==command.case_id||current.case_id!==command.case_id||current.input_revision!==journal.input_revision||current.input_sha256!==journal.input_sha256
+          ||current.period.from!==command.period.start_date||current.period.to!==command.period.end_date
+          ||current.facts_sha256!==factsSnapshotSha256||current.population!==command.population
+          ||current.order_id!==purchase.order_id||current.order_origin!==purchase.origin
+          ||current.order_receipt_sha256!==purchase.receipt_sha256)throw new CaseAnalysisError('OWNER_ENGINEERING_CANONICAL_SCOPE_MISMATCH');
+        ownerEngineering=createCaseAnalysisOwnerEngineering({...prepared,source:stored.document_review_input,analysis_run_id:analysisRunId},
+          {engine_case_revision:command.case_revision,source_journal:journal});
+        if(previous&&canonicalSha256(ownerEngineering)!==canonicalSha256(previous))throw new CaseAnalysisError('OWNER_ENGINEERING_RESUME_INPUT_MISMATCH');
+      }
+    }
     const dependencies: PinnedAnalysisDependencies = deepFreeze({
       extraction_snapshot_sha256: stored.extraction_snapshot_sha256,
       facts_snapshot_sha256: factsSnapshotSha256,
@@ -389,10 +537,18 @@ export class CaseAnalysisService implements CaseAnalysisPort {
       rule_spec_versions: sortStrings([...new Set(selections.flatMap((selection) => selection.rule_spec_id && selection.rule_spec_version
         ? [`${selection.rule_spec_id}@${selection.rule_spec_version}`]
         : []))]),
-      code_version: "case-analysis@0.6.0",
+      code_version: ownerEngineering?CASE_ANALYSIS_OWNER_ENGINEERING_CODE_VERSION:aiRelease?CASE_ANALYSIS_AI_RELEASE_CODE_VERSION:stored.document_review_input?CASE_ANALYSIS_DOCUMENT_REVIEW_CODE_VERSION:this.dependencies.readingPolicy===IDENTIFIED_AGREEING_CANDIDATES_POLICY?CASE_ANALYSIS_IDENTIFIED_READING_CODE_VERSION:CASE_ANALYSIS_CODE_VERSION,
       template_version: this.dependencies.templateVersion,
     });
     await this.stage(analysisRunId, "analysis_run", { selections, dependencies });
+
+    await this.dependencies.prepareExecutionContext?.(deepFreeze({
+      analysis_run_id: analysisRunId,
+      case_id: command.case_id,
+      command_sha256: commandSha256,
+      facts_snapshot_sha256: factsSnapshotSha256,
+      rule_inputs: ruleInputs,
+    }));
 
     const factByPath = new Map(facts.facts.map((fact) => [fact.path, fact] as const));
     const ruleInputByTopic = new Map(command.requested_topics.map((topic, index) => [topic, ruleInputs[index]!] as const));
@@ -403,7 +559,8 @@ export class CaseAnalysisService implements CaseAnalysisPort {
       if (!fact) throw new CaseAnalysisError(`CRITICAL_FACT_PROJECTION_MISSING:${topic}`);
       const selection = selectionByTopic.get(topic)!;
       const decision = readiness.get(topic)!;
-      const readyToExecute = fact.status === "confirmed" && decision.status === "READY"
+      const admissionBlock=this.dependencies.executionBlockers?.(topic)??null;
+      const readyToExecute = !admissionBlock && fact.status === "confirmed" && decision.status === "READY"
         && selection.parameter_version_ids.length > 0 && selection.rule_spec_id !== null && selection.rule_spec_version !== null;
       let execution: Awaited<ReturnType<RuleSpecExecutorPort["execute"]>> | null = null;
       if (readyToExecute) {
@@ -415,7 +572,7 @@ export class CaseAnalysisService implements CaseAnalysisPort {
           calculated_at: createdAt,
         });
       }
-      const result = topicResult({
+      const result:TopicAnalysisResult = admissionBlock ? deepFreeze({topic,...admissionBlock,rule_input_sha256:ruleInputByTopic.get(topic)!.snapshot_sha256,amount:null,trace:null,legal_readiness:decision}) : topicResult({
         topic,
         fact,
         ruleInput: ruleInputByTopic.get(topic)!,
@@ -429,9 +586,13 @@ export class CaseAnalysisService implements CaseAnalysisPort {
         topic, status: result.status, sha256: this.dependencies.hashes.hashCanonical(result),
       });
     }
-    const subtotal = knownSubtotal(topicResults);
-    const coverageComplete = topicResults.every((result) => result.status === "calculated" || result.status === "not_applicable");
+    const subtotal = ownerEngineering?null:knownSubtotal(topicResults);
+    const coverageComplete = !ownerEngineering&&topicResults.every((result) => result.status === "calculated" || result.status === "not_applicable");
+    const documentReview=ownerEngineering?.result.review??aiRelease?.result.review??(stored.document_review_input ? runDocumentReview(stored.document_review_input,analysisRunId) : undefined);
     const bundleSeed = {
+      ...(documentReview ? {document_review:documentReview} : {}),
+      ...(aiRelease?{ai_release:aiRelease}:{}),
+      ...(ownerEngineering?{owner_engineering:ownerEngineering}:{}),
       schema_version: "tivdoc-analysis-result-bundle-v0.6.0" as const,
       analysis_run_id: analysisRunId,
       case_id: command.case_id,
@@ -453,6 +614,8 @@ export class CaseAnalysisService implements CaseAnalysisPort {
       ...bundleSeed,
       result_sha256: this.dependencies.hashes.hashCanonical(bundleSeed),
     });
+    if(aiRelease)assertCaseAnalysisAiReleaseScope(aiRelease,bundle);
+    if(ownerEngineering)assertCaseAnalysisOwnerEngineeringScope(ownerEngineering,bundle);
     await this.stage(analysisRunId, "topic_results", { bundle });
 
     const report = await this.dependencies.reportBuilder.build(bundle);
@@ -476,6 +639,7 @@ export class CaseAnalysisService implements CaseAnalysisPort {
       report_sha256: report.report_sha256,
       auto_approved: false,
       export_eligible_before_review: false,
+      ...(this.dependencies.reviewDiagnostics ? {diagnostics:await this.dependencies.reviewDiagnostics({command,stored,facts,bundle})} : {}),
     });
     await this.dependencies.repository.complete({ analysis_run_id: analysisRunId, selections, dependencies, bundle, report });
     this.dependencies.logs.write({
@@ -492,6 +656,26 @@ export class CaseAnalysisService implements CaseAnalysisPort {
     await this.dependencies.repository.assertPinnedDependenciesAvailable(run.dependencies);
     const seed = Object.fromEntries(Object.entries(run.bundle).filter(([key]) => key !== "result_sha256"));
     if (this.dependencies.hashes.hashCanonical(seed) !== run.bundle.result_sha256) throw new CaseAnalysisError("PINNED_RESULT_HASH_MISMATCH");
+    if(run.bundle.ai_release&&run.bundle.owner_engineering)throw new CaseAnalysisError('CASE_ANALYSIS_PURPOSE_CONFLICT');
+    if(run.bundle.ai_release){
+      const envelope=replayCaseAnalysisAiRelease(run.bundle.ai_release);
+      assertCaseAnalysisAiReleaseScope(envelope,run.bundle);
+      const savedInput=run.stages.find(stage=>stage.stage==='input_snapshot')?.payload;
+      if(typeof savedInput!=='object'||savedInput===null||!('source_journal' in savedInput)
+        ||canonicalSha256(savedInput.source_journal)!==canonicalSha256(envelope.binding.source_journal))throw new CaseAnalysisError('AI_RELEASE_REPLAY_JOURNAL_MISMATCH');
+      if(envelope.input.source.case_id!==run.command.case_id
+        ||canonicalSha256(envelope.input.source)!==run.command.document_review_sha256
+        ||envelope.input.assessment_input.current.scope.population!==run.command.population)throw new CaseAnalysisError('AI_RELEASE_REPLAY_COMMAND_MISMATCH');
+    }
+    if(run.bundle.owner_engineering){
+      const envelope=replayCaseAnalysisOwnerEngineering(run.bundle.owner_engineering);
+      assertCaseAnalysisOwnerEngineeringScope(envelope,run.bundle);
+      const savedInput=run.stages.find(stage=>stage.stage==='input_snapshot')?.payload;
+      if(typeof savedInput!=='object'||savedInput===null||!('source_journal' in savedInput)
+        ||canonicalSha256(savedInput.source_journal)!==canonicalSha256(envelope.binding.source_journal))throw new CaseAnalysisError('OWNER_ENGINEERING_REPLAY_JOURNAL_MISMATCH');
+      if(envelope.input.source.case_id!==run.command.case_id||canonicalSha256(envelope.input.source)!==run.command.document_review_sha256
+        ||envelope.input.assessment_input.current.scope.population!==run.command.population)throw new CaseAnalysisError('OWNER_ENGINEERING_REPLAY_COMMAND_MISMATCH');
+    }
     this.dependencies.logs.write({
       event: "replay_completed", case_id: run.bundle.case_id, analysis_run_id: analysisRunId,
       topic: null, status: "byte_identical", sha256: run.bundle.result_sha256,

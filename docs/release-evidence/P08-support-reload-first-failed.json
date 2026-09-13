@@ -1,0 +1,19 @@
+{
+  "origin": "https://salary-sy8byvdz5-tivdoccom-5042s-projects.vercel.app",
+  "deployedSha": "17c668ef480f1b70e612d8906a9b81d79073f121",
+  "checks": [
+    {
+      "name": "customer opens case support with saved server state",
+      "passed": true
+    },
+    {
+      "name": "lost completion response survives full reload and retries the same saved question without duplication",
+      "passed": false
+    }
+  ],
+  "errors": [],
+  "syntheticCasesRemoved": 2,
+  "scope": "Seeded QA session; hosted customer browser/API and DEV database. Owner response injected through actual operations DB role; no owner HTTP/UI, OTP, provider, real payment or professional approval proof.",
+  "productionChanged": false,
+  "secretsIncluded": false
+}

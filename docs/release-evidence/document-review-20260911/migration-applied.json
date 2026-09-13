@@ -1,0 +1,54 @@
+{
+  "at": "2026-09-11T14:48:26.279Z",
+  "productionChanged": false,
+  "migrations": [
+    {
+      "path": "supabase/migrations/20260911144617_document_review_identified_completions.sql",
+      "sha256": "b982a27c856f5d784d84ce38b12b9a8ecd71d9651fef27d44751b67954284e3b"
+    }
+  ],
+  "target": {
+    "db": "tivdoc_release_replay_20260907",
+    "principal": "tivdoc_dev_migrator"
+  },
+  "rollbackPreflight": "PASS",
+  "applied": true,
+  "privileges": [
+    {
+      "role": "anon",
+      "can_seed_target": false,
+      "can_open": false,
+      "can_read_history": false
+    },
+    {
+      "role": "authenticated",
+      "can_seed_target": false,
+      "can_open": false,
+      "can_read_history": false
+    },
+    {
+      "role": "service_role",
+      "can_seed_target": false,
+      "can_open": false,
+      "can_read_history": false
+    },
+    {
+      "role": "tivdoc_web_runtime",
+      "can_seed_target": false,
+      "can_open": false,
+      "can_read_history": false
+    },
+    {
+      "role": "tivdoc_worker_runtime",
+      "can_seed_target": false,
+      "can_open": true,
+      "can_read_history": true
+    }
+  ],
+  "rls": [
+    {
+      "relname": "document_review_request_targets",
+      "relrowsecurity": true
+    }
+  ]
+}

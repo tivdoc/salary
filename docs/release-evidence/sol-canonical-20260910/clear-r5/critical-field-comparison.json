@@ -1,0 +1,320 @@
+{
+  "sourceSha256": "ba5286b3f907249b251e9b7caca193f1b1d303d77255c20eb83c55f1431f7197",
+  "checkpointResultSha256": "bc82e3ebb262529dcf41405689341958652023aee7005cd6cf34339e23595277",
+  "fields": [
+    {
+      "field": "salary_type",
+      "expected": "hourly",
+      "actual": [
+        {
+          "value": "hourly",
+          "confidence": 0.94
+        }
+      ],
+      "passed": true
+    },
+    {
+      "field": "salary_period",
+      "expected": {
+        "year": 2026,
+        "month": 6,
+        "start_date": "2026-06-01",
+        "end_date": "2026-06-30"
+      },
+      "actual": [
+        {
+          "value": {
+            "year": 2026,
+            "month": 6,
+            "start_date": "2026-06-01",
+            "end_date": "2026-06-30"
+          },
+          "confidence": 0.94
+        }
+      ],
+      "passed": true
+    },
+    {
+      "field": "base_monthly_salary",
+      "expected": {
+        "currency": "ILS",
+        "minor_units": 330000
+      },
+      "actual": [
+        {
+          "value": {
+            "currency": "ILS",
+            "minor_units": 330000
+          },
+          "confidence": 0.94
+        }
+      ],
+      "passed": true
+    },
+    {
+      "field": "gross_salary",
+      "expected": {
+        "currency": "ILS",
+        "minor_units": 330000
+      },
+      "actual": [
+        {
+          "value": {
+            "currency": "ILS",
+            "minor_units": 330000
+          },
+          "confidence": 0.94
+        }
+      ],
+      "passed": true
+    },
+    {
+      "field": "net_salary",
+      "expected": {
+        "currency": "ILS",
+        "minor_units": 330000
+      },
+      "actual": [
+        {
+          "value": {
+            "currency": "ILS",
+            "minor_units": 330000
+          },
+          "confidence": 0.94
+        }
+      ],
+      "passed": true
+    },
+    {
+      "field": "regular_hours",
+      "expected": {
+        "amount": "100",
+        "unit": "hours_per_month"
+      },
+      "actual": [
+        {
+          "value": {
+            "amount": "100",
+            "unit": "hours_per_month"
+          },
+          "confidence": 0.94
+        }
+      ],
+      "passed": true
+    },
+    {
+      "field": "hourly_rate",
+      "expected": {
+        "currency": "ILS",
+        "minor_units": 3300
+      },
+      "actual": [
+        {
+          "value": {
+            "currency": "ILS",
+            "minor_units": 3300
+          },
+          "confidence": 0.94
+        }
+      ],
+      "passed": true
+    }
+  ],
+  "scope": "Critical fields for one-base-component June minimum-wage calculation; this is not whole-payslip accuracy or pension validation.",
+  "allNormalizedFields": [
+    {
+      "candidate_id": "59011021-0fd4-4722-a74a-1e3d264eec2f",
+      "raw_value": "payslip",
+      "confidence": 0.96,
+      "source": {
+        "document_id": "656dcad4-791a-4483-8acf-c26f8ee1d617",
+        "page": 1,
+        "text_fragment": "document type"
+      },
+      "extraction_method": "ai_vision",
+      "warning_flags": [],
+      "field": "document_type",
+      "normalized_value": "payslip"
+    },
+    {
+      "candidate_id": "d46542db-3c60-4954-b8fe-f0a55d738223",
+      "raw_value": "06/2026",
+      "confidence": 0.94,
+      "source": {
+        "document_id": "656dcad4-791a-4483-8acf-c26f8ee1d617",
+        "page": 1,
+        "text_fragment": "חודש שכר: 06/2026"
+      },
+      "extraction_method": "ai_vision",
+      "warning_flags": [],
+      "field": "salary_period",
+      "normalized_value": {
+        "year": 2026,
+        "month": 6,
+        "start_date": "2026-06-01",
+        "end_date": "2026-06-30"
+      }
+    },
+    {
+      "candidate_id": "98e507dd-85bc-49e3-87dc-e570671b2de2",
+      "raw_value": "15/01/2025",
+      "confidence": 0.94,
+      "source": {
+        "document_id": "656dcad4-791a-4483-8acf-c26f8ee1d617",
+        "page": 1,
+        "text_fragment": "תחילת עבודה: 15/01/2025"
+      },
+      "extraction_method": "ai_vision",
+      "warning_flags": [],
+      "field": "employment_start_date",
+      "normalized_value": "2025-01-15"
+    },
+    {
+      "candidate_id": "acb26648-c821-40c9-af74-7e0b88aa68cb",
+      "raw_value": "שעתי",
+      "confidence": 0.94,
+      "source": {
+        "document_id": "656dcad4-791a-4483-8acf-c26f8ee1d617",
+        "page": 1,
+        "text_fragment": "סוג שכר: שעתי"
+      },
+      "extraction_method": "ai_vision",
+      "warning_flags": [],
+      "field": "salary_type",
+      "normalized_value": "hourly"
+    },
+    {
+      "candidate_id": "14d2b386-408c-4491-9250-0a37495bc97f",
+      "raw_value": "100",
+      "confidence": 0.94,
+      "source": {
+        "document_id": "656dcad4-791a-4483-8acf-c26f8ee1d617",
+        "page": 1,
+        "text_fragment": "שכר יסוד שעתי: 100"
+      },
+      "extraction_method": "ai_vision",
+      "warning_flags": [],
+      "field": "regular_hours",
+      "normalized_value": {
+        "amount": "100",
+        "unit": "hours_per_month"
+      }
+    },
+    {
+      "candidate_id": "1ceda3bc-155a-4d6f-b00d-e83cb6e8be51",
+      "raw_value": "33.00",
+      "confidence": 0.94,
+      "source": {
+        "document_id": "656dcad4-791a-4483-8acf-c26f8ee1d617",
+        "page": 1,
+        "text_fragment": "שכר יסוד שעתי: 33.00"
+      },
+      "extraction_method": "ai_vision",
+      "warning_flags": [],
+      "field": "hourly_rate",
+      "normalized_value": {
+        "currency": "ILS",
+        "minor_units": 3300
+      }
+    },
+    {
+      "candidate_id": "9d37f903-fde2-4bd8-b886-2e340d3236d5",
+      "raw_value": "3300.00",
+      "confidence": 0.94,
+      "source": {
+        "document_id": "656dcad4-791a-4483-8acf-c26f8ee1d617",
+        "page": 1,
+        "text_fragment": "שכר יסוד שעתי: 3300.00"
+      },
+      "extraction_method": "ai_vision",
+      "warning_flags": [],
+      "field": "base_monthly_salary",
+      "normalized_value": {
+        "currency": "ILS",
+        "minor_units": 330000
+      }
+    },
+    {
+      "candidate_id": "910656ad-8ff1-473c-b30f-5710d9e323b9",
+      "raw_value": "3300.00",
+      "confidence": 0.94,
+      "source": {
+        "document_id": "656dcad4-791a-4483-8acf-c26f8ee1d617",
+        "page": 1,
+        "text_fragment": "ברוטו: 3300.00"
+      },
+      "extraction_method": "ai_vision",
+      "warning_flags": [],
+      "field": "gross_salary",
+      "normalized_value": {
+        "currency": "ILS",
+        "minor_units": 330000
+      }
+    },
+    {
+      "candidate_id": "ab911ee7-7e38-4f51-97f1-db1a02b54b04",
+      "raw_value": "0.00",
+      "confidence": 0.94,
+      "source": {
+        "document_id": "656dcad4-791a-4483-8acf-c26f8ee1d617",
+        "page": 1,
+        "text_fragment": "סך ניכויים: 0.00"
+      },
+      "extraction_method": "ai_vision",
+      "warning_flags": [],
+      "field": "total_deductions",
+      "normalized_value": {
+        "currency": "ILS",
+        "minor_units": 0
+      }
+    },
+    {
+      "candidate_id": "8746d124-7fa7-4396-a1d1-92833df9c722",
+      "raw_value": "3300.00",
+      "confidence": 0.94,
+      "source": {
+        "document_id": "656dcad4-791a-4483-8acf-c26f8ee1d617",
+        "page": 1,
+        "text_fragment": "נטו לתשלום: 3300.00"
+      },
+      "extraction_method": "ai_vision",
+      "warning_flags": [],
+      "field": "net_salary",
+      "normalized_value": {
+        "currency": "ILS",
+        "minor_units": 330000
+      }
+    }
+  ],
+  "components": [
+    {
+      "component_id": "2ea6dedf-2aa2-4a46-8282-5a6bdd7b8f28",
+      "source_label": "שכר יסוד שעתי",
+      "normalized_label": "hourly_base",
+      "semantic_kind": "hourly_base",
+      "quantity_raw": "100",
+      "rate_raw": "33.00",
+      "percentage_raw": null,
+      "amount_raw": "3300.00",
+      "confidence": 0.94,
+      "source": {
+        "document_id": "656dcad4-791a-4483-8acf-c26f8ee1d617",
+        "page": 1,
+        "text_fragment": "שכר יסוד שעתי"
+      },
+      "extraction_method": "ai_vision",
+      "warning_flags": [],
+      "quantity": "100",
+      "rate": {
+        "currency": "ILS",
+        "minor_units": 3300
+      },
+      "percentage": null,
+      "amount": {
+        "currency": "ILS",
+        "minor_units": 330000
+      },
+      "normalization_warnings": []
+    }
+  ]
+}

@@ -77,7 +77,7 @@ export type LegalReadinessCandidate = Readonly<{
 
 export type LegalReadinessDecision = Readonly<{
   schema_version: string;
-  decision_source: "evaluateLegalReadiness";
+  decision_source: "evaluateLegalReadiness" | "evaluateJune2026TestReadiness";
   status: "READY" | "BLOCKED_NOT_READY";
   reason_codes: readonly string[];
   decision_sha256: string;
@@ -226,6 +226,6 @@ function v050Evaluation(input: Readonly<{ readinessCase: LegalReadinessCase; can
 }
 
 /** The sole domain decision source for legal readiness and admission. */
-export function evaluateLegalReadiness(input: Readonly<{ readinessCase: LegalReadinessCase; candidates: readonly LegalReadinessCandidate[] }>): LegalReadinessDecision {
+export function evaluateLegalReadiness(input: Readonly<{ readinessCase: LegalReadinessCase; candidates: readonly LegalReadinessCandidate[] }>): LegalReadinessDecision & {decision_source:"evaluateLegalReadiness"} {
   return input.readinessCase.contract_version === "v0.5.0" ? v050Evaluation(input) : legacyEvaluation(input);
 }

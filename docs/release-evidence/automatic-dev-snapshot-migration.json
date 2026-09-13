@@ -1,0 +1,12 @@
+{
+  "state": "APPLIED_ISOLATED_DEV",
+  "migration": "20260909155945_automatic_dev_notification_snapshot.sql",
+  "sha256": "d69d17a653ab450a9d6b95c7ac9cf248bee80a3aa562f9bbc0a1ef4ef96e45e0",
+  "database": "tivdoc_release_replay_20260907",
+  "project": "cpzrbidxftzqcfeqqusu",
+  "ddlRollbackVerified": true,
+  "upgradeVerified": true,
+  "policyAndAclProbes": true,
+  "oldUnboundEnqueueRemoved": true,
+  "productionChanged": false
+}

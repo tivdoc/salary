@@ -1,0 +1,29 @@
+{
+  "origin": "https://salary-341ku32zh-tivdoccom-5042s-projects.vercel.app",
+  "deployedSha": "5726684bc18b26db4e18cfebdfb86a5762b2bc5a",
+  "deploymentId": "dpl_84bQK8vC1HxgQLwea6MxhcM3T1Ts",
+  "stage": "missing",
+  "checks": [
+    {
+      "name": "isolated Preview health preserves disabled external services",
+      "passed": true
+    },
+    {
+      "name": "current missing result and previous historical financial run reload from saved DB",
+      "passed": true
+    },
+    {
+      "name": "identified customer answers the analysis-generated exact June hours request through the hosted UI",
+      "passed": true
+    },
+    {
+      "name": "answer invalidates the previous financial results before the next worker run",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "scope": "Actual generated DEV financial runs; hosted HTML/PDF/source/history and identified answer UI. Synthetic paid scope/session; injected OCR; no real payment, login OTP or production.",
+  "liveOcrProof": false,
+  "seededReport": false,
+  "productionChanged": false
+}

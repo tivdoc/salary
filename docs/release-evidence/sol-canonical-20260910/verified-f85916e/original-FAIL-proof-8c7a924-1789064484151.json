@@ -1,0 +1,87 @@
+{
+  "gitSha": "8c7a9241ca6033d783490bede8b6aa1d57dcf05f",
+  "caseId": "e6cc9d3f-4c27-4163-a2ea-b2f0b8a5df23",
+  "publicId": "TV-DEA924CB",
+  "orderId": "5f1c1930-dc9f-4ea6-a4ab-88514708c79d",
+  "kind": "absent-hours",
+  "phase": "authority-change-wakes-existing-queue",
+  "state": "FAIL",
+  "error": "expected 'a400ab7b-8b12-4ba7-8287-6bd64b9b28fe' not to be 'a400ab7b-8b12-4ba7-8287-6bd64b9b28fe' // Object.is equality",
+  "checks": [
+    "ordinary_published_source_bound_and_foreign_source_denied",
+    "resumed_existing_live_checkpoint_without_provider_call",
+    "live_provider_to_canonical_finding_and_published_report",
+    "parallel_retry_same_report_no_duplicates",
+    "managed_callback_same_regular_run_and_current_publication",
+    "durable_job_terminal_success",
+    "restart_exact_terminal_manifest_no_duplicate_publication",
+    "ordinary_published_source_bound_and_foreign_source_denied",
+    "owned_job_lease_released_with_fence"
+  ],
+  "runs": [
+    {
+      "label": "report-resume-8c7a924",
+      "runId": "a400ab7b-8b12-4ba7-8287-6bd64b9b28fe",
+      "projectionId": "ce91acc9-2d9e-4e9b-a9d6-2d4c9c9683c0",
+      "pdfSha256": "5bdb320e76bdf1e703b8488308a3a3fa5c686bbc4a0f3b085922ab95c240a73e",
+      "htmlSha256": "c5b2ba9a96e091791e212dc556f26f343537e93b59071d7836673c0ed89fb06d",
+      "revision": 30,
+      "sourceSha256": "76f6f01e3b1f10792afcf31966bb7362970f4f652af8540525de3a2c65335e1b",
+      "hoursOrigin": "identified_declared",
+      "expectedMinor": 354058,
+      "recordedMinor": 330000,
+      "gapMinor": 24058
+    },
+    {
+      "label": "dependency-current",
+      "runId": "a400ab7b-8b12-4ba7-8287-6bd64b9b28fe",
+      "projectionId": "ce91acc9-2d9e-4e9b-a9d6-2d4c9c9683c0",
+      "pdfSha256": "5bdb320e76bdf1e703b8488308a3a3fa5c686bbc4a0f3b085922ab95c240a73e",
+      "htmlSha256": "c5b2ba9a96e091791e212dc556f26f343537e93b59071d7836673c0ed89fb06d",
+      "revision": 30,
+      "sourceSha256": "76f6f01e3b1f10792afcf31966bb7362970f4f652af8540525de3a2c65335e1b",
+      "hoursOrigin": "identified_declared",
+      "expectedMinor": 354058,
+      "recordedMinor": 330000,
+      "gapMinor": 24058
+    }
+  ],
+  "answers": [],
+  "sourceSha256": "76f6f01e3b1f10792afcf31966bb7362970f4f652af8540525de3a2c65335e1b",
+  "budget": {
+    "policy": {
+      "version": "tivdoc-sol-comparison-budget-v1",
+      "model": "gpt-5.6-sol",
+      "executionProfile": "sol-medium-comparison-v1",
+      "reasoningEffort": "medium",
+      "serviceTier": "default",
+      "pricingSource": "https://developers.openai.com/api/docs/models/gpt-5.6-sol",
+      "pricingCheckedAt": "2026-09-10",
+      "pricingValidUntil": "2026-09-17T00:00:00Z",
+      "inputUsdPerMillion": 4,
+      "outputUsdPerMillion": 20,
+      "inputTokenCeiling": 64000,
+      "outputTokenCeiling": 10000,
+      "maxRequests": 12,
+      "maxReservedMicroUsd": 5000000,
+      "countReservedMicroUsd": 256000,
+      "generationReservedMicroUsd": 456000,
+      "sdkRetries": 0
+    },
+    "contentRequests": 12,
+    "generations": 6,
+    "countRequests": 6,
+    "reservedUpperBoundUsd": 4.272,
+    "unknownOutcomes": 1,
+    "supplierReturnedCost": {
+      "status": "not_returned_by_provider",
+      "amountUsd": null
+    },
+    "countEndpointTariff": "not_separately_documented_reserved_at_full_input_price",
+    "instanceGenerations": 0
+  },
+  "payment": "synthetic_paid_full_offer_no_payment_provider",
+  "authority": "isolated_test_only",
+  "humanApproval": false,
+  "productionChanged": false
+}

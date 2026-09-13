@@ -1,0 +1,17 @@
+{
+  "source": "178ce2cfc87ef029eed50b9a46505467db507e71",
+  "ci": [
+    34266179985,
+    34266175803
+  ],
+  "failure": "One engine import-extension guard: four extensionless imports in three new research/test files",
+  "passed": 2908,
+  "failed": 1,
+  "skipped": 61,
+  "buildAndClosureReached": false,
+  "repair": "Required explicit .ts extensions",
+  "localFocusedPassed": 39,
+  "typecheck": "PASS",
+  "lint": "PASS",
+  "productionChanged": false
+}

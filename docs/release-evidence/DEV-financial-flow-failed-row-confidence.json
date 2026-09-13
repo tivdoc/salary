@@ -1,0 +1,52 @@
+{
+  "verdict": "FAIL",
+  "gitSha": "686a66c362a88a2fee18322a3dd060d38ad44399",
+  "gitWorktreeDirty": true,
+  "migration": "20260909043527_dev_financial_analysis_flow.sql",
+  "migrationSha256": "4c850becd0cb7dbcf86b1552ecdb390088a190280cd5ec51cb9867bd0f3ce1b8",
+  "checks": [
+    "actual web reservation, non-upsert signed Storage transfer, byte validation and commit feed the actual durable V2 extraction adapter and saved receipt; provider output is explicitly injected",
+    "the actual SQL write boundary refuses a missing-hours question when the persisted extraction already contains regular hours"
+  ],
+  "processChecks": [],
+  "previewChecks": [],
+  "failure": "expected [Function] to throw error including 'INJECTED_BEFORE_FINANCIAL_SAVE' but got 'DEV_FINANCIAL_SCENARIO_UNSUPPORTED'",
+  "cleanupFailure": null,
+  "runs": [],
+  "providerKind": "injected V2 transport; no network OCR",
+  "providerPasses": 1,
+  "distinctProviderInputs": [
+    "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d"
+  ],
+  "independentExpected": {
+    "month": "2026-06",
+    "regularHours": "100",
+    "baseMinor": 330000,
+    "expectedMinor": 354000,
+    "gapMinor": 24000,
+    "independentCalculation": "100 * 3540 minor units - 330000 minor units = 24000 minor units",
+    "humanLegalApproval": false
+  },
+  "syntheticCasesRemoved": 2,
+  "syntheticIdentitiesRemoved": 2,
+  "machineSessionsRevoked": 2,
+  "storageObjectsRemoved": 1,
+  "sourceFiles": [
+    {
+      "name": "synthetic-june-2026-100-hours.pdf",
+      "sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d"
+    },
+    {
+      "name": "synthetic-june-2026-missing-hours.pdf",
+      "sha256": "d7b5b567e94d8314283009bc73a2461857f668cc6f5f024d0d7f21aca2e295f3"
+    }
+  ],
+  "canonicalAuditRetained": true,
+  "uploadProof": "Actual web-role reserve/commit and signed private Storage bytes; no browser HTTP upload route in this proof",
+  "browserProof": false,
+  "processRestartProof": false,
+  "liveOcrProof": false,
+  "productionChanged": false,
+  "processRestartProofRequested": true,
+  "evidenceCorrection": "The initial harness recorded the requested flag as proof before reaching the subprocess. This failed attempt did not prove process restart."
+}

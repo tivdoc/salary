@@ -8,13 +8,18 @@ import {
 } from "@/engine/extraction/contracts";
 import type { Gate0CriticalContext } from "@/engine/extraction/validation";
 import { salaryTypeAssessmentSchema, type SalaryTypeAssessment } from "@/engine/extraction/v2";
-import { openAiPayslipV2StructuredOutputSchema, type OpenAiPayslipV2StructuredOutput } from "./v2-schema";
+import { openAiPayslipV2AcceptedOutputSchema, type OpenAiPayslipV2AcceptedOutput as OpenAiPayslipV2StructuredOutput } from "./v2-schema";
+import type {OpenAiProviderReceipt} from './provider-receipt';
+import {classifyOpenAiV2AggregateTotalRows} from './v2-aggregate-totals';
+import {explicitHourlyBaseCells} from './v2-hourly-row-evidence';
+import {classifyOpenAiV2SourceScopes} from './v2-source-scope';
 
 type ValueCandidate = OpenAiPayslipV2StructuredOutput["totals"]["gross_candidates"][number];
 type ModelConfidence = ValueCandidate["confidence"];
 
 const modelConfidence = { high: 0.94, medium: 0.72, low: 0.42 } as const;
 const qualityConfidence = { high: 0.96, medium: 0.76, low: 0.48 } as const;
+export const OPENAI_V2_SALARY_TYPE_MAPPING_POLICY='payslip-v2-salary-type-branch-isolation-v1' as const;
 
 function uuidFrom(seed: string) {
   const hex = createHash("sha256").update(seed).digest("hex").slice(0, 32).split("");
@@ -41,10 +46,12 @@ function candidateSource(input: {
     document_id: input.documentId,
     page: input.candidate.evidence.page ?? 1,
     text_fragment: `${label}: ${input.candidate.raw_value}`.slice(0, 500),
+    ...('source_scope' in input.candidate.evidence?{source_scope:input.candidate.evidence.source_scope,...(input.candidate.evidence.region?{region:input.candidate.evidence.region}:{})}:{}),
   };
 }
 
 export type MappedOpenAiV2Pass = Readonly<{
+  provider_receipt?:OpenAiProviderReceipt;
   extraction: ReturnType<typeof extractionResultSchema.parse>;
   salary_type_assessment: SalaryTypeAssessment;
   critical_context: Gate0CriticalContext;
@@ -63,28 +70,33 @@ export function mapOpenAiV2Output(input: {
   extractedAt: string;
   allowedFields?: readonly PayslipFieldKey[];
 }): MappedOpenAiV2Pass {
-  const output = openAiPayslipV2StructuredOutputSchema.parse(input.output);
-  if ((output.salary_type.documented_value === null) !== (output.salary_type.documented_raw_value === null)) {
-    throw new TypeError("Documented salary type value and raw evidence must be present together");
-  }
-  if ((output.salary_type.inferred_value === null) !== (output.salary_type.inference_basis.length === 0)) {
-    throw new TypeError("Inferred salary type and its basis must be present together");
-  }
+  const output = openAiPayslipV2AcceptedOutputSchema.parse(input.output);
+  // A malformed optional assessment is not evidence against unrelated cells.
+  // Omit only the invalid branch; never invent raw evidence or promote an
+  // inference into the documentary field. Keep the diagnostic in the receipt's
+  // hashed raw extraction, with no blanket confidence penalty on valid fields.
+  const documentedPairValid=(output.salary_type.documented_value===null)===(output.salary_type.documented_raw_value===null);
+  const inferredPairValid=(output.salary_type.inferred_value===null)===(output.salary_type.inference_basis.length===0)
+    &&new Set(output.salary_type.inference_basis).size===output.salary_type.inference_basis.length;
+  const salaryDiagnostics=[...(!documentedPairValid?['salary_type_documented_pair_invalid']:[]),
+    ...(!inferredPairValid?['salary_type_inferred_pair_invalid']:[])];
   const documentId = input.request.document.document_id;
   const allowed = input.allowedFields ? new Set(input.allowedFields) : null;
   const fields: RawCandidateField[] = [];
+  const literalLabels=new Map<string,string>();
   let sequence = 0;
-  const addCandidate = (field: PayslipFieldKey, value: ValueCandidate, fallbackLabel: string) => {
+  const addCandidate = (field: PayslipFieldKey, value: ValueCandidate, fallbackLabel: string, derivedWarnings: readonly string[] = []) => {
     if (allowed && !allowed.has(field)) return null;
     const candidateId = uuidFrom(`${input.request.extraction_id}:v2:${sequence++}:${field}`);
+    if(value.evidence.source_label)literalLabels.set(candidateId,value.evidence.source_label);
     fields.push({
       candidate_id: candidateId,
       field,
       raw_value: value.raw_value,
-      confidence: candidateConfidence(value.confidence, output.document_quality, value.warnings.length),
+      confidence: candidateConfidence(value.confidence, output.document_quality, value.warnings.length + derivedWarnings.length),
       source: candidateSource({ documentId, candidate: value, fallbackLabel }),
       extraction_method: "ai_vision",
-      warning_flags: value.warnings,
+      warning_flags: [...value.warnings,...derivedWarnings],
     });
     return candidateId;
   };
@@ -108,7 +120,7 @@ export function mapOpenAiV2Output(input: {
 
   let documentedCandidateId: string | null = null;
   if (
-    output.salary_type.documented_value !== null &&
+    documentedPairValid && output.salary_type.documented_value !== null &&
     output.salary_type.documented_raw_value !== null &&
     (!allowed || allowed.has("salary_type"))
   ) {
@@ -127,7 +139,7 @@ export function mapOpenAiV2Output(input: {
     amount?: PayslipFieldKey;
   }>>> = {
     base_salary: { amount: "base_monthly_salary" },
-    hourly_base: { quantity: "regular_hours", rate: "hourly_rate" },
+    hourly_base: { quantity: "regular_hours", rate: "hourly_rate", amount: "base_monthly_salary" },
     overtime_125: { quantity: "overtime_125_hours" },
     overtime_150: { quantity: "overtime_150_hours" },
     travel: { amount: "travel_amount" },
@@ -144,6 +156,12 @@ export function mapOpenAiV2Output(input: {
     if (mapping?.quantity && row.quantity_raw) addCandidate(mapping.quantity, rowValue(row.quantity_raw), row.source_label);
     if (mapping?.rate && row.rate_raw) addCandidate(mapping.rate, rowValue(row.rate_raw), row.source_label);
     if (mapping?.amount && row.amount_raw) addCandidate(mapping.amount, rowValue(row.amount_raw), row.source_label);
+    const explicitHourly=explicitHourlyBaseCells(output,row);
+    if(explicitHourly){
+
+      addCandidate('regular_hours',rowValue(explicitHourly.quantity_raw),row.source_label,[explicitHourly.warning]);
+      addCandidate('hourly_rate',rowValue(explicitHourly.rate_raw),row.source_label,[explicitHourly.warning]);
+    }
   }
 
   for (const value of output.totals.gross_candidates) addCandidate("gross_salary", value, "gross total");
@@ -177,6 +195,7 @@ export function mapOpenAiV2Output(input: {
         document_id: documentId,
         page: row.evidence.page ?? 1,
         text_fragment: row.source_label,
+        ...('source_scope' in row.evidence?{source_scope:row.evidence.source_scope,...(row.evidence.region?{region:row.evidence.region}:{})}:{}),
       },
       extraction_method: "ai_vision" as const,
       warning_flags: row.warnings,
@@ -196,7 +215,7 @@ export function mapOpenAiV2Output(input: {
           candidate_id: documentedCandidateId,
         }
       : null,
-    inferred: output.salary_type.inferred_value && (!allowed || allowed.has("salary_type"))
+    inferred: inferredPairValid && output.salary_type.inferred_value && (!allowed || allowed.has("salary_type"))
       ? {
           value: output.salary_type.inferred_value,
           confidence: candidateConfidence(
@@ -216,8 +235,9 @@ export function mapOpenAiV2Output(input: {
   const pensionVisible = output.pension.visible && (!allowed || [...allowed].some((field) => field.startsWith("pension_") || field.startsWith("severance_")));
   const requiredFields: PayslipFieldKey[] = [];
   if (!allowed || allowed.has("salary_period")) requiredFields.push("salary_period");
+  if(!documentedPairValid&&(!allowed||allowed.has('salary_type')))requiredFields.push('salary_type');
 
-  const extraction = extractionResultSchema.parse({
+  const extraction = classifyOpenAiV2SourceScopes(classifyOpenAiV2AggregateTotalRows(extractionResultSchema.parse({
     extraction_id: input.request.extraction_id,
     document_id: documentId,
     status: fields.length > 1 ? "completed" : "partial",
@@ -233,7 +253,7 @@ export function mapOpenAiV2Output(input: {
     additional_components: additionalComponents,
     sensitive_metadata: [],
     earnings_components_complete: output.earnings_components_complete,
-    warnings: output.warnings,
+    warnings: [...new Set([...output.warnings,...salaryDiagnostics])],
     provider: { provider_id: "openai", extractor_version: input.extractorVersion, model_version: input.model },
     operation: {
       duration_ms: input.durationMs,
@@ -242,7 +262,7 @@ export function mapOpenAiV2Output(input: {
     },
     extracted_at: input.extractedAt,
     error_code: null,
-  });
+  })),literalLabels,{hasSeparateEmployeeFunds:output.payroll_rows.some(row=>row.semantic_kind==='deduction'&&/(?:ניכוי(?:י)? קופ|ניכוי(?:י)? קרנ|employee funds)/u.test(row.source_label))});
   return {
     extraction,
     salary_type_assessment: salaryTypeAssessment,

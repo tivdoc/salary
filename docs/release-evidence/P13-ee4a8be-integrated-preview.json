@@ -1,0 +1,58 @@
+{
+  "sha": "ee4a8be9f90ba8ae93dbfe4a52ff003099919dcc",
+  "origin": "https://salary-1vlhcfu08-tivdoccom-5042s-projects.vercel.app",
+  "deployment": "dpl_CGKBZ9SWrLusgQYEm57mHmza28oA",
+  "ready": true,
+  "ci": [
+    34265017223,
+    34265013898
+  ],
+  "results": [
+    {
+      "name": "P13-launch-preview.json",
+      "passed": 44
+    },
+    {
+      "name": "P06-request-browser.json",
+      "passed": 12
+    },
+    {
+      "name": "P08-support-browser.json",
+      "passed": 12
+    },
+    {
+      "name": "P13-studio-upload-browser.json",
+      "passed": 12
+    },
+    {
+      "name": "P08-ai-report-browser.json",
+      "passed": 11
+    },
+    {
+      "name": "P09-customer-refund-browser.json",
+      "passed": 8
+    }
+  ],
+  "totalBrowserChecks": 99,
+  "aiPublicationDbAssertions": 9,
+  "verifiedStorageObjects": 9,
+  "currentUploadObjects": 7,
+  "retainedUploadObjects": 1,
+  "reportSourceObjects": 1,
+  "syntheticCasesRemoved": 10,
+  "syntheticIdentitiesRemoved": 10,
+  "ownedCleanupComplete": true,
+  "inspectedScreenshots": [
+    "preview-ai-report/report-390.png",
+    "preview-ai-report/pdf-page-1.png",
+    "preview-order-refunds/orders-390.png"
+  ],
+  "runtimeErrorQuery": {
+    "since": "20m",
+    "limit": 100,
+    "count": 0
+  },
+  "scope": "Isolated DEV Preview, seeded QA sessions, actual HTTP/DB/Storage and AI report/PDF disclosure and pending price-correction status. Synthetic paid orders, pricing basis and projections; no canonical monetary computation, legal activation, live provider/OTP or production rollout. Later 178ce2c inactive vacation research is not deployed in this Preview.",
+  "productionChanged": false,
+  "priceCorrectionDbAssertions": 12
+}

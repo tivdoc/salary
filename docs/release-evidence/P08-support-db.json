@@ -1,0 +1,18 @@
+{
+  "database": "tivdoc_release_replay_20260907",
+  "migration": "20260907200000_owner_support_threads.sql",
+  "migration_sha256": "8f4ff63c11604347f5d10c025e281bcbd100e52d80627c0fdba94d5e644040e4",
+  "checks": [
+    "two actual web connections concurrently retry one question without duplicate thread or message",
+    "changed retries, cross-case reads and foreign thread replies are refused",
+    "web role has no support queue or owner reply authority",
+    "owner reply is idempotent, visible to its customer and omits internal actor identity",
+    "stale owner action cannot overwrite a newer conversation",
+    "customer reply reopens the same owner queue thread and preserves priority/history",
+    "support actions do not change case or payment status"
+  ],
+  "syntheticCasesRemoved": 2,
+  "syntheticIdentitiesRemoved": 2,
+  "scope": "Actual web/operations roles and scoped synthetic cases; owner HTTP identity check has separate local tests. No email or professional approval.",
+  "productionChanged": false
+}

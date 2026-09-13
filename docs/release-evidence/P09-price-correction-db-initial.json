@@ -1,0 +1,24 @@
+{
+  "verdict": "PASS",
+  "checks": [
+    "unpaid order and entitlement without an exact verified payment cannot request money",
+    "foreign case/identity, actual web and non-worker function privileges are refused",
+    "unknown, low, changed checked scope and higher amounts create no refund intent",
+    "pre-commit failure rolls back both the intent and its audit event",
+    "concurrent first calls, lost-response retry and a new ID for the same reduction preserve one request",
+    "actual SQL rechecks original-policy arithmetic, source, checked scope and conflicting request payload",
+    "a further reduction and concurrent customer refund intake retain both histories; queue uses MAX cumulative target, never SUM",
+    "pending corrections preserve purchased price, initial credit and active full entitlement; no settled state is fabricated",
+    "the exact saved request receipt replays after later case-input changes without repricing it",
+    "actual runtime cannot mutate ledger history and web cannot read the private queue or assert provider settlement"
+  ],
+  "failure": null,
+  "cleanupFailure": null,
+  "database": "tivdoc_release_replay_20260907",
+  "migration": "20260908172254_order_price_correction_intents.sql",
+  "migration_sha256": "eb9647f7f06f73fbbaf43bc0c82504a7cd009624fb8f455f3c2955e01385a053",
+  "syntheticCasesRemoved": 2,
+  "machineSessionRevoked": true,
+  "scope": "Actual worker/peer/web correction intake and cumulative queue. Injected synthetic basis and verified payment rows. No canonical monetary proof, refund dispatch/settlement, customer UI or production change.",
+  "productionChanged": false
+}

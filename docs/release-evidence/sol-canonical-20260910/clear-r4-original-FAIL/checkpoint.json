@@ -1,0 +1,2578 @@
+{
+  "run": {
+    "result": {
+      "first_pass": {
+        "kind": "first_pass",
+        "model": "gpt-5.6-sol",
+        "pass_id": "ff7ccbd7-cb44-4cfe-95ad-4bf07c083aca",
+        "validation": {
+          "issues": [
+            {
+              "code": "duplicate_candidate",
+              "message": "The same field was extracted more than once.",
+              "severity": "warning",
+              "field_keys": [
+                "salary_period"
+              ],
+              "field_candidate_ids": [
+                "a1fba617-c7c9-467f-b341-df0bc53218d0",
+                "5d616ddb-f5ff-4270-8164-219a37c8e55e"
+              ]
+            },
+            {
+              "code": "duplicate_candidate",
+              "message": "The same field was extracted more than once.",
+              "severity": "warning",
+              "field_keys": [
+                "regular_hours"
+              ],
+              "field_candidate_ids": [
+                "0f7b127a-587c-4ef9-a903-ae723d3bdabf",
+                "5c01c318-5fe1-4fe8-b083-afde17318f32"
+              ]
+            },
+            {
+              "code": "duplicate_candidate",
+              "message": "The same field was extracted more than once.",
+              "severity": "warning",
+              "field_keys": [
+                "hourly_rate"
+              ],
+              "field_candidate_ids": [
+                "ddf04c30-53b7-4621-9dd2-e558fc6794f4",
+                "8d537160-fdcf-4d9a-9e84-b65c054f0e23"
+              ]
+            },
+            {
+              "code": "duplicate_mapped_component",
+              "message": "The same normalized additional component was mapped more than once.",
+              "severity": "warning",
+              "field_keys": [],
+              "field_candidate_ids": [
+                "8516f362-e411-496b-930b-9ec4a375a5c5",
+                "cae37540-b584-41f4-92d5-2ed06ae6e1fe",
+                "39e0b300-6ff4-4470-89f1-4a271af87c0f"
+              ]
+            }
+          ],
+          "status": "suspicious",
+          "field_assessments": [
+            {
+              "field": "document_type",
+              "status": "valid",
+              "issue_codes": [],
+              "candidate_id": "021d42bb-6b43-4d66-a99e-1e5cffff76f8"
+            },
+            {
+              "field": "salary_period",
+              "status": "suspicious",
+              "issue_codes": [
+                "duplicate_candidate"
+              ],
+              "candidate_id": "a1fba617-c7c9-467f-b341-df0bc53218d0"
+            },
+            {
+              "field": "salary_period",
+              "status": "suspicious",
+              "issue_codes": [
+                "duplicate_candidate"
+              ],
+              "candidate_id": "5d616ddb-f5ff-4270-8164-219a37c8e55e"
+            },
+            {
+              "field": "employment_start_date",
+              "status": "valid",
+              "issue_codes": [],
+              "candidate_id": "d22af206-809d-4c9f-8cd7-f78f3c4e7c6f"
+            },
+            {
+              "field": "salary_type",
+              "status": "valid",
+              "issue_codes": [],
+              "candidate_id": "e49a037c-4833-4932-9ae1-79291d25a269"
+            },
+            {
+              "field": "regular_hours",
+              "status": "suspicious",
+              "issue_codes": [
+                "duplicate_candidate"
+              ],
+              "candidate_id": "0f7b127a-587c-4ef9-a903-ae723d3bdabf"
+            },
+            {
+              "field": "hourly_rate",
+              "status": "suspicious",
+              "issue_codes": [
+                "duplicate_candidate"
+              ],
+              "candidate_id": "ddf04c30-53b7-4621-9dd2-e558fc6794f4"
+            },
+            {
+              "field": "regular_hours",
+              "status": "suspicious",
+              "issue_codes": [
+                "duplicate_candidate"
+              ],
+              "candidate_id": "5c01c318-5fe1-4fe8-b083-afde17318f32"
+            },
+            {
+              "field": "hourly_rate",
+              "status": "suspicious",
+              "issue_codes": [
+                "duplicate_candidate"
+              ],
+              "candidate_id": "8d537160-fdcf-4d9a-9e84-b65c054f0e23"
+            },
+            {
+              "field": "base_monthly_salary",
+              "status": "valid",
+              "issue_codes": [],
+              "candidate_id": "9d5abfbb-949d-4b78-b8d3-fb01a28bc5c7"
+            },
+            {
+              "field": "gross_salary",
+              "status": "valid",
+              "issue_codes": [],
+              "candidate_id": "b866b244-fbd3-440f-a6e7-7010033aa455"
+            },
+            {
+              "field": "total_deductions",
+              "status": "valid",
+              "issue_codes": [],
+              "candidate_id": "5609dcf0-325a-47fd-a95f-942f265bb892"
+            },
+            {
+              "field": "net_salary",
+              "status": "valid",
+              "issue_codes": [],
+              "candidate_id": "eb2e605c-ff3b-45a1-be23-bf9e11643b10"
+            }
+          ],
+          "component_duplicate_policy": "source-row-cells-v1"
+        },
+        "prompt_version": "payslip-extraction-openai-v2-first-r4",
+        "raw_extraction": {
+          "fields": [
+            {
+              "field": "document_type",
+              "source": {
+                "page": 1,
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+                "text_fragment": "document type"
+              },
+              "raw_value": "payslip",
+              "confidence": 0.96,
+              "candidate_id": "021d42bb-6b43-4d66-a99e-1e5cffff76f8",
+              "warning_flags": [],
+              "extraction_method": "ai_vision"
+            },
+            {
+              "field": "salary_period",
+              "source": {
+                "page": 1,
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+                "text_fragment": "חודש שכר: 06/2026"
+              },
+              "raw_value": "06/2026",
+              "confidence": 0.94,
+              "candidate_id": "a1fba617-c7c9-467f-b341-df0bc53218d0",
+              "warning_flags": [],
+              "extraction_method": "ai_vision"
+            },
+            {
+              "field": "salary_period",
+              "source": {
+                "page": 1,
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+                "text_fragment": "תחילת תקופת השכר / סיום תקופת השכר: 01/06/2026–30/06/2026"
+              },
+              "raw_value": "01/06/2026–30/06/2026",
+              "confidence": 0.94,
+              "candidate_id": "5d616ddb-f5ff-4270-8164-219a37c8e55e",
+              "warning_flags": [],
+              "extraction_method": "ai_vision"
+            },
+            {
+              "field": "employment_start_date",
+              "source": {
+                "page": 1,
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+                "text_fragment": "תחילת עבודה: 15/01/2025"
+              },
+              "raw_value": "15/01/2025",
+              "confidence": 0.94,
+              "candidate_id": "d22af206-809d-4c9f-8cd7-f78f3c4e7c6f",
+              "warning_flags": [],
+              "extraction_method": "ai_vision"
+            },
+            {
+              "field": "salary_type",
+              "source": {
+                "page": 1,
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+                "text_fragment": "סוג שכר: שעתי"
+              },
+              "raw_value": "שעתי",
+              "confidence": 0.94,
+              "candidate_id": "e49a037c-4833-4932-9ae1-79291d25a269",
+              "warning_flags": [],
+              "extraction_method": "ai_vision"
+            },
+            {
+              "field": "regular_hours",
+              "source": {
+                "page": 1,
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+                "text_fragment": "שעות רגילות: 100"
+              },
+              "raw_value": "100",
+              "confidence": 0.94,
+              "candidate_id": "0f7b127a-587c-4ef9-a903-ae723d3bdabf",
+              "warning_flags": [],
+              "extraction_method": "ai_vision"
+            },
+            {
+              "field": "hourly_rate",
+              "source": {
+                "page": 1,
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+                "text_fragment": "תעריף רגיל לשעה בשקלים: 33.00"
+              },
+              "raw_value": "33.00",
+              "confidence": 0.94,
+              "candidate_id": "ddf04c30-53b7-4621-9dd2-e558fc6794f4",
+              "warning_flags": [],
+              "extraction_method": "ai_vision"
+            },
+            {
+              "field": "regular_hours",
+              "source": {
+                "page": 1,
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+                "text_fragment": "שכר יסוד שעתי: 100"
+              },
+              "raw_value": "100",
+              "confidence": 0.94,
+              "candidate_id": "5c01c318-5fe1-4fe8-b083-afde17318f32",
+              "warning_flags": [],
+              "extraction_method": "ai_vision"
+            },
+            {
+              "field": "hourly_rate",
+              "source": {
+                "page": 1,
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+                "text_fragment": "שכר יסוד שעתי: 33.00"
+              },
+              "raw_value": "33.00",
+              "confidence": 0.94,
+              "candidate_id": "8d537160-fdcf-4d9a-9e84-b65c054f0e23",
+              "warning_flags": [],
+              "extraction_method": "ai_vision"
+            },
+            {
+              "field": "base_monthly_salary",
+              "source": {
+                "page": 1,
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+                "text_fragment": "שכר יסוד שעתי: 3300.00"
+              },
+              "raw_value": "3300.00",
+              "confidence": 0.94,
+              "candidate_id": "9d5abfbb-949d-4b78-b8d3-fb01a28bc5c7",
+              "warning_flags": [],
+              "extraction_method": "ai_vision"
+            },
+            {
+              "field": "gross_salary",
+              "source": {
+                "page": 1,
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+                "text_fragment": "ברוטו: 3300.00"
+              },
+              "raw_value": "3300.00",
+              "confidence": 0.94,
+              "candidate_id": "b866b244-fbd3-440f-a6e7-7010033aa455",
+              "warning_flags": [],
+              "extraction_method": "ai_vision"
+            },
+            {
+              "field": "total_deductions",
+              "source": {
+                "page": 1,
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+                "text_fragment": "סך ניכויים: 0.00"
+              },
+              "raw_value": "0.00",
+              "confidence": 0.94,
+              "candidate_id": "5609dcf0-325a-47fd-a95f-942f265bb892",
+              "warning_flags": [],
+              "extraction_method": "ai_vision"
+            },
+            {
+              "field": "net_salary",
+              "source": {
+                "page": 1,
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+                "text_fragment": "נטו לתשלום: 3300.00"
+              },
+              "raw_value": "3300.00",
+              "confidence": 0.94,
+              "candidate_id": "eb2e605c-ff3b-45a1-be23-bf9e11643b10",
+              "warning_flags": [],
+              "extraction_method": "ai_vision"
+            }
+          ],
+          "status": "completed",
+          "provider": {
+            "provider_id": "openai",
+            "model_version": "gpt-5.6-sol",
+            "extractor_version": "2.1"
+          },
+          "warnings": [],
+          "operation": {
+            "duration_ms": 29079,
+            "token_usage": {
+              "input_tokens": 4124,
+              "total_tokens": 5830,
+              "output_tokens": 1706
+            },
+            "provider_response_id": "resp_017555988e7a5b5e016aa2e05de57887d2b45ad19630a160b4"
+          },
+          "error_code": null,
+          "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+          "extracted_at": "2026-09-10T16:53:14.428Z",
+          "extraction_id": "ff7ccbd7-cb44-4cfe-95ad-4bf07c083aca",
+          "quality_metrics": {
+            "page_count": 1,
+            "text_coverage": null,
+            "rotation_degrees": 0,
+            "source_resolution_dpi": null
+          },
+          "sensitive_metadata": [],
+          "additional_components": [
+            {
+              "source": {
+                "page": 1,
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+                "text_fragment": "שעות רגילות"
+              },
+              "rate_raw": null,
+              "amount_raw": null,
+              "confidence": 0.94,
+              "component_id": "8516f362-e411-496b-930b-9ec4a375a5c5",
+              "quantity_raw": "100",
+              "source_label": "שעות רגילות",
+              "semantic_kind": "hourly_base",
+              "warning_flags": [],
+              "percentage_raw": null,
+              "normalized_label": "hourly_base",
+              "extraction_method": "ai_vision"
+            },
+            {
+              "source": {
+                "page": 1,
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+                "text_fragment": "תעריף רגיל לשעה בשקלים"
+              },
+              "rate_raw": "33.00",
+              "amount_raw": null,
+              "confidence": 0.94,
+              "component_id": "cae37540-b584-41f4-92d5-2ed06ae6e1fe",
+              "quantity_raw": null,
+              "source_label": "תעריף רגיל לשעה בשקלים",
+              "semantic_kind": "hourly_base",
+              "warning_flags": [],
+              "percentage_raw": null,
+              "normalized_label": "hourly_base",
+              "extraction_method": "ai_vision"
+            },
+            {
+              "source": {
+                "page": 1,
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+                "text_fragment": "שכר יסוד שעתי"
+              },
+              "rate_raw": "33.00",
+              "amount_raw": "3300.00",
+              "confidence": 0.94,
+              "component_id": "39e0b300-6ff4-4470-89f1-4a271af87c0f",
+              "quantity_raw": "100",
+              "source_label": "שכר יסוד שעתי",
+              "semantic_kind": "hourly_base",
+              "warning_flags": [],
+              "percentage_raw": null,
+              "normalized_label": "hourly_base",
+              "extraction_method": "ai_vision"
+            }
+          ],
+          "detected_document_type": "payslip",
+          "document_quality_confidence": 0.96,
+          "earnings_components_complete": true
+        },
+        "requested_fields": [
+          "document_type",
+          "salary_period",
+          "employment_start_date",
+          "salary_type",
+          "base_monthly_salary",
+          "hourly_rate",
+          "regular_hours",
+          "overtime_125_hours",
+          "overtime_150_hours",
+          "gross_salary",
+          "total_deductions",
+          "net_salary",
+          "travel_amount",
+          "convalescence_amount",
+          "pension_employee_contribution",
+          "pension_employer_contribution",
+          "severance_contribution",
+          "pension_base",
+          "pension_employee_rate",
+          "pension_employer_rate",
+          "severance_rate",
+          "vacation_balance",
+          "sick_balance"
+        ],
+        "selected_regions": [],
+        "confidence_assessment": {
+          "decisions": [
+            {
+              "field": "salary_period",
+              "status": "needs_confirmation",
+              "threshold": 0.95,
+              "applicable": true,
+              "reason_codes": [
+                "gate0_requires_review",
+                "below_field_threshold"
+              ],
+              "candidate_ids": [
+                "a1fba617-c7c9-467f-b341-df0bc53218d0",
+                "5d616ddb-f5ff-4270-8164-219a37c8e55e"
+              ],
+              "effective_confidence": 0.75
+            },
+            {
+              "field": "salary_type",
+              "status": "needs_confirmation",
+              "threshold": 0.95,
+              "applicable": true,
+              "reason_codes": [
+                "below_field_threshold"
+              ],
+              "candidate_ids": [
+                "e49a037c-4833-4932-9ae1-79291d25a269"
+              ],
+              "effective_confidence": 0.94
+            },
+            {
+              "field": "gross_salary",
+              "status": "needs_confirmation",
+              "threshold": 0.95,
+              "applicable": true,
+              "reason_codes": [
+                "below_field_threshold"
+              ],
+              "candidate_ids": [
+                "b866b244-fbd3-440f-a6e7-7010033aa455"
+              ],
+              "effective_confidence": 0.94
+            },
+            {
+              "field": "total_deductions",
+              "status": "needs_confirmation",
+              "threshold": 0.95,
+              "applicable": true,
+              "reason_codes": [
+                "below_field_threshold"
+              ],
+              "candidate_ids": [
+                "5609dcf0-325a-47fd-a95f-942f265bb892"
+              ],
+              "effective_confidence": 0.94
+            },
+            {
+              "field": "net_salary",
+              "status": "needs_confirmation",
+              "threshold": 0.95,
+              "applicable": true,
+              "reason_codes": [
+                "below_field_threshold"
+              ],
+              "candidate_ids": [
+                "eb2e605c-ff3b-45a1-be23-bf9e11643b10"
+              ],
+              "effective_confidence": 0.94
+            },
+            {
+              "field": "hourly_rate",
+              "status": "needs_confirmation",
+              "threshold": 0.95,
+              "applicable": true,
+              "reason_codes": [
+                "gate0_requires_review",
+                "below_field_threshold"
+              ],
+              "candidate_ids": [
+                "ddf04c30-53b7-4621-9dd2-e558fc6794f4",
+                "8d537160-fdcf-4d9a-9e84-b65c054f0e23"
+              ],
+              "effective_confidence": 0.75
+            },
+            {
+              "field": "regular_hours",
+              "status": "needs_confirmation",
+              "threshold": 0.95,
+              "applicable": true,
+              "reason_codes": [
+                "gate0_requires_review",
+                "below_field_threshold"
+              ],
+              "candidate_ids": [
+                "0f7b127a-587c-4ef9-a903-ae723d3bdabf",
+                "5c01c318-5fe1-4fe8-b083-afde17318f32"
+              ],
+              "effective_confidence": 0.75
+            },
+            {
+              "field": "pension_base",
+              "status": "not_applicable",
+              "threshold": 0.95,
+              "applicable": false,
+              "reason_codes": [],
+              "candidate_ids": [],
+              "effective_confidence": 0
+            },
+            {
+              "field": "pension_employee_contribution",
+              "status": "not_applicable",
+              "threshold": 0.95,
+              "applicable": false,
+              "reason_codes": [],
+              "candidate_ids": [],
+              "effective_confidence": 0
+            },
+            {
+              "field": "pension_employer_contribution",
+              "status": "not_applicable",
+              "threshold": 0.95,
+              "applicable": false,
+              "reason_codes": [],
+              "candidate_ids": [],
+              "effective_confidence": 0
+            },
+            {
+              "field": "severance_contribution",
+              "status": "not_applicable",
+              "threshold": 0.95,
+              "applicable": false,
+              "reason_codes": [],
+              "candidate_ids": [],
+              "effective_confidence": 0
+            },
+            {
+              "field": "overtime_125_hours",
+              "status": "not_applicable",
+              "threshold": 0.95,
+              "applicable": false,
+              "reason_codes": [],
+              "candidate_ids": [],
+              "effective_confidence": 0
+            },
+            {
+              "field": "overtime_150_hours",
+              "status": "not_applicable",
+              "threshold": 0.95,
+              "applicable": false,
+              "reason_codes": [],
+              "candidate_ids": [],
+              "effective_confidence": 0
+            }
+          ]
+        },
+        "normalized_extraction": {
+          "fields": [
+            {
+              "field": "document_type",
+              "source": {
+                "page": 1,
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+                "text_fragment": "document type"
+              },
+              "raw_value": "payslip",
+              "confidence": 0.96,
+              "candidate_id": "021d42bb-6b43-4d66-a99e-1e5cffff76f8",
+              "warning_flags": [],
+              "normalized_value": "payslip",
+              "extraction_method": "ai_vision"
+            },
+            {
+              "field": "salary_period",
+              "source": {
+                "page": 1,
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+                "text_fragment": "חודש שכר: 06/2026"
+              },
+              "raw_value": "06/2026",
+              "confidence": 0.94,
+              "candidate_id": "a1fba617-c7c9-467f-b341-df0bc53218d0",
+              "warning_flags": [],
+              "normalized_value": {
+                "year": 2026,
+                "month": 6,
+                "end_date": "2026-06-30",
+                "start_date": "2026-06-01"
+              },
+              "extraction_method": "ai_vision"
+            },
+            {
+              "field": "salary_period",
+              "source": {
+                "page": 1,
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+                "text_fragment": "תחילת תקופת השכר / סיום תקופת השכר: 01/06/2026–30/06/2026"
+              },
+              "raw_value": "01/06/2026–30/06/2026",
+              "confidence": 0.94,
+              "candidate_id": "5d616ddb-f5ff-4270-8164-219a37c8e55e",
+              "warning_flags": [],
+              "normalized_value": {
+                "year": 2026,
+                "month": 6,
+                "end_date": "2026-06-30",
+                "start_date": "2026-06-01"
+              },
+              "extraction_method": "ai_vision"
+            },
+            {
+              "field": "employment_start_date",
+              "source": {
+                "page": 1,
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+                "text_fragment": "תחילת עבודה: 15/01/2025"
+              },
+              "raw_value": "15/01/2025",
+              "confidence": 0.94,
+              "candidate_id": "d22af206-809d-4c9f-8cd7-f78f3c4e7c6f",
+              "warning_flags": [],
+              "normalized_value": "2025-01-15",
+              "extraction_method": "ai_vision"
+            },
+            {
+              "field": "salary_type",
+              "source": {
+                "page": 1,
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+                "text_fragment": "סוג שכר: שעתי"
+              },
+              "raw_value": "שעתי",
+              "confidence": 0.94,
+              "candidate_id": "e49a037c-4833-4932-9ae1-79291d25a269",
+              "warning_flags": [],
+              "normalized_value": "hourly",
+              "extraction_method": "ai_vision"
+            },
+            {
+              "field": "regular_hours",
+              "source": {
+                "page": 1,
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+                "text_fragment": "שעות רגילות: 100"
+              },
+              "raw_value": "100",
+              "confidence": 0.94,
+              "candidate_id": "0f7b127a-587c-4ef9-a903-ae723d3bdabf",
+              "warning_flags": [],
+              "normalized_value": {
+                "unit": "hours_per_month",
+                "amount": "100"
+              },
+              "extraction_method": "ai_vision"
+            },
+            {
+              "field": "hourly_rate",
+              "source": {
+                "page": 1,
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+                "text_fragment": "תעריף רגיל לשעה בשקלים: 33.00"
+              },
+              "raw_value": "33.00",
+              "confidence": 0.94,
+              "candidate_id": "ddf04c30-53b7-4621-9dd2-e558fc6794f4",
+              "warning_flags": [],
+              "normalized_value": {
+                "currency": "ILS",
+                "minor_units": 3300
+              },
+              "extraction_method": "ai_vision"
+            },
+            {
+              "field": "regular_hours",
+              "source": {
+                "page": 1,
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+                "text_fragment": "שכר יסוד שעתי: 100"
+              },
+              "raw_value": "100",
+              "confidence": 0.94,
+              "candidate_id": "5c01c318-5fe1-4fe8-b083-afde17318f32",
+              "warning_flags": [],
+              "normalized_value": {
+                "unit": "hours_per_month",
+                "amount": "100"
+              },
+              "extraction_method": "ai_vision"
+            },
+            {
+              "field": "hourly_rate",
+              "source": {
+                "page": 1,
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+                "text_fragment": "שכר יסוד שעתי: 33.00"
+              },
+              "raw_value": "33.00",
+              "confidence": 0.94,
+              "candidate_id": "8d537160-fdcf-4d9a-9e84-b65c054f0e23",
+              "warning_flags": [],
+              "normalized_value": {
+                "currency": "ILS",
+                "minor_units": 3300
+              },
+              "extraction_method": "ai_vision"
+            },
+            {
+              "field": "base_monthly_salary",
+              "source": {
+                "page": 1,
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+                "text_fragment": "שכר יסוד שעתי: 3300.00"
+              },
+              "raw_value": "3300.00",
+              "confidence": 0.94,
+              "candidate_id": "9d5abfbb-949d-4b78-b8d3-fb01a28bc5c7",
+              "warning_flags": [],
+              "normalized_value": {
+                "currency": "ILS",
+                "minor_units": 330000
+              },
+              "extraction_method": "ai_vision"
+            },
+            {
+              "field": "gross_salary",
+              "source": {
+                "page": 1,
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+                "text_fragment": "ברוטו: 3300.00"
+              },
+              "raw_value": "3300.00",
+              "confidence": 0.94,
+              "candidate_id": "b866b244-fbd3-440f-a6e7-7010033aa455",
+              "warning_flags": [],
+              "normalized_value": {
+                "currency": "ILS",
+                "minor_units": 330000
+              },
+              "extraction_method": "ai_vision"
+            },
+            {
+              "field": "total_deductions",
+              "source": {
+                "page": 1,
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+                "text_fragment": "סך ניכויים: 0.00"
+              },
+              "raw_value": "0.00",
+              "confidence": 0.94,
+              "candidate_id": "5609dcf0-325a-47fd-a95f-942f265bb892",
+              "warning_flags": [],
+              "normalized_value": {
+                "currency": "ILS",
+                "minor_units": 0
+              },
+              "extraction_method": "ai_vision"
+            },
+            {
+              "field": "net_salary",
+              "source": {
+                "page": 1,
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+                "text_fragment": "נטו לתשלום: 3300.00"
+              },
+              "raw_value": "3300.00",
+              "confidence": 0.94,
+              "candidate_id": "eb2e605c-ff3b-45a1-be23-bf9e11643b10",
+              "warning_flags": [],
+              "normalized_value": {
+                "currency": "ILS",
+                "minor_units": 330000
+              },
+              "extraction_method": "ai_vision"
+            }
+          ],
+          "status": "completed",
+          "provider": {
+            "provider_id": "openai",
+            "model_version": "gpt-5.6-sol",
+            "extractor_version": "2.1"
+          },
+          "warnings": [],
+          "operation": {
+            "duration_ms": 29079,
+            "token_usage": {
+              "input_tokens": 4124,
+              "total_tokens": 5830,
+              "output_tokens": 1706
+            },
+            "provider_response_id": "resp_017555988e7a5b5e016aa2e05de57887d2b45ad19630a160b4"
+          },
+          "error_code": null,
+          "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+          "extracted_at": "2026-09-10T16:53:14.428Z",
+          "extraction_id": "ff7ccbd7-cb44-4cfe-95ad-4bf07c083aca",
+          "quality_metrics": {
+            "page_count": 1,
+            "text_coverage": null,
+            "rotation_degrees": 0,
+            "source_resolution_dpi": null
+          },
+          "sensitive_metadata": [],
+          "additional_components": [
+            {
+              "rate": null,
+              "amount": null,
+              "source": {
+                "page": 1,
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+                "text_fragment": "שעות רגילות"
+              },
+              "quantity": "100",
+              "rate_raw": null,
+              "amount_raw": null,
+              "confidence": 0.94,
+              "percentage": null,
+              "component_id": "8516f362-e411-496b-930b-9ec4a375a5c5",
+              "quantity_raw": "100",
+              "source_label": "שעות רגילות",
+              "semantic_kind": "hourly_base",
+              "warning_flags": [],
+              "percentage_raw": null,
+              "normalized_label": "hourly_base",
+              "extraction_method": "ai_vision",
+              "normalization_warnings": []
+            },
+            {
+              "rate": {
+                "currency": "ILS",
+                "minor_units": 3300
+              },
+              "amount": null,
+              "source": {
+                "page": 1,
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+                "text_fragment": "תעריף רגיל לשעה בשקלים"
+              },
+              "quantity": null,
+              "rate_raw": "33.00",
+              "amount_raw": null,
+              "confidence": 0.94,
+              "percentage": null,
+              "component_id": "cae37540-b584-41f4-92d5-2ed06ae6e1fe",
+              "quantity_raw": null,
+              "source_label": "תעריף רגיל לשעה בשקלים",
+              "semantic_kind": "hourly_base",
+              "warning_flags": [],
+              "percentage_raw": null,
+              "normalized_label": "hourly_base",
+              "extraction_method": "ai_vision",
+              "normalization_warnings": []
+            },
+            {
+              "rate": {
+                "currency": "ILS",
+                "minor_units": 3300
+              },
+              "amount": {
+                "currency": "ILS",
+                "minor_units": 330000
+              },
+              "source": {
+                "page": 1,
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+                "text_fragment": "שכר יסוד שעתי"
+              },
+              "quantity": "100",
+              "rate_raw": "33.00",
+              "amount_raw": "3300.00",
+              "confidence": 0.94,
+              "percentage": null,
+              "component_id": "39e0b300-6ff4-4470-89f1-4a271af87c0f",
+              "quantity_raw": "100",
+              "source_label": "שכר יסוד שעתי",
+              "semantic_kind": "hourly_base",
+              "warning_flags": [],
+              "percentage_raw": null,
+              "normalized_label": "hourly_base",
+              "extraction_method": "ai_vision",
+              "normalization_warnings": []
+            }
+          ],
+          "detected_document_type": "payslip",
+          "document_quality_confidence": 0.96,
+          "earnings_components_complete": true
+        },
+        "salary_type_assessment": {
+          "inferred": {
+            "basis": [
+              "hourly_rate",
+              "regular_hours",
+              "payroll_structure"
+            ],
+            "value": "hourly",
+            "confidence": 0.94,
+            "warning_flags": [
+              "inferred_not_documented"
+            ]
+          },
+          "documented": {
+            "value": "hourly",
+            "raw_value": "שעתי",
+            "confidence": 0.94,
+            "candidate_id": "e49a037c-4833-4932-9ae1-79291d25a269"
+          }
+        },
+        "totals_section_visible": true,
+        "pension_section_visible": false
+      },
+      "resolutions": [
+        {
+          "field": "document_type",
+          "status": "confirmed",
+          "reason_codes": [
+            "first_pass_preserved"
+          ],
+          "first_pass_status": "confirmed",
+          "selected_candidate_id": "021d42bb-6b43-4d66-a99e-1e5cffff76f8",
+          "recovery_candidate_ids": [],
+          "first_pass_candidate_ids": [
+            "021d42bb-6b43-4d66-a99e-1e5cffff76f8"
+          ]
+        },
+        {
+          "field": "salary_period",
+          "status": "suspicious",
+          "reason_codes": [
+            "first_pass_preserved"
+          ],
+          "first_pass_status": "suspicious",
+          "selected_candidate_id": "a1fba617-c7c9-467f-b341-df0bc53218d0",
+          "recovery_candidate_ids": [],
+          "first_pass_candidate_ids": [
+            "a1fba617-c7c9-467f-b341-df0bc53218d0",
+            "5d616ddb-f5ff-4270-8164-219a37c8e55e"
+          ]
+        },
+        {
+          "field": "employment_start_date",
+          "status": "candidate",
+          "reason_codes": [
+            "first_pass_preserved"
+          ],
+          "first_pass_status": "candidate",
+          "selected_candidate_id": "d22af206-809d-4c9f-8cd7-f78f3c4e7c6f",
+          "recovery_candidate_ids": [],
+          "first_pass_candidate_ids": [
+            "d22af206-809d-4c9f-8cd7-f78f3c4e7c6f"
+          ]
+        },
+        {
+          "field": "salary_type",
+          "status": "candidate",
+          "reason_codes": [
+            "first_pass_preserved"
+          ],
+          "first_pass_status": "candidate",
+          "selected_candidate_id": "e49a037c-4833-4932-9ae1-79291d25a269",
+          "recovery_candidate_ids": [],
+          "first_pass_candidate_ids": [
+            "e49a037c-4833-4932-9ae1-79291d25a269"
+          ]
+        },
+        {
+          "field": "base_monthly_salary",
+          "status": "candidate",
+          "reason_codes": [
+            "first_pass_preserved"
+          ],
+          "first_pass_status": "candidate",
+          "selected_candidate_id": "9d5abfbb-949d-4b78-b8d3-fb01a28bc5c7",
+          "recovery_candidate_ids": [],
+          "first_pass_candidate_ids": [
+            "9d5abfbb-949d-4b78-b8d3-fb01a28bc5c7"
+          ]
+        },
+        {
+          "field": "hourly_rate",
+          "status": "suspicious",
+          "reason_codes": [
+            "first_pass_preserved"
+          ],
+          "first_pass_status": "suspicious",
+          "selected_candidate_id": "ddf04c30-53b7-4621-9dd2-e558fc6794f4",
+          "recovery_candidate_ids": [],
+          "first_pass_candidate_ids": [
+            "ddf04c30-53b7-4621-9dd2-e558fc6794f4",
+            "8d537160-fdcf-4d9a-9e84-b65c054f0e23"
+          ]
+        },
+        {
+          "field": "regular_hours",
+          "status": "suspicious",
+          "reason_codes": [
+            "first_pass_preserved"
+          ],
+          "first_pass_status": "suspicious",
+          "selected_candidate_id": "0f7b127a-587c-4ef9-a903-ae723d3bdabf",
+          "recovery_candidate_ids": [],
+          "first_pass_candidate_ids": [
+            "0f7b127a-587c-4ef9-a903-ae723d3bdabf",
+            "5c01c318-5fe1-4fe8-b083-afde17318f32"
+          ]
+        },
+        {
+          "field": "gross_salary",
+          "status": "candidate",
+          "reason_codes": [
+            "first_pass_preserved"
+          ],
+          "first_pass_status": "candidate",
+          "selected_candidate_id": "b866b244-fbd3-440f-a6e7-7010033aa455",
+          "recovery_candidate_ids": [],
+          "first_pass_candidate_ids": [
+            "b866b244-fbd3-440f-a6e7-7010033aa455"
+          ]
+        },
+        {
+          "field": "total_deductions",
+          "status": "candidate",
+          "reason_codes": [
+            "first_pass_preserved"
+          ],
+          "first_pass_status": "candidate",
+          "selected_candidate_id": "5609dcf0-325a-47fd-a95f-942f265bb892",
+          "recovery_candidate_ids": [],
+          "first_pass_candidate_ids": [
+            "5609dcf0-325a-47fd-a95f-942f265bb892"
+          ]
+        },
+        {
+          "field": "net_salary",
+          "status": "candidate",
+          "reason_codes": [
+            "first_pass_preserved"
+          ],
+          "first_pass_status": "candidate",
+          "selected_candidate_id": "eb2e605c-ff3b-45a1-be23-bf9e11643b10",
+          "recovery_candidate_ids": [],
+          "first_pass_candidate_ids": [
+            "eb2e605c-ff3b-45a1-be23-bf9e11643b10"
+          ]
+        }
+      ],
+      "recovery_passes": [],
+      "final_extraction": {
+        "fields": [
+          {
+            "field": "document_type",
+            "source": {
+              "page": 1,
+              "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+              "text_fragment": "document type"
+            },
+            "raw_value": "payslip",
+            "confidence": 0.96,
+            "candidate_id": "021d42bb-6b43-4d66-a99e-1e5cffff76f8",
+            "warning_flags": [],
+            "normalized_value": "payslip",
+            "extraction_method": "ai_vision"
+          },
+          {
+            "field": "salary_period",
+            "source": {
+              "page": 1,
+              "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+              "text_fragment": "חודש שכר: 06/2026"
+            },
+            "raw_value": "06/2026",
+            "confidence": 0.94,
+            "candidate_id": "a1fba617-c7c9-467f-b341-df0bc53218d0",
+            "warning_flags": [],
+            "normalized_value": {
+              "year": 2026,
+              "month": 6,
+              "end_date": "2026-06-30",
+              "start_date": "2026-06-01"
+            },
+            "extraction_method": "ai_vision"
+          },
+          {
+            "field": "salary_period",
+            "source": {
+              "page": 1,
+              "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+              "text_fragment": "תחילת תקופת השכר / סיום תקופת השכר: 01/06/2026–30/06/2026"
+            },
+            "raw_value": "01/06/2026–30/06/2026",
+            "confidence": 0.94,
+            "candidate_id": "5d616ddb-f5ff-4270-8164-219a37c8e55e",
+            "warning_flags": [],
+            "normalized_value": {
+              "year": 2026,
+              "month": 6,
+              "end_date": "2026-06-30",
+              "start_date": "2026-06-01"
+            },
+            "extraction_method": "ai_vision"
+          },
+          {
+            "field": "employment_start_date",
+            "source": {
+              "page": 1,
+              "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+              "text_fragment": "תחילת עבודה: 15/01/2025"
+            },
+            "raw_value": "15/01/2025",
+            "confidence": 0.94,
+            "candidate_id": "d22af206-809d-4c9f-8cd7-f78f3c4e7c6f",
+            "warning_flags": [],
+            "normalized_value": "2025-01-15",
+            "extraction_method": "ai_vision"
+          },
+          {
+            "field": "salary_type",
+            "source": {
+              "page": 1,
+              "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+              "text_fragment": "סוג שכר: שעתי"
+            },
+            "raw_value": "שעתי",
+            "confidence": 0.94,
+            "candidate_id": "e49a037c-4833-4932-9ae1-79291d25a269",
+            "warning_flags": [],
+            "normalized_value": "hourly",
+            "extraction_method": "ai_vision"
+          },
+          {
+            "field": "regular_hours",
+            "source": {
+              "page": 1,
+              "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+              "text_fragment": "שעות רגילות: 100"
+            },
+            "raw_value": "100",
+            "confidence": 0.94,
+            "candidate_id": "0f7b127a-587c-4ef9-a903-ae723d3bdabf",
+            "warning_flags": [],
+            "normalized_value": {
+              "unit": "hours_per_month",
+              "amount": "100"
+            },
+            "extraction_method": "ai_vision"
+          },
+          {
+            "field": "hourly_rate",
+            "source": {
+              "page": 1,
+              "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+              "text_fragment": "תעריף רגיל לשעה בשקלים: 33.00"
+            },
+            "raw_value": "33.00",
+            "confidence": 0.94,
+            "candidate_id": "ddf04c30-53b7-4621-9dd2-e558fc6794f4",
+            "warning_flags": [],
+            "normalized_value": {
+              "currency": "ILS",
+              "minor_units": 3300
+            },
+            "extraction_method": "ai_vision"
+          },
+          {
+            "field": "regular_hours",
+            "source": {
+              "page": 1,
+              "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+              "text_fragment": "שכר יסוד שעתי: 100"
+            },
+            "raw_value": "100",
+            "confidence": 0.94,
+            "candidate_id": "5c01c318-5fe1-4fe8-b083-afde17318f32",
+            "warning_flags": [],
+            "normalized_value": {
+              "unit": "hours_per_month",
+              "amount": "100"
+            },
+            "extraction_method": "ai_vision"
+          },
+          {
+            "field": "hourly_rate",
+            "source": {
+              "page": 1,
+              "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+              "text_fragment": "שכר יסוד שעתי: 33.00"
+            },
+            "raw_value": "33.00",
+            "confidence": 0.94,
+            "candidate_id": "8d537160-fdcf-4d9a-9e84-b65c054f0e23",
+            "warning_flags": [],
+            "normalized_value": {
+              "currency": "ILS",
+              "minor_units": 3300
+            },
+            "extraction_method": "ai_vision"
+          },
+          {
+            "field": "base_monthly_salary",
+            "source": {
+              "page": 1,
+              "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+              "text_fragment": "שכר יסוד שעתי: 3300.00"
+            },
+            "raw_value": "3300.00",
+            "confidence": 0.94,
+            "candidate_id": "9d5abfbb-949d-4b78-b8d3-fb01a28bc5c7",
+            "warning_flags": [],
+            "normalized_value": {
+              "currency": "ILS",
+              "minor_units": 330000
+            },
+            "extraction_method": "ai_vision"
+          },
+          {
+            "field": "gross_salary",
+            "source": {
+              "page": 1,
+              "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+              "text_fragment": "ברוטו: 3300.00"
+            },
+            "raw_value": "3300.00",
+            "confidence": 0.94,
+            "candidate_id": "b866b244-fbd3-440f-a6e7-7010033aa455",
+            "warning_flags": [],
+            "normalized_value": {
+              "currency": "ILS",
+              "minor_units": 330000
+            },
+            "extraction_method": "ai_vision"
+          },
+          {
+            "field": "total_deductions",
+            "source": {
+              "page": 1,
+              "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+              "text_fragment": "סך ניכויים: 0.00"
+            },
+            "raw_value": "0.00",
+            "confidence": 0.94,
+            "candidate_id": "5609dcf0-325a-47fd-a95f-942f265bb892",
+            "warning_flags": [],
+            "normalized_value": {
+              "currency": "ILS",
+              "minor_units": 0
+            },
+            "extraction_method": "ai_vision"
+          },
+          {
+            "field": "net_salary",
+            "source": {
+              "page": 1,
+              "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+              "text_fragment": "נטו לתשלום: 3300.00"
+            },
+            "raw_value": "3300.00",
+            "confidence": 0.94,
+            "candidate_id": "eb2e605c-ff3b-45a1-be23-bf9e11643b10",
+            "warning_flags": [],
+            "normalized_value": {
+              "currency": "ILS",
+              "minor_units": 330000
+            },
+            "extraction_method": "ai_vision"
+          }
+        ],
+        "status": "completed",
+        "provider": {
+          "provider_id": "openai",
+          "model_version": "gpt-5.6-sol",
+          "extractor_version": "2.1"
+        },
+        "warnings": [],
+        "operation": {
+          "duration_ms": 29079,
+          "token_usage": {
+            "input_tokens": 4124,
+            "total_tokens": 5830,
+            "output_tokens": 1706
+          },
+          "provider_response_id": null
+        },
+        "error_code": null,
+        "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+        "extracted_at": "2026-09-10T16:53:14.428Z",
+        "extraction_id": "3194b5eb-88ef-467e-8a14-bcf58997f7b3",
+        "quality_metrics": {
+          "page_count": 1,
+          "text_coverage": null,
+          "rotation_degrees": 0,
+          "source_resolution_dpi": null
+        },
+        "sensitive_metadata": [],
+        "additional_components": [
+          {
+            "rate": null,
+            "amount": null,
+            "source": {
+              "page": 1,
+              "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+              "text_fragment": "שעות רגילות"
+            },
+            "quantity": "100",
+            "rate_raw": null,
+            "amount_raw": null,
+            "confidence": 0.94,
+            "percentage": null,
+            "component_id": "8516f362-e411-496b-930b-9ec4a375a5c5",
+            "quantity_raw": "100",
+            "source_label": "שעות רגילות",
+            "semantic_kind": "hourly_base",
+            "warning_flags": [],
+            "percentage_raw": null,
+            "normalized_label": "hourly_base",
+            "extraction_method": "ai_vision",
+            "normalization_warnings": []
+          },
+          {
+            "rate": {
+              "currency": "ILS",
+              "minor_units": 3300
+            },
+            "amount": null,
+            "source": {
+              "page": 1,
+              "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+              "text_fragment": "תעריף רגיל לשעה בשקלים"
+            },
+            "quantity": null,
+            "rate_raw": "33.00",
+            "amount_raw": null,
+            "confidence": 0.94,
+            "percentage": null,
+            "component_id": "cae37540-b584-41f4-92d5-2ed06ae6e1fe",
+            "quantity_raw": null,
+            "source_label": "תעריף רגיל לשעה בשקלים",
+            "semantic_kind": "hourly_base",
+            "warning_flags": [],
+            "percentage_raw": null,
+            "normalized_label": "hourly_base",
+            "extraction_method": "ai_vision",
+            "normalization_warnings": []
+          },
+          {
+            "rate": {
+              "currency": "ILS",
+              "minor_units": 3300
+            },
+            "amount": {
+              "currency": "ILS",
+              "minor_units": 330000
+            },
+            "source": {
+              "page": 1,
+              "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+              "text_fragment": "שכר יסוד שעתי"
+            },
+            "quantity": "100",
+            "rate_raw": "33.00",
+            "amount_raw": "3300.00",
+            "confidence": 0.94,
+            "percentage": null,
+            "component_id": "39e0b300-6ff4-4470-89f1-4a271af87c0f",
+            "quantity_raw": "100",
+            "source_label": "שכר יסוד שעתי",
+            "semantic_kind": "hourly_base",
+            "warning_flags": [],
+            "percentage_raw": null,
+            "normalized_label": "hourly_base",
+            "extraction_method": "ai_vision",
+            "normalization_warnings": []
+          }
+        ],
+        "detected_document_type": "payslip",
+        "document_quality_confidence": 0.96,
+        "earnings_components_complete": true
+      },
+      "final_validation": {
+        "issues": [
+          {
+            "code": "duplicate_candidate",
+            "message": "The same field was extracted more than once.",
+            "severity": "warning",
+            "field_keys": [
+              "salary_period"
+            ],
+            "field_candidate_ids": [
+              "a1fba617-c7c9-467f-b341-df0bc53218d0",
+              "5d616ddb-f5ff-4270-8164-219a37c8e55e"
+            ]
+          },
+          {
+            "code": "duplicate_candidate",
+            "message": "The same field was extracted more than once.",
+            "severity": "warning",
+            "field_keys": [
+              "regular_hours"
+            ],
+            "field_candidate_ids": [
+              "0f7b127a-587c-4ef9-a903-ae723d3bdabf",
+              "5c01c318-5fe1-4fe8-b083-afde17318f32"
+            ]
+          },
+          {
+            "code": "duplicate_candidate",
+            "message": "The same field was extracted more than once.",
+            "severity": "warning",
+            "field_keys": [
+              "hourly_rate"
+            ],
+            "field_candidate_ids": [
+              "ddf04c30-53b7-4621-9dd2-e558fc6794f4",
+              "8d537160-fdcf-4d9a-9e84-b65c054f0e23"
+            ]
+          },
+          {
+            "code": "duplicate_mapped_component",
+            "message": "The same normalized additional component was mapped more than once.",
+            "severity": "warning",
+            "field_keys": [],
+            "field_candidate_ids": [
+              "8516f362-e411-496b-930b-9ec4a375a5c5",
+              "cae37540-b584-41f4-92d5-2ed06ae6e1fe",
+              "39e0b300-6ff4-4470-89f1-4a271af87c0f"
+            ]
+          }
+        ],
+        "status": "suspicious",
+        "field_assessments": [
+          {
+            "field": "document_type",
+            "status": "valid",
+            "issue_codes": [],
+            "candidate_id": "021d42bb-6b43-4d66-a99e-1e5cffff76f8"
+          },
+          {
+            "field": "salary_period",
+            "status": "suspicious",
+            "issue_codes": [
+              "duplicate_candidate"
+            ],
+            "candidate_id": "a1fba617-c7c9-467f-b341-df0bc53218d0"
+          },
+          {
+            "field": "salary_period",
+            "status": "suspicious",
+            "issue_codes": [
+              "duplicate_candidate"
+            ],
+            "candidate_id": "5d616ddb-f5ff-4270-8164-219a37c8e55e"
+          },
+          {
+            "field": "employment_start_date",
+            "status": "valid",
+            "issue_codes": [],
+            "candidate_id": "d22af206-809d-4c9f-8cd7-f78f3c4e7c6f"
+          },
+          {
+            "field": "salary_type",
+            "status": "valid",
+            "issue_codes": [],
+            "candidate_id": "e49a037c-4833-4932-9ae1-79291d25a269"
+          },
+          {
+            "field": "regular_hours",
+            "status": "suspicious",
+            "issue_codes": [
+              "duplicate_candidate"
+            ],
+            "candidate_id": "0f7b127a-587c-4ef9-a903-ae723d3bdabf"
+          },
+          {
+            "field": "hourly_rate",
+            "status": "suspicious",
+            "issue_codes": [
+              "duplicate_candidate"
+            ],
+            "candidate_id": "ddf04c30-53b7-4621-9dd2-e558fc6794f4"
+          },
+          {
+            "field": "regular_hours",
+            "status": "suspicious",
+            "issue_codes": [
+              "duplicate_candidate"
+            ],
+            "candidate_id": "5c01c318-5fe1-4fe8-b083-afde17318f32"
+          },
+          {
+            "field": "hourly_rate",
+            "status": "suspicious",
+            "issue_codes": [
+              "duplicate_candidate"
+            ],
+            "candidate_id": "8d537160-fdcf-4d9a-9e84-b65c054f0e23"
+          },
+          {
+            "field": "base_monthly_salary",
+            "status": "valid",
+            "issue_codes": [],
+            "candidate_id": "9d5abfbb-949d-4b78-b8d3-fb01a28bc5c7"
+          },
+          {
+            "field": "gross_salary",
+            "status": "valid",
+            "issue_codes": [],
+            "candidate_id": "b866b244-fbd3-440f-a6e7-7010033aa455"
+          },
+          {
+            "field": "total_deductions",
+            "status": "valid",
+            "issue_codes": [],
+            "candidate_id": "5609dcf0-325a-47fd-a95f-942f265bb892"
+          },
+          {
+            "field": "net_salary",
+            "status": "valid",
+            "issue_codes": [],
+            "candidate_id": "eb2e605c-ff3b-45a1-be23-bf9e11643b10"
+          }
+        ],
+        "component_duplicate_policy": "source-row-cells-v1"
+      },
+      "extractor_version": "2.1",
+      "recovery_decision": {
+        "regions": [],
+        "skipped": true,
+        "requested": false,
+        "reason_codes": [
+          "recovery_skipped_no_material_gain"
+        ],
+        "fields_requested": [],
+        "expected_information_gain": "none"
+      },
+      "current_validation": {
+        "issues": [
+          {
+            "code": "duplicate_candidate",
+            "message": "The same field was extracted more than once.",
+            "severity": "warning",
+            "field_keys": [
+              "salary_period"
+            ],
+            "field_candidate_ids": [
+              "a1fba617-c7c9-467f-b341-df0bc53218d0",
+              "5d616ddb-f5ff-4270-8164-219a37c8e55e"
+            ]
+          },
+          {
+            "code": "duplicate_candidate",
+            "message": "The same field was extracted more than once.",
+            "severity": "warning",
+            "field_keys": [
+              "regular_hours"
+            ],
+            "field_candidate_ids": [
+              "0f7b127a-587c-4ef9-a903-ae723d3bdabf",
+              "5c01c318-5fe1-4fe8-b083-afde17318f32"
+            ]
+          },
+          {
+            "code": "duplicate_candidate",
+            "message": "The same field was extracted more than once.",
+            "severity": "warning",
+            "field_keys": [
+              "hourly_rate"
+            ],
+            "field_candidate_ids": [
+              "ddf04c30-53b7-4621-9dd2-e558fc6794f4",
+              "8d537160-fdcf-4d9a-9e84-b65c054f0e23"
+            ]
+          },
+          {
+            "code": "duplicate_mapped_component",
+            "message": "The same normalized additional component was mapped more than once.",
+            "severity": "warning",
+            "field_keys": [],
+            "field_candidate_ids": [
+              "8516f362-e411-496b-930b-9ec4a375a5c5",
+              "cae37540-b584-41f4-92d5-2ed06ae6e1fe",
+              "39e0b300-6ff4-4470-89f1-4a271af87c0f"
+            ]
+          }
+        ],
+        "status": "suspicious",
+        "field_assessments": [
+          {
+            "field": "document_type",
+            "status": "valid",
+            "issue_codes": [],
+            "candidate_id": "021d42bb-6b43-4d66-a99e-1e5cffff76f8"
+          },
+          {
+            "field": "salary_period",
+            "status": "suspicious",
+            "issue_codes": [
+              "duplicate_candidate"
+            ],
+            "candidate_id": "a1fba617-c7c9-467f-b341-df0bc53218d0"
+          },
+          {
+            "field": "salary_period",
+            "status": "suspicious",
+            "issue_codes": [
+              "duplicate_candidate"
+            ],
+            "candidate_id": "5d616ddb-f5ff-4270-8164-219a37c8e55e"
+          },
+          {
+            "field": "employment_start_date",
+            "status": "valid",
+            "issue_codes": [],
+            "candidate_id": "d22af206-809d-4c9f-8cd7-f78f3c4e7c6f"
+          },
+          {
+            "field": "salary_type",
+            "status": "valid",
+            "issue_codes": [],
+            "candidate_id": "e49a037c-4833-4932-9ae1-79291d25a269"
+          },
+          {
+            "field": "regular_hours",
+            "status": "suspicious",
+            "issue_codes": [
+              "duplicate_candidate"
+            ],
+            "candidate_id": "0f7b127a-587c-4ef9-a903-ae723d3bdabf"
+          },
+          {
+            "field": "hourly_rate",
+            "status": "suspicious",
+            "issue_codes": [
+              "duplicate_candidate"
+            ],
+            "candidate_id": "ddf04c30-53b7-4621-9dd2-e558fc6794f4"
+          },
+          {
+            "field": "regular_hours",
+            "status": "suspicious",
+            "issue_codes": [
+              "duplicate_candidate"
+            ],
+            "candidate_id": "5c01c318-5fe1-4fe8-b083-afde17318f32"
+          },
+          {
+            "field": "hourly_rate",
+            "status": "suspicious",
+            "issue_codes": [
+              "duplicate_candidate"
+            ],
+            "candidate_id": "8d537160-fdcf-4d9a-9e84-b65c054f0e23"
+          },
+          {
+            "field": "base_monthly_salary",
+            "status": "valid",
+            "issue_codes": [],
+            "candidate_id": "9d5abfbb-949d-4b78-b8d3-fb01a28bc5c7"
+          },
+          {
+            "field": "gross_salary",
+            "status": "valid",
+            "issue_codes": [],
+            "candidate_id": "b866b244-fbd3-440f-a6e7-7010033aa455"
+          },
+          {
+            "field": "total_deductions",
+            "status": "valid",
+            "issue_codes": [],
+            "candidate_id": "5609dcf0-325a-47fd-a95f-942f265bb892"
+          },
+          {
+            "field": "net_salary",
+            "status": "valid",
+            "issue_codes": [],
+            "candidate_id": "eb2e605c-ff3b-45a1-be23-bf9e11643b10"
+          }
+        ],
+        "component_duplicate_policy": "source-row-cells-v1"
+      },
+      "historical_validation": {
+        "issues": [
+          {
+            "code": "duplicate_candidate",
+            "message": "The same field was extracted more than once.",
+            "severity": "warning",
+            "field_keys": [
+              "salary_period"
+            ],
+            "field_candidate_ids": [
+              "a1fba617-c7c9-467f-b341-df0bc53218d0",
+              "5d616ddb-f5ff-4270-8164-219a37c8e55e"
+            ]
+          },
+          {
+            "code": "duplicate_candidate",
+            "message": "The same field was extracted more than once.",
+            "severity": "warning",
+            "field_keys": [
+              "regular_hours"
+            ],
+            "field_candidate_ids": [
+              "0f7b127a-587c-4ef9-a903-ae723d3bdabf",
+              "5c01c318-5fe1-4fe8-b083-afde17318f32"
+            ]
+          },
+          {
+            "code": "duplicate_candidate",
+            "message": "The same field was extracted more than once.",
+            "severity": "warning",
+            "field_keys": [
+              "hourly_rate"
+            ],
+            "field_candidate_ids": [
+              "ddf04c30-53b7-4621-9dd2-e558fc6794f4",
+              "8d537160-fdcf-4d9a-9e84-b65c054f0e23"
+            ]
+          },
+          {
+            "code": "duplicate_mapped_component",
+            "message": "The same normalized additional component was mapped more than once.",
+            "severity": "warning",
+            "field_keys": [],
+            "field_candidate_ids": [
+              "8516f362-e411-496b-930b-9ec4a375a5c5",
+              "cae37540-b584-41f4-92d5-2ed06ae6e1fe",
+              "39e0b300-6ff4-4470-89f1-4a271af87c0f"
+            ]
+          }
+        ],
+        "status": "suspicious",
+        "field_assessments": [
+          {
+            "field": "document_type",
+            "status": "valid",
+            "issue_codes": [],
+            "candidate_id": "021d42bb-6b43-4d66-a99e-1e5cffff76f8"
+          },
+          {
+            "field": "salary_period",
+            "status": "suspicious",
+            "issue_codes": [
+              "duplicate_candidate"
+            ],
+            "candidate_id": "a1fba617-c7c9-467f-b341-df0bc53218d0"
+          },
+          {
+            "field": "salary_period",
+            "status": "suspicious",
+            "issue_codes": [
+              "duplicate_candidate"
+            ],
+            "candidate_id": "5d616ddb-f5ff-4270-8164-219a37c8e55e"
+          },
+          {
+            "field": "employment_start_date",
+            "status": "valid",
+            "issue_codes": [],
+            "candidate_id": "d22af206-809d-4c9f-8cd7-f78f3c4e7c6f"
+          },
+          {
+            "field": "salary_type",
+            "status": "valid",
+            "issue_codes": [],
+            "candidate_id": "e49a037c-4833-4932-9ae1-79291d25a269"
+          },
+          {
+            "field": "regular_hours",
+            "status": "suspicious",
+            "issue_codes": [
+              "duplicate_candidate"
+            ],
+            "candidate_id": "0f7b127a-587c-4ef9-a903-ae723d3bdabf"
+          },
+          {
+            "field": "hourly_rate",
+            "status": "suspicious",
+            "issue_codes": [
+              "duplicate_candidate"
+            ],
+            "candidate_id": "ddf04c30-53b7-4621-9dd2-e558fc6794f4"
+          },
+          {
+            "field": "regular_hours",
+            "status": "suspicious",
+            "issue_codes": [
+              "duplicate_candidate"
+            ],
+            "candidate_id": "5c01c318-5fe1-4fe8-b083-afde17318f32"
+          },
+          {
+            "field": "hourly_rate",
+            "status": "suspicious",
+            "issue_codes": [
+              "duplicate_candidate"
+            ],
+            "candidate_id": "8d537160-fdcf-4d9a-9e84-b65c054f0e23"
+          },
+          {
+            "field": "base_monthly_salary",
+            "status": "valid",
+            "issue_codes": [],
+            "candidate_id": "9d5abfbb-949d-4b78-b8d3-fb01a28bc5c7"
+          },
+          {
+            "field": "gross_salary",
+            "status": "valid",
+            "issue_codes": [],
+            "candidate_id": "b866b244-fbd3-440f-a6e7-7010033aa455"
+          },
+          {
+            "field": "total_deductions",
+            "status": "valid",
+            "issue_codes": [],
+            "candidate_id": "5609dcf0-325a-47fd-a95f-942f265bb892"
+          },
+          {
+            "field": "net_salary",
+            "status": "valid",
+            "issue_codes": [],
+            "candidate_id": "eb2e605c-ff3b-45a1-be23-bf9e11643b10"
+          }
+        ],
+        "component_duplicate_policy": "source-row-cells-v1"
+      },
+      "resolution_policy_version": "payslip-v2.1-non-degrading-resolution-4",
+      "final_confidence_assessment": {
+        "decisions": [
+          {
+            "field": "salary_period",
+            "status": "needs_confirmation",
+            "threshold": 0.95,
+            "applicable": true,
+            "reason_codes": [
+              "gate0_requires_review",
+              "below_field_threshold"
+            ],
+            "candidate_ids": [
+              "a1fba617-c7c9-467f-b341-df0bc53218d0",
+              "5d616ddb-f5ff-4270-8164-219a37c8e55e"
+            ],
+            "effective_confidence": 0.75
+          },
+          {
+            "field": "salary_type",
+            "status": "needs_confirmation",
+            "threshold": 0.95,
+            "applicable": true,
+            "reason_codes": [
+              "below_field_threshold"
+            ],
+            "candidate_ids": [
+              "e49a037c-4833-4932-9ae1-79291d25a269"
+            ],
+            "effective_confidence": 0.94
+          },
+          {
+            "field": "gross_salary",
+            "status": "needs_confirmation",
+            "threshold": 0.95,
+            "applicable": true,
+            "reason_codes": [
+              "below_field_threshold"
+            ],
+            "candidate_ids": [
+              "b866b244-fbd3-440f-a6e7-7010033aa455"
+            ],
+            "effective_confidence": 0.94
+          },
+          {
+            "field": "total_deductions",
+            "status": "needs_confirmation",
+            "threshold": 0.95,
+            "applicable": true,
+            "reason_codes": [
+              "below_field_threshold"
+            ],
+            "candidate_ids": [
+              "5609dcf0-325a-47fd-a95f-942f265bb892"
+            ],
+            "effective_confidence": 0.94
+          },
+          {
+            "field": "net_salary",
+            "status": "needs_confirmation",
+            "threshold": 0.95,
+            "applicable": true,
+            "reason_codes": [
+              "below_field_threshold"
+            ],
+            "candidate_ids": [
+              "eb2e605c-ff3b-45a1-be23-bf9e11643b10"
+            ],
+            "effective_confidence": 0.94
+          },
+          {
+            "field": "hourly_rate",
+            "status": "needs_confirmation",
+            "threshold": 0.95,
+            "applicable": true,
+            "reason_codes": [
+              "gate0_requires_review",
+              "below_field_threshold"
+            ],
+            "candidate_ids": [
+              "ddf04c30-53b7-4621-9dd2-e558fc6794f4",
+              "8d537160-fdcf-4d9a-9e84-b65c054f0e23"
+            ],
+            "effective_confidence": 0.75
+          },
+          {
+            "field": "regular_hours",
+            "status": "needs_confirmation",
+            "threshold": 0.95,
+            "applicable": true,
+            "reason_codes": [
+              "gate0_requires_review",
+              "below_field_threshold"
+            ],
+            "candidate_ids": [
+              "0f7b127a-587c-4ef9-a903-ae723d3bdabf",
+              "5c01c318-5fe1-4fe8-b083-afde17318f32"
+            ],
+            "effective_confidence": 0.75
+          },
+          {
+            "field": "pension_base",
+            "status": "not_applicable",
+            "threshold": 0.95,
+            "applicable": false,
+            "reason_codes": [],
+            "candidate_ids": [],
+            "effective_confidence": 0
+          },
+          {
+            "field": "pension_employee_contribution",
+            "status": "not_applicable",
+            "threshold": 0.95,
+            "applicable": false,
+            "reason_codes": [],
+            "candidate_ids": [],
+            "effective_confidence": 0
+          },
+          {
+            "field": "pension_employer_contribution",
+            "status": "not_applicable",
+            "threshold": 0.95,
+            "applicable": false,
+            "reason_codes": [],
+            "candidate_ids": [],
+            "effective_confidence": 0
+          },
+          {
+            "field": "severance_contribution",
+            "status": "not_applicable",
+            "threshold": 0.95,
+            "applicable": false,
+            "reason_codes": [],
+            "candidate_ids": [],
+            "effective_confidence": 0
+          },
+          {
+            "field": "overtime_125_hours",
+            "status": "not_applicable",
+            "threshold": 0.95,
+            "applicable": false,
+            "reason_codes": [],
+            "candidate_ids": [],
+            "effective_confidence": 0
+          },
+          {
+            "field": "overtime_150_hours",
+            "status": "not_applicable",
+            "threshold": 0.95,
+            "applicable": false,
+            "reason_codes": [],
+            "candidate_ids": [],
+            "effective_confidence": 0
+          }
+        ]
+      },
+      "resolved_historical_issue_codes": []
+    },
+    "snapshot": {
+      "facts": [
+        {
+          "path": "documents.period",
+          "value": {
+            "period": {
+              "end_date": "2026-06-30",
+              "start_date": "2026-06-01"
+            },
+            "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b"
+          },
+          "status": "candidate",
+          "case_id": "6d31d6ee-902b-4f22-8416-196b56fb6c21",
+          "fact_id": "558cb408-c5fe-470d-8674-a298c4b5cdf7",
+          "confidence": 0.94,
+          "created_at": "2026-09-10T16:52:41.931Z",
+          "provenance": [
+            {
+              "read_by": "machine",
+              "verified": false,
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "locator": {
+                  "page": 1,
+                  "text_span": "חודש שכר: 06/2026"
+                },
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b"
+              }
+            },
+            {
+              "read_by": "machine",
+              "verified": false,
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "locator": {
+                  "page": 1,
+                  "text_span": "תחילת תקופת השכר / סיום תקופת השכר: 01/06/2026–30/06/2026"
+                },
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b"
+              }
+            }
+          ],
+          "resolution": null,
+          "conflicting_fact_ids": []
+        },
+        {
+          "path": "employment.start_date",
+          "value": "2025-01-15",
+          "status": "candidate",
+          "case_id": "6d31d6ee-902b-4f22-8416-196b56fb6c21",
+          "fact_id": "c7186f9b-108d-42f0-875c-9c9bbfbed2ed",
+          "confidence": 0.94,
+          "created_at": "2026-09-10T16:52:41.931Z",
+          "provenance": [
+            {
+              "read_by": "machine",
+              "verified": false,
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "locator": {
+                  "page": 1,
+                  "text_span": "תחילת עבודה: 15/01/2025"
+                },
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b"
+              }
+            }
+          ],
+          "resolution": null,
+          "conflicting_fact_ids": []
+        },
+        {
+          "path": "compensation.salary_type",
+          "value": "hourly",
+          "status": "candidate",
+          "case_id": "6d31d6ee-902b-4f22-8416-196b56fb6c21",
+          "fact_id": "4353a4a7-fe8c-4002-84c5-33b671445ca3",
+          "confidence": 0.94,
+          "created_at": "2026-09-10T16:52:41.931Z",
+          "provenance": [
+            {
+              "read_by": "machine",
+              "verified": false,
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "locator": {
+                  "page": 1,
+                  "text_span": "סוג שכר: שעתי"
+                },
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b"
+              }
+            }
+          ],
+          "resolution": null,
+          "conflicting_fact_ids": []
+        },
+        {
+          "path": "compensation.base_monthly_salary",
+          "value": {
+            "currency": "ILS",
+            "minor_units": 330000
+          },
+          "status": "candidate",
+          "case_id": "6d31d6ee-902b-4f22-8416-196b56fb6c21",
+          "fact_id": "9e0cbdcb-deee-4eb7-8ccb-d989cfe262b4",
+          "confidence": 0.94,
+          "created_at": "2026-09-10T16:52:41.931Z",
+          "provenance": [
+            {
+              "read_by": "machine",
+              "verified": false,
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "locator": {
+                  "page": 1,
+                  "text_span": "שכר יסוד שעתי: 3300.00"
+                },
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b"
+              }
+            }
+          ],
+          "resolution": null,
+          "conflicting_fact_ids": []
+        },
+        {
+          "path": "compensation.hourly_rate",
+          "value": {
+            "currency": "ILS",
+            "minor_units": 3300
+          },
+          "status": "candidate",
+          "case_id": "6d31d6ee-902b-4f22-8416-196b56fb6c21",
+          "fact_id": "ee41a096-68d5-4209-8a6b-8ab129511cbc",
+          "confidence": 0.94,
+          "created_at": "2026-09-10T16:52:41.931Z",
+          "provenance": [
+            {
+              "read_by": "machine",
+              "verified": false,
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "locator": {
+                  "page": 1,
+                  "text_span": "תעריף רגיל לשעה בשקלים: 33.00"
+                },
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b"
+              }
+            },
+            {
+              "read_by": "machine",
+              "verified": false,
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "locator": {
+                  "page": 1,
+                  "text_span": "שכר יסוד שעתי: 33.00"
+                },
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b"
+              }
+            }
+          ],
+          "resolution": null,
+          "conflicting_fact_ids": []
+        },
+        {
+          "path": "compensation.gross_salary",
+          "value": {
+            "currency": "ILS",
+            "minor_units": 330000
+          },
+          "status": "candidate",
+          "case_id": "6d31d6ee-902b-4f22-8416-196b56fb6c21",
+          "fact_id": "a7596dd4-733d-42a4-8348-9d550cca8fa1",
+          "confidence": 0.94,
+          "created_at": "2026-09-10T16:52:41.931Z",
+          "provenance": [
+            {
+              "read_by": "machine",
+              "verified": false,
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "locator": {
+                  "page": 1,
+                  "text_span": "ברוטו: 3300.00"
+                },
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b"
+              }
+            }
+          ],
+          "resolution": null,
+          "conflicting_fact_ids": []
+        },
+        {
+          "path": "compensation.net_salary",
+          "value": {
+            "currency": "ILS",
+            "minor_units": 330000
+          },
+          "status": "candidate",
+          "case_id": "6d31d6ee-902b-4f22-8416-196b56fb6c21",
+          "fact_id": "7c1156ef-664a-45fe-8a4c-28264417b0cd",
+          "confidence": 0.94,
+          "created_at": "2026-09-10T16:52:41.931Z",
+          "provenance": [
+            {
+              "read_by": "machine",
+              "verified": false,
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "locator": {
+                  "page": 1,
+                  "text_span": "נטו לתשלום: 3300.00"
+                },
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b"
+              }
+            }
+          ],
+          "resolution": null,
+          "conflicting_fact_ids": []
+        },
+        {
+          "path": "work.regular_hours",
+          "value": {
+            "unit": "hours_per_month",
+            "amount": "100"
+          },
+          "status": "candidate",
+          "case_id": "6d31d6ee-902b-4f22-8416-196b56fb6c21",
+          "fact_id": "71f68939-b31b-43de-880e-eef18a706113",
+          "confidence": 0.94,
+          "created_at": "2026-09-10T16:52:41.931Z",
+          "provenance": [
+            {
+              "read_by": "machine",
+              "verified": false,
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "locator": {
+                  "page": 1,
+                  "text_span": "שעות רגילות: 100"
+                },
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b"
+              }
+            },
+            {
+              "read_by": "machine",
+              "verified": false,
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "locator": {
+                  "page": 1,
+                  "text_span": "שכר יסוד שעתי: 100"
+                },
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b"
+              }
+            }
+          ],
+          "resolution": null,
+          "conflicting_fact_ids": []
+        },
+        {
+          "path": "work.overtime_125_hours",
+          "value": null,
+          "status": "missing",
+          "case_id": "6d31d6ee-902b-4f22-8416-196b56fb6c21",
+          "fact_id": "0d4b1a0e-9836-4dd3-8b69-db1e35f1f05a",
+          "confidence": 0.96,
+          "created_at": "2026-09-10T16:52:41.931Z",
+          "provenance": [
+            {
+              "read_by": "machine",
+              "verified": false,
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b"
+              }
+            }
+          ],
+          "resolution": null,
+          "conflicting_fact_ids": []
+        },
+        {
+          "path": "work.overtime_150_hours",
+          "value": null,
+          "status": "missing",
+          "case_id": "6d31d6ee-902b-4f22-8416-196b56fb6c21",
+          "fact_id": "ad55f686-daa6-46e3-88c7-b9e1e42901bc",
+          "confidence": 0.96,
+          "created_at": "2026-09-10T16:52:41.931Z",
+          "provenance": [
+            {
+              "read_by": "machine",
+              "verified": false,
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b"
+              }
+            }
+          ],
+          "resolution": null,
+          "conflicting_fact_ids": []
+        },
+        {
+          "path": "work.overtime_hours",
+          "value": null,
+          "status": "missing",
+          "case_id": "6d31d6ee-902b-4f22-8416-196b56fb6c21",
+          "fact_id": "ec822ad0-104b-4c67-8388-21384101a627",
+          "confidence": 0.96,
+          "created_at": "2026-09-10T16:52:41.931Z",
+          "provenance": [
+            {
+              "read_by": "machine",
+              "verified": false,
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b"
+              }
+            }
+          ],
+          "resolution": null,
+          "conflicting_fact_ids": []
+        },
+        {
+          "path": "pension.base_salary",
+          "value": null,
+          "status": "missing",
+          "case_id": "6d31d6ee-902b-4f22-8416-196b56fb6c21",
+          "fact_id": "02ad11c4-3474-4748-87a0-325988ff7569",
+          "confidence": 0.96,
+          "created_at": "2026-09-10T16:52:41.931Z",
+          "provenance": [
+            {
+              "read_by": "machine",
+              "verified": false,
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b"
+              }
+            }
+          ],
+          "resolution": null,
+          "conflicting_fact_ids": []
+        },
+        {
+          "path": "pension.contributions",
+          "value": null,
+          "status": "missing",
+          "case_id": "6d31d6ee-902b-4f22-8416-196b56fb6c21",
+          "fact_id": "7859c057-6849-40e0-8ea2-02ec8e64fb6f",
+          "confidence": 0.96,
+          "created_at": "2026-09-10T16:52:41.931Z",
+          "provenance": [
+            {
+              "read_by": "machine",
+              "verified": false,
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b"
+              }
+            }
+          ],
+          "resolution": null,
+          "conflicting_fact_ids": []
+        },
+        {
+          "path": "pension.severance_contribution",
+          "value": null,
+          "status": "missing",
+          "case_id": "6d31d6ee-902b-4f22-8416-196b56fb6c21",
+          "fact_id": "761b3f5a-9753-45bc-8143-f4b872411809",
+          "confidence": 0.96,
+          "created_at": "2026-09-10T16:52:41.931Z",
+          "provenance": [
+            {
+              "read_by": "machine",
+              "verified": false,
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b"
+              }
+            }
+          ],
+          "resolution": null,
+          "conflicting_fact_ids": []
+        },
+        {
+          "path": "travel.reimbursement",
+          "value": null,
+          "status": "missing",
+          "case_id": "6d31d6ee-902b-4f22-8416-196b56fb6c21",
+          "fact_id": "c180b1b4-e8e5-4685-8f9a-1a0ad1d8f600",
+          "confidence": 0.96,
+          "created_at": "2026-09-10T16:52:41.931Z",
+          "provenance": [
+            {
+              "read_by": "machine",
+              "verified": false,
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b"
+              }
+            }
+          ],
+          "resolution": null,
+          "conflicting_fact_ids": []
+        },
+        {
+          "path": "convalescence.payment",
+          "value": null,
+          "status": "missing",
+          "case_id": "6d31d6ee-902b-4f22-8416-196b56fb6c21",
+          "fact_id": "ec56f5e4-80a1-491e-8654-3637f02b9931",
+          "confidence": 0.96,
+          "created_at": "2026-09-10T16:52:41.931Z",
+          "provenance": [
+            {
+              "read_by": "machine",
+              "verified": false,
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b"
+              }
+            }
+          ],
+          "resolution": null,
+          "conflicting_fact_ids": []
+        },
+        {
+          "path": "leave.vacation_balance",
+          "value": null,
+          "status": "missing",
+          "case_id": "6d31d6ee-902b-4f22-8416-196b56fb6c21",
+          "fact_id": "9f003fba-2296-4a22-808f-c1591f5ee6f5",
+          "confidence": 0.96,
+          "created_at": "2026-09-10T16:52:41.931Z",
+          "provenance": [
+            {
+              "read_by": "machine",
+              "verified": false,
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b"
+              }
+            }
+          ],
+          "resolution": null,
+          "conflicting_fact_ids": []
+        },
+        {
+          "path": "leave.sick_balance",
+          "value": null,
+          "status": "missing",
+          "case_id": "6d31d6ee-902b-4f22-8416-196b56fb6c21",
+          "fact_id": "7e8ba461-d8b9-43af-8703-1a43429d4aa8",
+          "confidence": 0.96,
+          "created_at": "2026-09-10T16:52:41.931Z",
+          "provenance": [
+            {
+              "read_by": "machine",
+              "verified": false,
+              "source_type": "documented",
+              "source_reference": {
+                "kind": "document",
+                "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b"
+              }
+            }
+          ],
+          "resolution": null,
+          "conflicting_fact_ids": []
+        }
+      ],
+      "case_id": "6d31d6ee-902b-4f22-8416-196b56fb6c21",
+      "created_at": "2026-09-10T16:52:41.931Z",
+      "snapshot_id": "3194b5eb-88ef-467e-8a14-bcf58997f7b3",
+      "schema_version": "1.0.0",
+      "analysis_run_id": "26c7754e-49c6-480b-8683-86333c847200"
+    },
+    "preprocessing": [
+      {
+        "reason": "unsupported_source",
+        "applied": false,
+        "grayscale": false,
+        "source_width": null,
+        "contrast_gain": 1,
+        "sharpen_sigma": 0,
+        "source_height": null,
+        "deskew_degrees": 0,
+        "upscale_factor": 1,
+        "crop_plan_version": "payslip-semantic-bands-1",
+        "preprocessing_version": "payslip-raster-preprocess-1"
+      }
+    ],
+    "provider_receipts": [
+      {
+        "cost": {
+          "status": "not_returned_by_provider",
+          "amount_usd": null
+        },
+        "origin": "openai_live",
+        "status": "completed",
+        "case_id": "6d31d6ee-902b-4f22-8416-196b56fb6c21",
+        "pass_kind": "first_pass",
+        "created_at": "2026-09-10T16:53:14.428Z",
+        "error_code": null,
+        "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+        "duration_ms": 29079,
+        "http_status": null,
+        "token_usage": {
+          "input_tokens": 4124,
+          "total_tokens": 5830,
+          "output_tokens": 1706
+        },
+        "actual_model": "gpt-5.6-sol",
+        "extraction_id": "ff7ccbd7-cb44-4cfe-95ad-4bf07c083aca",
+        "source_sha256": "ba5286b3f907249b251e9b7caca193f1b1d303d77255c20eb83c55f1431f7197",
+        "prompt_version": "payslip-extraction-openai-v2-first-r4",
+        "receipt_sha256": "d331cc55f732be3d0cd7e71ad5f520c1afdef4197740f18983e8d74c49808b70",
+        "request_sha256": "b1f448a0211f533e6ca1ebe9d3d141fff3b22e56313ed0d3d7487334f3439e14",
+        "schema_version": "tivdoc-openai-provider-receipt-v1",
+        "analysis_run_id": "26c7754e-49c6-480b-8683-86333c847200",
+        "requested_model": "gpt-5.6-sol",
+        "source_mime_type": "application/pdf",
+        "extractor_version": "2.1",
+        "source_page_count": 1,
+        "source_size_bytes": 770601,
+        "provider_attempted": true,
+        "provider_request_id": "req_d06139b3c51e42a8b2a2733182b238c9",
+        "provider_response_id": "resp_017555988e7a5b5e016aa2e05de57887d2b45ad19630a160b4",
+        "raw_extraction_sha256": "cac8c2e476a7a0b2ebd46082da9a714b86d846fa1a523e259f8466f97ea2609d"
+      }
+    ]
+  },
+  "case_id": "6d31d6ee-902b-4f22-8416-196b56fb6c21",
+  "version_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+  "input_sha256": "ba5286b3f907249b251e9b7caca193f1b1d303d77255c20eb83c55f1431f7197",
+  "result_sha256": "6d3ad6380cc989f398a884773a23d2bb396f918d021feaf18974715434bb36bf",
+  "expected_month": "2026-06",
+  "schema_version": "tivdoc-saved-extraction-v1",
+  "period_mismatch": false,
+  "product_document_id": "27448570-cb1b-48c3-ad50-5fac84d4fdbc",
+  "requires_confirmation": true
+}

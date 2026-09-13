@@ -1,0 +1,78 @@
+{
+  "sha": "ea0875a5eb633acbb4435c04217a0d13dbffcecb",
+  "origin": "https://salary-249wckccu-tivdoccom-5042s-projects.vercel.app",
+  "deployment": "dpl_6xrS9bt6xNLkUaKbnSKSVGrnHjHs",
+  "ci": [
+    34307799736,
+    34307796375
+  ],
+  "results": [
+    {
+      "name": "P13-launch-preview.json",
+      "passed": 44
+    },
+    {
+      "name": "P06-request-browser.json",
+      "passed": 12
+    },
+    {
+      "name": "P08-support-browser.json",
+      "passed": 12
+    },
+    {
+      "name": "P13-studio-upload-browser.json",
+      "passed": 12
+    },
+    {
+      "name": "P06-field-confirmation-browser.json",
+      "passed": 14
+    },
+    {
+      "name": "P08-ai-report-browser.json",
+      "passed": 11
+    },
+    {
+      "name": "P09-customer-refund-browser.json",
+      "passed": 8
+    },
+    {
+      "name": "P09-customer-cancellation-preview.json",
+      "passed": 10
+    }
+  ],
+  "totalBrowserChecks": 123,
+  "fieldConfirmationDbAssertions": 15,
+  "aiPublicationDbAssertions": 9,
+  "priceCorrectionDbAssertions": 12,
+  "customerCancellationDbAssertions": 8,
+  "quoteLedgerDbAssertions": 11,
+  "verifiedStorageObjects": 11,
+  "syntheticCasesRemoved": 14,
+  "identityCleanup": "Owned identities deleted in each successful cleanup transaction; older request/support/AI/refund receipts do not separately count deleted identity rows.",
+  "cleanWorkerProof": {
+    "sha": "ea0875a5eb633acbb4435c04217a0d13dbffcecb",
+    "bundleSha256": "34f9768cb4829e333aa6df0821b7d4834457075b29f80dda4d801c15f846f51e",
+    "assertions": 34,
+    "additionalOwnedCasesRemoved": 2,
+    "additionalStorageObjectsRemoved": 2
+  },
+  "fieldFixtureRepair": {
+    "file": "src/server/product/reports/document-field-confirmation.postgres.test.ts",
+    "sha256": "4f81ea0c7b8386e36aa6f08163664fbbbebe5591045f3c7c85f3fd1f3fac00ce",
+    "change": "Only the synthetic upload fixture primary month now matches its retained February payslip; metadata-only scope test retains January. Deployed application code is unchanged.",
+    "applicationChangesSinceDeployment": []
+  },
+  "runtimeErrorRows": 0,
+  "runtimeErrorWindowMinutes": 20,
+  "inspectedScreenshots": [
+    "preview-ai-report/report-390.png",
+    "preview-ai-report/current-pdf-page-1.png",
+    "preview-order-refunds/orders-390.png",
+    "preview-field-confirmation/field-390.png",
+    "preview-field-confirmation/replaced-source-390.png",
+    "preview-field-confirmation/historical-field-390.png",
+    "preview-field-confirmation/source-page-1.png"
+  ],
+  "scope": "Exact isolated DEV application Preview. Seeded authenticated identities, synthetic paid orders/pricing/extraction/projections, actual HTTP/PostgreSQL/Storage and PDF. Customer source replacement uses the normal sign/PUT/complete path and retains old source bytes. One field-fixture run initially failed before PUT and cleaned two cases/identities and one object; repaired fixture then passed. No live OCR/OTP, canonical financial correctness, legal activation, provider settlement or production rollout.",
+  "productionChanged": false
+}

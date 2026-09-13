@@ -1,0 +1,114 @@
+{
+  "current_rate_list": [
+    "שכר יומי למועסק 6 ימים בשבוע: 257.75 ש\"ח (החל ב- 01.04.2026)",
+    "שכר יומי למועסק 5 ימים בשבוע: 297.4 ש\"ח (החל ב- 01.04.2026)",
+    "שכר לשעה בהיקף של 186 שעות בחודש: 34.64 ש\"ח (החל ב- 01.04.2026)",
+    "שכר לשעה בהיקף של 182 שעות בחודש: 35.4 ש\"ח (החל ב- 01.04.2026)",
+    "שכר חודשי: 6,443.85 ש\"ח (החל ב- 01.04.2026)"
+  ],
+  "human_transcription_attested": false,
+  "normalization": "HTML entities decoded; whitespace collapsed; U+200B removed; DOM cell order, rowspan and colspan retained; no legal interpretation",
+  "operative_parameter_authority": false,
+  "parser": "python-stdlib-html.parser",
+  "parser_version": "1.0.0",
+  "population_heading": "שכר מינימום מגיל 18 ומעלה",
+  "raw_fragment_sha256": "7a601febe7f60ec7d306c5504a6dafe131186bd7b0a34123a9c876b29565c5f9",
+  "review_version_id": "IL_MIN_WAGE_OFFICIAL_RATES@20260910.63bb67d11d02.review1",
+  "schema_version": "tivdoc-nii-rate-review-chunk-v1",
+  "scope": "adult minimum-wage current-rate list, complete table headers including tooltip definitions, and first table row effective2026-04-01; remaining historical rows are outside this chunk",
+  "source_file": "minimum-wage-rates-nii.html",
+  "source_sha256": "63bb67d11d02ae1377d3979a5028303c9905900c998106263570046cecc5edb2",
+  "source_version_id": "IL_MIN_WAGE_OFFICIAL_RATES@20260909.63bb67d11d02",
+  "table_rows": [
+    [
+      {
+        "colspan": 1,
+        "rowspan": 2,
+        "tag": "th",
+        "text": "החל ביום"
+      },
+      {
+        "colspan": 2,
+        "rowspan": 1,
+        "tag": "th",
+        "text": "שכר יומי"
+      },
+      {
+        "colspan": 2,
+        "rowspan": 1,
+        "tag": "th",
+        "text": "שכר מינימום לשעהסכום השכר המינימלי שיש לשלם בעבור שעת עבודה."
+      },
+      {
+        "colspan": 1,
+        "rowspan": 2,
+        "tag": "th",
+        "text": "שכר מינימום לחודשסכום השכר המינימלי שיש לשלם לעובד בעבור חודש עבודה."
+      }
+    ],
+    [
+      {
+        "colspan": 1,
+        "rowspan": 1,
+        "tag": "th",
+        "text": "שכר מינימום ליום - בשבוע עבודה של 5 ימיםסכום השכר המינימלי ליום שיש לשלם למי שמועסק 5 ימים בשבוע, והוא שווה לחלק ה-21 ו-2/3 של שכר המינימום החודשי."
+      },
+      {
+        "colspan": 1,
+        "rowspan": 1,
+        "tag": "th",
+        "text": "שכר מינימום ליום - בשבוע עבודה של 6 ימיםסכום השכר המינימלי ליום שיש לשלם למי שמועסק 6 ימים בשבוע, והוא שווה לחלק ה-25 של שכר המינימום החודשי."
+      },
+      {
+        "colspan": 1,
+        "rowspan": 1,
+        "tag": "th",
+        "text": "בהיקף של 186 שעות"
+      },
+      {
+        "colspan": 1,
+        "rowspan": 1,
+        "tag": "th",
+        "text": "בהיקף של 182 שעות"
+      }
+    ],
+    [
+      {
+        "colspan": 1,
+        "rowspan": 1,
+        "tag": "th",
+        "text": "01.04.2026"
+      },
+      {
+        "colspan": 1,
+        "rowspan": 1,
+        "tag": "td",
+        "text": "297.4"
+      },
+      {
+        "colspan": 1,
+        "rowspan": 1,
+        "tag": "td",
+        "text": "257.75"
+      },
+      {
+        "colspan": 1,
+        "rowspan": 1,
+        "tag": "td",
+        "text": "34.64"
+      },
+      {
+        "colspan": 1,
+        "rowspan": 1,
+        "tag": "td",
+        "text": "35.4"
+      },
+      {
+        "colspan": 1,
+        "rowspan": 1,
+        "tag": "td",
+        "text": "6443.85"
+      }
+    ]
+  ]
+}

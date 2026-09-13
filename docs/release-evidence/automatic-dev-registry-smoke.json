@@ -1,0 +1,18 @@
+{
+  "checks": [
+    "candidates actual worker prepared/executed zero unrelated cases",
+    "status actual worker prepared/executed zero unrelated cases",
+    "foreign-web refused",
+    "wrong-capability refused",
+    "null-limit refused"
+  ],
+  "productionChanged": false,
+  "database": "tivdoc_release_replay_20260907",
+  "schema": 126,
+  "priorFailure": {
+    "schema": 125,
+    "code": "2201B",
+    "reason": "PostgreSQL rejects regex repetition upper bound256; fixed by forward126 length+character checks",
+    "effects": "no candidate or claim executed; test capability disabled"
+  }
+}

@@ -27,7 +27,7 @@ type DocumentRow = Readonly<{
 
 export async function listCaseDocuments(caseId: string, db?: CaseAccessDb | null): Promise<readonly CaseDocument[]> {
   const store = db ?? await resolveCaseAccessDb();
-  if (!store) return [];
+  if (!store) throw new Error("CASE_STORE_UNAVAILABLE");
   const rows = await store.rpc<DocumentRow>("case_documents_list", { target_case: caseId });
   return rows.map((row) => ({
     id: row.id,

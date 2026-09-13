@@ -60,6 +60,9 @@ export async function verifyPendingInvoice4uPayment(
   let transaction;
   try {
     transaction = validateInvoice4uClearingLog(clearingLog, payment.provider_clearing_log_id);
+    if (payment.provider_payment_id && transaction.paymentId !== payment.provider_payment_id) {
+      throw new PaymentVerificationError("transaction_reused");
+    }
   } catch (error) {
     if (error instanceof PaymentVerificationError && error.code === "transaction_pending") {
       return "pending";

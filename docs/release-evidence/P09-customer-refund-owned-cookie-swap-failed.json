@@ -1,0 +1,29 @@
+{
+  "verdict": "FAIL",
+  "checks": [
+    "unpaid order and entitlement without an exact verified payment cannot request money",
+    "foreign case/identity, actual web and non-worker function privileges are refused",
+    "unknown, low, changed checked scope and higher amounts create no refund intent",
+    "pre-commit failure rolls back both the intent and its audit event",
+    "concurrent first calls, lost-response retry and a new ID for the same reduction preserve one request",
+    "actual SQL rechecks original-policy arithmetic, source, checked scope and conflicting request payload",
+    "a further reduction and concurrent customer refund intake retain both histories; queue uses MAX cumulative target, never SUM",
+    "pending corrections preserve purchased price, initial credit and active full entitlement; no settled state is fabricated",
+    "the exact saved request receipt replays after later case-input changes without repricing it",
+    "actual runtime cannot mutate ledger history and web cannot read the private queue or assert provider settlement",
+    "actual customer snapshot exposes only one cumulative pending status on the corrected order, with no internal basis or initial-order adjustment",
+    "foreign customer snapshot is refused and another owned case receives none of the correction data"
+  ],
+  "failure": "locator.waitFor: Timeout 20000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByText('בקשת החזר בעקבות תיקון', { exact: true }) to be visible\u001b[22m\n",
+  "cleanupFailure": null,
+  "database": "tivdoc_release_replay_20260907",
+  "migration": "20260908172254_order_price_correction_intents.sql",
+  "migration_sha256": "eb9647f7f06f73fbbaf43bc0c82504a7cd009624fb8f455f3c2955e01385a053",
+  "customerStatusMigration": "20260908174231_customer_price_correction_status.sql",
+  "customerStatusMigrationSha256": "486997c599294606460b043844fdc5e576ba4cf71482b6833a55729da1a54bb4",
+  "syntheticCasesRemoved": 2,
+  "machineSessionRevoked": true,
+  "scope": "Actual worker/peer/web correction intake, cumulative queue and customer SQL snapshot. Injected synthetic basis and verified payment rows. No canonical monetary proof or refund dispatch/settlement. Hosted customer browser is proved only when browserProof is true. No production change.",
+  "browserProof": true,
+  "productionChanged": false
+}

@@ -1,0 +1,34 @@
+{
+  "verdict": "PASS",
+  "gitSha": "ddeff9ae34e9eb5ca0279cbc633d9849a58b9f24",
+  "proof": {
+    "checks": [
+      "an aborted write rolls back the trace while the original persisted canonical stages remain available",
+      "actual worker role stores one immutable row across retry and independently replays operands from returned PostgreSQL JSON",
+      "the actual canonical customer-confirmed source and separate versioned parameter survive database roundtrip",
+      "another tenant cannot resolve the source stages or create a linked trace through the verified worker connection",
+      "the database refuses UPDATE and preserves the original trace bytes and hash",
+      "existing canonical findings remain absent; the arithmetic probe creates no report, amount, legal activation or price"
+    ],
+    "comparisonProof": {
+      "checks": [
+        "actual saved worker facts feed explicit expected-minus-recorded RuleSpec subtraction; PostgreSQL retry preserves one comparison trace",
+        "comparison is independently reconstructed from returned SQL JSON with exact recorded amount and signed difference; no finding or pricing authority"
+      ],
+      "comparisonSha256": "50f555c79c4817ca13d836471e94c0d64d4cd4cbc83c8b343bccb527e595902e",
+      "traceSha256": "cdc0adb6677fd63bc7fc810acf2c491ba9a3fa69b87ee89a9db21f1e228e2816",
+      "scope": "Synthetic +1 XTS arithmetic over actual canonical saved facts in isolated DEV. The enclosing transaction rolls it back; no meaningful legal expectation, fund transfer, publication or price proof."
+    },
+    "traceSha256": "b91ea5c89336b085ea1d472ef0e978768cf65d73e633ed814c3ca0b461656cff",
+    "storedTraceSha256": "3176aa10e42e6858e9abf7f3d1b56b5c1390da7ac9a1a3dac160a1118b858fad",
+    "scope": "Actual isolated DEV worker connection and saved canonical stages, synthetic +1 XTS arithmetic only. Trace/run are rolled back by the enclosing proof; no concurrent-process, OCR, monetary entitlement or publication proof."
+  },
+  "failure": null,
+  "cleanupFailure": null,
+  "syntheticCasesRemoved": 2,
+  "syntheticIdentitiesRemoved": 2,
+  "machineSessionRevoked": true,
+  "traceAndAnalysisRolledBack": true,
+  "browserProof": false,
+  "productionChanged": false
+}

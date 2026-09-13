@@ -1,0 +1,20 @@
+{
+  "schema_version": "synthetic-review-upload-public-evidence-v1",
+  "scope": "Synthetic QA only; no customer source or credentials",
+  "files": [
+    {
+      "bytes": 7735,
+      "byte_identical": true,
+      "source": "output/release-completion/review-upload-db/b4a9ac69/proof.json",
+      "sha256": "38dbb53d01c6d3cff7f48a3b193e5c14c20e1d884bd288e721e055867d3effeb",
+      "path": "proof.json"
+    },
+    {
+      "bytes": 289,
+      "byte_identical": true,
+      "source": "output/release-completion/review-upload-db/b4a9ac69/independent-oracle.json",
+      "sha256": "a70fe4bbefb444465d4cc50a3c9bce2a9f249c14a9c4520ea7bf5ce18a6b9c4f",
+      "path": "independent-oracle.json"
+    }
+  ]
+}

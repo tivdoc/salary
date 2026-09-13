@@ -13,6 +13,10 @@
 // The board is read to decide whether the product works, and 0% and "nothing
 // has happened yet" are opposite answers.
 
+import { CUSTOMER_WORDING } from "@/server/product/reports/report-wording";
+import { ReportView } from "@/components/case/report-view";
+import type { CaseReportProjection } from "@/server/product/reports/case-report-projection";
+import type { ReportDocument } from "@/server/product/reports/report-document";
 import { useState } from "react";
 import styles from "./operations-workspace.module.css";
 import { AUTOMATIC_FINDING_CEILING_MINOR_UNITS } from "@/server/product/reports/publication-gate";
@@ -27,6 +31,7 @@ type QueueRow = Readonly<{
   wording: Readonly<Record<string, string>>;
   queued_at: string;
   published_at: string | null;
+  assigned_to?:string|null;
 }>;
 
 type Ratio = Readonly<{ numerator: number; denominator: number; rate: number | null; available: boolean }>;
@@ -35,7 +40,7 @@ type Board = Readonly<{
   steps: Readonly<Record<string, Ratio>>;
   automatic_track: Ratio;
   review_minutes_per_case: number | null;
-  source: Readonly<{ events_counted: number; reports_counted: number; generated_at: string }>;
+  source: Readonly<{ events_counted: number; reports_counted: number; generated_at: string; since?:string;until?:string;sample?:{cases:number;paid_cases:number;published_cases:number;opened_cases:number;qa_cases_excluded:number;review_duration_missing:number};outcome_dictionary?:string }>;
 }>;
 
 const REASON_TEXT: Readonly<Record<string, string>> = Object.freeze({
@@ -52,8 +57,8 @@ const STEP_TEXT: Readonly<Record<string, string>> = Object.freeze({
   start_to_case: "התחלה ← תיק",
   case_to_upload: "תיק ← תלוש",
   upload_to_payment: "תלוש ← תשלום",
-  payment_to_finding: "תשלום ← S04",
-  finding_to_full_report: "S04 ← דוח מלא",
+  payment_to_finding: "תשלום ← דוח עם ממצא",
+  finding_to_full_report: "דוח עם ממצא ← רכישת מלא",
 });
 
 const STATE_TEXT: Readonly<Record<string, string>> = Object.freeze({
@@ -74,6 +79,8 @@ function reasonText(code: string): string {
 }
 
 export function ReportQaPanel({ csrfToken }: { csrfToken: string }) {
+  const [view,setView]=useState("open");
+  const [detail,setDetail]=useState<{projection:CaseReportProjection;document:ReportDocument|null;fingerprint:string;row:{wording:Record<string,string>};corrections?:{id:string;message:string;state:string}[]}|null>(null);
   const [queue, setQueue] = useState<readonly QueueRow[]>([]);
   const [board, setBoard] = useState<Board | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
@@ -86,7 +93,7 @@ export function ReportQaPanel({ csrfToken }: { csrfToken: string }) {
     setBusy(true);
     try {
       const [queueResponse, boardResponse] = await Promise.all([
-        fetch("/api/operations/report-qa/queue", { cache: "no-store", credentials: "same-origin" }),
+        fetch(`/api/operations/report-qa/queue?state=${view}`, { cache: "no-store", credentials: "same-origin" }),
         fetch("/api/operations/report-qa/board", { cache: "no-store", credentials: "same-origin" }),
       ]);
       if (!queueResponse.ok || !boardResponse.ok) throw new Error("report_qa_unavailable");
@@ -114,6 +121,8 @@ export function ReportQaPanel({ csrfToken }: { csrfToken: string }) {
     });
   }
 
+  async function selectReport(id:string){setSelected(id);setDetail(null);setBusy(true);try{const response=await fetch(`/api/operations/report-qa/detail?id=${encodeURIComponent(id)}`,{cache:"no-store",credentials:"same-origin"});if(!response.ok)throw new Error();const body=await response.json();setDetail(body.data);}catch{setNotice("לא ניתן לטעון את הדוח. אי אפשר לאשר תצוגה שלא נטענה.");}finally{setBusy(false);}}
+
   async function saveWording() {
     if (!selected) return;
     setBusy(true);
@@ -128,6 +137,7 @@ export function ReportQaPanel({ csrfToken }: { csrfToken: string }) {
       if (!response.ok) throw new Error("wording_failed");
       setNotice("הניסוח נשמר ונרשם בלוג.");
       setSentence("");
+      setDetail(null);
       await load();
     } catch {
       setNotice("שמירת הניסוח נכשלה.");
@@ -140,9 +150,9 @@ export function ReportQaPanel({ csrfToken }: { csrfToken: string }) {
     if (!selected) return;
     setBusy(true);
     try {
-      const response = await post("decide", { qa_id: selected, state });
+      const response = await post("decide", { qa_id: selected, state, fingerprint:detail?.fingerprint });
       if (!response.ok) throw new Error("decision_failed");
-      setNotice(state === "published" ? "הדוח פורסם וההודעה נשלחה לערוץ שאומת." : `הדוח סומן: ${STATE_TEXT[state]}.`);
+      setNotice(state === "published" ? "הדוח פורסם. מצב משלוח ההודעה נרשם בנפרד." : `הדוח סומן: ${STATE_TEXT[state]}.`);
       setSelected(null);
       await load();
     } catch {
@@ -162,14 +172,18 @@ export function ReportQaPanel({ csrfToken }: { csrfToken: string }) {
         המפעיל עורך ניסוח בלבד. מספר משתנה רק כשהמנוע כותב חוזה חדש — אין כאן שדה שמספר יכול לעבור בו.
         כל פעולה נרשמת בלוג עם זהות המפעיל.
       </p>
+      <label>מצב התור<select value={view} onChange={e=>setView(e.target.value)}><option value="open">ממתין לבקרה</option><option value="approved">מאושר לפרסום</option><option value="published">פורסם</option></select></label>
       <button type="button" onClick={load} disabled={busy}>טען תור ולוח</button>
 
       {board && (
         <dl>
-          <dt>שמונת המספרים (D-11)</dt>
+          <dt>תקופה ומדגם</dt><dd>{board.source.since?`${new Date(board.source.since).toLocaleDateString('he-IL')} – ${new Date(board.source.until!).toLocaleDateString('he-IL')}`:'התקופה לא נמסרה'}</dd>
+          <dd>{board.source.sample?`${board.source.sample.cases} תיקים שנפתחו בתקופה; ${board.source.sample.published_cases} עם דוח שפורסם; ${board.source.sample.opened_cases} פתחו דוח; ${board.source.sample.qa_cases_excluded} תיקי QA הוחרגו.`:'המדגם אינו זמין'}</dd>
+          <dd>ביקורים נמדדים לפי חלון הזמן; המשך התיק לפי קבוצת התיקים שנפתחה בו. אלה אינם שיעורי דיוק של המנוע.</dd>
+          <dt>מעברים ושירות</dt>
           <dd>
             <code dir="ltr">
-              {Object.keys(STEP_TEXT).map((step) => `${STEP_TEXT[step]}=${rateText(board.steps[step])}`).join(" · ")}
+              {Object.keys(STEP_TEXT).map((step) => `${STEP_TEXT[step]}: ${rateText(board.steps[step])} (${board.steps[step]?.numerator ?? "?"}/${board.steps[step]?.denominator ?? "?"})`).join(" · ")}
             </code>
           </dd>
           <dt>מסלול אוטומטי</dt>
@@ -186,10 +200,10 @@ export function ReportQaPanel({ csrfToken }: { csrfToken: string }) {
         <ul>
           {queue.map((row) => (
             <li key={row.id}>
-              <button type="button" onClick={() => setSelected(row.id)} disabled={busy}>
+              <button type="button" onClick={() => selectReport(row.id)} disabled={busy}>
                 {row.report_kind === "full" ? "דוח מלא" : "דוח ראשוני"} · {STATE_TEXT[row.state] ?? row.state} · מסלול {row.document_track === "automatic" ? "אוטומטי" : "אנושי"}
               </button>
-              <span> {row.queue_reasons.map(reasonText).join("; ")}</span>
+              <span> {row.queue_reasons.map(reasonText).join("; ")} · נפתח {new Date(row.queued_at).toLocaleString("he-IL")} · אחראי: {row.assigned_to??"טרם שויך"}</span>
             </li>
           ))}
         </ul>
@@ -197,6 +211,8 @@ export function ReportQaPanel({ csrfToken }: { csrfToken: string }) {
 
       {current && (
         <div>
+          <button type="button" disabled={busy} onClick={async()=>{const result=await post('assign',{qa_id:current.id});setNotice(result.ok?'התיק שויך אליך.':'השיוך נכשל.');await load();}}>לקיחת אחריות על הבדיקה</button>
+          {detail?<><h3>התצוגה ללקוח</h3><ReportView projection={detail.projection} wording={detail.row.wording}/><p>גרסת התצוגה לאישור: <bdi>{detail.fingerprint}</bdi></p><h3>מקורות החישוב</h3>{detail.document?<ul>{detail.document.evidence.map(e=><li key={e.id}><a href={`/api/operations/report-qa/source?id=${current.id}&version=${e.version_id}`}>מסמך <bdi>{e.document_id}</bdi></a> · גרסה <bdi>{e.version_id}</bdi> · עמוד {e.page} · שדה {e.field} · גרסת עובדה {e.fact_version}<br/><bdi>{e.sha256}</bdi></li>)}</ul>:<p>לדוח היסטורי זה אין מעטפת מקורות מלאה.</p>}{detail.corrections?.map(c=><p key={c.id}>בקשת בירור ({c.state}): {c.message}</p>)}</>:null}
           <h3>ניסוח לתיק שנבחר</h3>
           <label>
             נושא
@@ -208,12 +224,13 @@ export function ReportQaPanel({ csrfToken }: { csrfToken: string }) {
           </label>
           <label>
             ניסוח הממצא (בלי סכומים)
-            <textarea value={sentence} onChange={(event) => setSentence(event.target.value)} rows={3} />
+            <select value={sentence} onChange={e=>setSentence(e.target.value)}><option value="">בחירת נוסח</option>{CUSTOMER_WORDING.map(text=><option key={text} value={text}>{text}</option>)}</select>
           </label>
           <button type="button" onClick={saveWording} disabled={busy || sentence.trim().length < 4}>שמור ניסוח</button>
-          <button type="button" onClick={() => decide("approved")} disabled={busy}>אשר</button>
-          <button type="button" onClick={() => decide("published")} disabled={busy}>פרסם</button>
-          <button type="button" onClick={() => decide("rejected")} disabled={busy}>דחה</button>
+          <button type="button" onClick={() => decide("approved")} disabled={busy||!detail?.document||current.state==="published"}>אשר</button>
+          <button type="button" onClick={() => decide("published")} disabled={busy||!detail||current.state!=="approved"}>פרסם</button>
+          {current.published_at?<button type="button" disabled={busy} onClick={async()=>{const response=await post("notify",{qa_id:current.id});const body=await response.json().catch(()=>null);const status=body?.data?.value?.state;setNotice(!response.ok?"מצב המשלוח אינו זמין.":status==="delivered"?"הספק אישר מסירה.":status==="sent"?"הספק קיבל את ההודעה; מסירה טרם אושרה.":status==="dead_letter"||status==="suppressed"?"המשלוח נעצר. נדרש בירור מול הספק לפני ניסיון חדש.":status?"ההודעה בתור; ניסיונות חוזרים נעשים בלי לפרסם מחדש.":"אין רישום משלוח לגרסה היסטורית זו.");}}>מצב משלוח וניסיון חוזר</button>:null}
+          <button type="button" onClick={() => decide("rejected")} disabled={busy||!detail||current.state==="published"}>דחה</button>
         </div>
       )}
     </section>

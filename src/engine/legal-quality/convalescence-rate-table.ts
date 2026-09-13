@@ -50,7 +50,7 @@ export const HAVRAA_RATE_TABLE: readonly HavraaRateRow[] = Object.freeze([
     known_at: "2026-08-18",
     retroactive: true,
     parameter_version_id: "il.convalescence.daily_rate@2026.3.0",
-    source: "IL_CONVALESCENCE_EXTENSION_ORDER_2026@discovery-v0.2 (gazette 14863, page 9134), published 18.8.2026 per the lawyer-approved opinion of 5.9.2026; the gazette number and date of publication are the opinion's open item V8",
+    source: "IL_CONVALESCENCE_EXTENSION_ORDER_2026@discovery-v0.2 (gazette 14863, page 9132), published 18.8.2026, independently read by AI from the archived primary page on 7.9.2026 (P04); this does not close human attestation V8",
   },
 ]);
 

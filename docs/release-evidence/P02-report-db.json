@@ -1,0 +1,7 @@
+{
+  "passed": 5,
+  "database": "tivdoc_release_replay_20260907",
+  "migration_sha256_lf": "266517e5a89093a00b0ba006fcbaf13791282249ee8129486b895987a150e753",
+  "fixtures": "synthetic rows removed; seed-only migrator policies rolled back; runtime privileges unchanged",
+  "production": "untouched"
+}

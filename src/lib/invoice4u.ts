@@ -1,7 +1,10 @@
 import "server-only";
 import type { Invoice4uClearingLog } from "./payment-verification";
 
-const INVOICE4U_API_BASE = "https://api.invoice4u.co.il/Services/ApiService.svc";
+const INVOICE4U_API_BASES = {
+  production: "https://api.invoice4u.co.il/Services/ApiService.svc",
+  qa: "https://apiqa.invoice4u.co.il/Services/ApiService.svc",
+} as const;
 
 type Fetcher = typeof fetch;
 
@@ -21,6 +24,7 @@ type CheckoutInput = {
   returnUrl: string;
   amount: number;
   currency: string;
+  kind?: "initial" | "full";
 };
 
 export type Invoice4uCheckout = {
@@ -52,16 +56,28 @@ function unwrapWcfPayload(value: unknown): unknown {
   return current;
 }
 
+function referenceValue(value: unknown): string | null {
+  if (value === undefined || value === null) return null;
+  if (typeof value !== "string" && (typeof value !== "number" || !Number.isSafeInteger(value))) {
+    throw new Invoice4uApiError("invalid_provider_response");
+  }
+  return String(value).trim() || null;
+}
+
+function consistentReference(values: unknown[]): string | null {
+  const references = values.map(referenceValue).filter((value) => value !== null);
+  if (new Set(references).size > 1) throw new Invoice4uApiError("invalid_provider_response");
+  return references[0] ?? null;
+}
+
 function openInfoValue(payload: Record<string, unknown>, key: string) {
-  if (!Array.isArray(payload.OpenInfo)) return null;
-  const item = payload.OpenInfo.find(
-    (candidate) =>
-      candidate &&
-      typeof candidate === "object" &&
-      (candidate as Record<string, unknown>).Key === key,
-  ) as Record<string, unknown> | undefined;
-  const value = item?.Value;
-  return typeof value === "string" || typeof value === "number" ? String(value).trim() : null;
+  const info = payload.OpenInfo;
+  if (Array.isArray(info)) {
+    return consistentReference(info.filter((item) => item && typeof item === "object" && item.Key === key)
+      .map((item) => item.Value));
+  }
+  if (info && typeof info === "object") return referenceValue((info as Record<string, unknown>)[key]);
+  return null;
 }
 
 function providerRejectionCode(payload: Record<string, unknown>) {
@@ -90,16 +106,24 @@ export function invoice4uErrorCode(error: unknown) {
 export class Invoice4uClient {
   private readonly apiKey: string;
   private readonly clearingCompanyType: number;
+  private readonly apiBase: string;
+  private readonly isQaMode: boolean;
 
   constructor(
     apiKey = process.env.INVOICE4U_API_KEY,
     private readonly fetcher: Fetcher = fetch,
     clearingCompanyType = Number(process.env.INVOICE4U_CLEARING_COMPANY_TYPE),
+    environment = process.env.INVOICE4U_ENVIRONMENT ?? 'production',
   ) {
     if (!apiKey) throw new Invoice4uApiError("missing_api_key");
     if (![6, 7, 12, 15].includes(clearingCompanyType)) {
       throw new Invoice4uApiError("invalid_clearing_company_type");
     }
+    if (environment !== 'qa' && environment !== 'production') {
+      throw new Invoice4uApiError('invalid_provider_environment');
+    }
+    this.apiBase = INVOICE4U_API_BASES[environment];
+    this.isQaMode = environment === 'qa';
     this.apiKey = apiKey;
     this.clearingCompanyType = clearingCompanyType;
   }
@@ -107,7 +131,7 @@ export class Invoice4uClient {
   private async post(path: string, body: Record<string, unknown>) {
     let response: Response;
     try {
-      response = await this.fetcher(`${INVOICE4U_API_BASE}/${path}`, {
+      response = await this.fetcher(`${this.apiBase}/${path}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -128,6 +152,11 @@ export class Invoice4uClient {
   }
 
   async createCheckout(input: CheckoutInput): Promise<Invoice4uCheckout> {
+    const minor = Math.round(input.amount * 100);
+    if (!Number.isSafeInteger(minor) || minor <= 0 || minor / 100 !== input.amount) {
+      throw new Invoice4uApiError("invalid_checkout_amount");
+    }
+    if (input.currency !== "ILS") throw new Invoice4uApiError("invalid_checkout_currency");
     const response = await this.post("ProcessApiRequestV2", {
       request: {
         Invoice4UUserApiKey: this.apiKey,
@@ -137,12 +166,13 @@ export class Invoice4uClient {
         Phone: input.phone,
         Email: input.email,
         Sum: input.amount,
-        Description: `Tivdoc salary initial check (${input.caseId})`,
+        Description: `Tivdoc salary ${input.kind=== "full"?"full report":"initial check"} (${input.caseId})`,
         PaymentsNum: 1,
-        Currency: input.currency,
+        Currency: "NIS",
+        IsQaMode: this.isQaMode,
         OrderIdClientUsage: input.orderId,
         IsDocCreate: true,
-        DocHeadline: "Tivdoc - בדיקה ראשונית",
+        DocHeadline: input.kind==="full"?"Tivdoc - דוח מלא":"Tivdoc - בדיקה ראשונית",
         DocComments: `Case ${input.caseId}`,
         IsManualDocCreationsWithParams: false,
         IsGeneralClient: true,
@@ -164,7 +194,7 @@ export class Invoice4uClient {
     const rejectionCode = providerRejectionCode(payload);
     if (rejectionCode) throw new Invoice4uApiError(rejectionCode);
 
-    const rawPaymentId = openInfoValue(payload, "PaymentId");
+    const rawPaymentId = consistentReference([openInfoValue(payload, "PaymentId"), payload.PaymentId]);
     const clearingLogId = openInfoValue(payload, "I4UClearingLogId");
     const paymentId = rawPaymentId && rawPaymentId !== "0" ? rawPaymentId : null;
     const url = typeof payload.ClearingRedirectUrl === "string" ? payload.ClearingRedirectUrl : "";

@@ -1,0 +1,13 @@
+{
+  "sha": "80c4b2adf873ef2540a42a0a91d4042b53d339fc",
+  "run": 34263723759,
+  "result": "FAIL",
+  "passed": 2867,
+  "failed": 1,
+  "skipped": 61,
+  "cause": "migration-tail filename assertion still named the prior migration",
+  "fix": "Update the exact expected tail to 20260908182405_payment_reference_binding.sql",
+  "localChainTests": 5,
+  "localLint": "PASS",
+  "buildAndClosure": "not reached"
+}

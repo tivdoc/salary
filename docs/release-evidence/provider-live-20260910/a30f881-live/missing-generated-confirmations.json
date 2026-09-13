@@ -1,0 +1,132 @@
+{
+  "targets": [
+    {
+      "request_id": "59aa4632-0d35-47b2-b62d-4e744e79417b",
+      "target": {
+        "month": "2026-06",
+        "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+        "candidate": {
+          "field": "gross_salary",
+          "source": {
+            "page": 1,
+            "document_id": "2c9f4382-734a-42ba-9f17-ceb427acc836",
+            "text_fragment": "Gross salary (ILS): 3,300.00"
+          },
+          "raw_value": "3,300.00",
+          "confidence": 0.94,
+          "candidate_id": "9a326937-2257-443b-abd5-a957b3417cd7",
+          "warning_flags": [],
+          "normalized_value": {
+            "currency": "ILS",
+            "minor_units": 330000
+          },
+          "extraction_method": "ai_vision"
+        },
+        "version_id": "2c9f4382-734a-42ba-9f17-ceb427acc836",
+        "source_sha256": "520ff4644bedc7c4e1fe333f30662027e2bd4d94721e6338d325b03f175b18f5",
+        "target_sha256": "4d55bbc3ed862806fc2c53c28290c39cbb9a5c6a522e42480bbb7df3cafa89f2",
+        "policy_version": "saved-payslip-v21-p95-v1",
+        "schema_version": "document-field-confirmation-v1",
+        "product_document_id": "5a067c04-4dec-4060-8ea8-4361fd3d2840",
+        "extraction_result_sha256": "ad86e2da0337294e6e0fa9cfdeb910519cca6fd79f3e85f1e71080114d584dff"
+      }
+    },
+    {
+      "request_id": "dc175516-c419-43f3-a67b-d81dbde71354",
+      "target": {
+        "month": "2026-06",
+        "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+        "candidate": {
+          "field": "hourly_rate",
+          "source": {
+            "page": 1,
+            "document_id": "2c9f4382-734a-42ba-9f17-ceb427acc836",
+            "text_fragment": "Hourly rate (ILS): 33.00"
+          },
+          "raw_value": "33.00",
+          "confidence": 0.94,
+          "candidate_id": "96dd4b5c-84cb-43b4-93a1-81021793fc8f",
+          "warning_flags": [
+            "recovery_reading_confirmation_required"
+          ],
+          "normalized_value": {
+            "currency": "ILS",
+            "minor_units": 3300
+          },
+          "extraction_method": "ai_vision"
+        },
+        "version_id": "2c9f4382-734a-42ba-9f17-ceb427acc836",
+        "source_sha256": "520ff4644bedc7c4e1fe333f30662027e2bd4d94721e6338d325b03f175b18f5",
+        "target_sha256": "a02e47b7224874ae1feae9a07767936744550412b008c0d5f814ddf9e8e97f08",
+        "policy_version": "saved-payslip-v21-p95-v1",
+        "schema_version": "document-field-confirmation-v1",
+        "product_document_id": "5a067c04-4dec-4060-8ea8-4361fd3d2840",
+        "extraction_result_sha256": "ad86e2da0337294e6e0fa9cfdeb910519cca6fd79f3e85f1e71080114d584dff"
+      }
+    },
+    {
+      "request_id": "e380f220-cfac-4f24-8ca8-ab5546c7c861",
+      "target": {
+        "month": "2026-06",
+        "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+        "candidate": {
+          "field": "net_salary",
+          "source": {
+            "page": 1,
+            "document_id": "2c9f4382-734a-42ba-9f17-ceb427acc836",
+            "text_fragment": "Net salary (ILS): 3,300.00"
+          },
+          "raw_value": "3,300.00",
+          "confidence": 0.94,
+          "candidate_id": "be340993-323c-4177-b639-a9d696b78619",
+          "warning_flags": [],
+          "normalized_value": {
+            "currency": "ILS",
+            "minor_units": 330000
+          },
+          "extraction_method": "ai_vision"
+        },
+        "version_id": "2c9f4382-734a-42ba-9f17-ceb427acc836",
+        "source_sha256": "520ff4644bedc7c4e1fe333f30662027e2bd4d94721e6338d325b03f175b18f5",
+        "target_sha256": "801fdef976aaa8ab097337371345b47c4234cb3662ee2e9ed7e5329b5447192c",
+        "policy_version": "saved-payslip-v21-p95-v1",
+        "schema_version": "document-field-confirmation-v1",
+        "product_document_id": "5a067c04-4dec-4060-8ea8-4361fd3d2840",
+        "extraction_result_sha256": "ad86e2da0337294e6e0fa9cfdeb910519cca6fd79f3e85f1e71080114d584dff"
+      }
+    },
+    {
+      "request_id": "930da88d-ddc9-4938-83ef-ea67c6f1219d",
+      "target": {
+        "month": "2026-06",
+        "case_id": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+        "candidate": {
+          "field": "salary_period",
+          "source": {
+            "page": 1,
+            "document_id": "2c9f4382-734a-42ba-9f17-ceb427acc836",
+            "text_fragment": "Salary period: 06/2026"
+          },
+          "raw_value": "06/2026",
+          "confidence": 0.94,
+          "candidate_id": "0e1c51ec-21b5-4667-806f-b2b3b6e6aaeb",
+          "warning_flags": [],
+          "normalized_value": {
+            "year": 2026,
+            "month": 6,
+            "end_date": "2026-06-30",
+            "start_date": "2026-06-01"
+          },
+          "extraction_method": "ai_vision"
+        },
+        "version_id": "2c9f4382-734a-42ba-9f17-ceb427acc836",
+        "source_sha256": "520ff4644bedc7c4e1fe333f30662027e2bd4d94721e6338d325b03f175b18f5",
+        "target_sha256": "cd012998df9d0ab3bf59e9815c963fb7ace1c3b0a62217375ef24a4568bf1c6c",
+        "policy_version": "saved-payslip-v21-p95-v1",
+        "schema_version": "document-field-confirmation-v1",
+        "product_document_id": "5a067c04-4dec-4060-8ea8-4361fd3d2840",
+        "extraction_result_sha256": "ad86e2da0337294e6e0fa9cfdeb910519cca6fd79f3e85f1e71080114d584dff"
+      }
+    }
+  ]
+}

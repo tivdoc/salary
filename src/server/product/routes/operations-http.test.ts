@@ -44,6 +44,12 @@ function command(action: string, caseId: string, expectedRevision: number, extra
 }
 
 describe("stable operations HTTP boundary", () => {
+  it("refuses support reads for a reviewer without designated owner authority and requires CSRF for replies",async()=>{
+    const {handler,cookie}=harness("fact_reviewer");
+    expect((await handler.handle(request("report-qa/support",{cookie}),["report-qa","support"])).status).toBe(403);
+    expect((await handler.handle(request("report-qa/support",{cookie,body:{}}),["report-qa","support"])).status).toBe(404);
+  });
+
   it("returns a hard non-disclosing 404 while disabled, unwired or unauthenticated", async () => {
     const { handler } = harness();
     const disabled = createOperationsHttpHandler({ enabled: false, service: null, sessions: new HermeticSessionManager({ environment: {}, nodeEnv: "test" }) });

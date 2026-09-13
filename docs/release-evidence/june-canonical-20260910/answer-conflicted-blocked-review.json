@@ -1,0 +1,2874 @@
+{
+  "diagnostics": {
+    "period": {
+      "end_date": "2026-06-30",
+      "start_date": "2026-06-01"
+    },
+    "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+    "blockers": {
+      "policy": [
+        "HUMAN_LEGAL_REVIEW_MISSING",
+        "EFFECTIVE_INTERVAL_MISSING_INVALID_OR_UNVERIFIED",
+        "SECTOR_MISSING_UNKNOWN_MISMATCH_OR_UNVERIFIED",
+        "POPULATION_MISSING_MISMATCH_OR_UNVERIFIED",
+        "ACTIVATION_MISSING"
+      ],
+      "evidence": [
+        "employee_scope_and_component_substance_unconfirmed",
+        "operative_rounding_policy_unresolved",
+        "notice_original_origin_authenticity_unattested"
+      ],
+      "technical": [
+        "authenticated_case_evidence_admission_not_available",
+        "active_catalog_executor_binding_not_connected",
+        "canonical_financial_publication_not_connected"
+      ]
+    },
+    "documents": [
+      {
+        "components": [
+          {
+            "source": {
+              "page": 1,
+              "document_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c",
+              "text_fragment": "Regular base salary"
+            },
+            "component_id": "c5cf3ca6-7d5d-4d97-80f7-9f37a38344fe",
+            "source_label": "Regular base salary",
+            "classification": null,
+            "documented_amount": {
+              "currency": "ILS",
+              "minor_units": 330000
+            },
+            "observed_semantic": "hourly_base",
+            "classification_status": "missing"
+          }
+        ],
+        "version_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c",
+        "extraction_id": "2a485191-6bb3-4daa-8edd-c79525895bef",
+        "source_sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+        "extraction_sha256": "5cb11be66b759cd116416f0e6a51a749a105eea56c3a28c35760856cd412308a",
+        "earnings_completeness_confirmed": false,
+        "provider_claimed_earnings_complete": true
+      }
+    ],
+    "collection": {
+      "month": "2026-06",
+      "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+      "unknown": 0,
+      "conflicted": 1,
+      "resolutions": [
+        {
+          "state": "declared",
+          "declaration": {
+            "answer": "Synthetic adult hourly clerk with recorded hours, direct supervision and no managerial authority.",
+            "target": {
+              "month": "2026-06",
+              "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+              "subject": {
+                "kind": "applicability",
+                "field": "hours_rest_law_applies"
+              },
+              "version_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c",
+              "source_sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+              "target_sha256": "028ff4f2d81817ef86f40f72f3d1a7c926f26b6c40d8004f1d3106c0271522a2",
+              "schema_version": "minimum-wage-june2026-collection-v1",
+              "legal_policy_sha256": "7c37868d57537a143fd9bcb39071b2c707443bae85d610986f90c50f6bbda948",
+              "product_document_id": "38b7ab1d-efda-412b-8d95-cb0f2af631c3",
+              "extraction_result_sha256": "bea42eaf129bc3e01392e6da569318117517acbfea89dcd16e15634e4080f2f4",
+              "extraction_policy_version": "saved-payslip-v21-p95-v1"
+            },
+            "actor_kind": "customer_declaration",
+            "provenance": [
+              {
+                "source_type": "declared",
+                "source_reference": {
+                  "kind": "case_request_answer",
+                  "request_id": "5d110b0c-e8f5-419e-b10f-3acf4de59ab9",
+                  "answer_revision": 1
+                }
+              }
+            ],
+            "request_id": "5d110b0c-e8f5-419e-b10f-3acf4de59ab9",
+            "answered_at": "2026-09-10T14:51:31.877356+00:00",
+            "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+            "interpretation": {
+              "kind": "text_declaration",
+              "value": "Synthetic adult hourly clerk with recorded hours, direct supervision and no managerial authority."
+            },
+            "schema_version": "minimum-wage-june2026-customer-declaration-v1",
+            "answer_revision": 1,
+            "evidence_status": "needs_confirmation",
+            "declaration_sha256": "9dbb0ef862d5ff1a10b183f14c75c8d842e8c90402419e5b426751469e3ca6c9",
+            "candidate_evidence_admitted": false,
+            "legal_classification_status": "unreviewed"
+          }
+        },
+        {
+          "state": "declared",
+          "declaration": {
+            "answer": "Synthetic office supplies shop; no sector or collective agreement is claimed.",
+            "target": {
+              "month": "2026-06",
+              "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+              "subject": {
+                "kind": "applicability",
+                "field": "sector"
+              },
+              "version_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c",
+              "source_sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+              "target_sha256": "05927e584c0af74039214ceda209a99b610d1758624826ff6ccb0a09ea198c84",
+              "schema_version": "minimum-wage-june2026-collection-v1",
+              "legal_policy_sha256": "7c37868d57537a143fd9bcb39071b2c707443bae85d610986f90c50f6bbda948",
+              "product_document_id": "38b7ab1d-efda-412b-8d95-cb0f2af631c3",
+              "extraction_result_sha256": "bea42eaf129bc3e01392e6da569318117517acbfea89dcd16e15634e4080f2f4",
+              "extraction_policy_version": "saved-payslip-v21-p95-v1"
+            },
+            "actor_kind": "customer_declaration",
+            "provenance": [
+              {
+                "source_type": "declared",
+                "source_reference": {
+                  "kind": "case_request_answer",
+                  "request_id": "5917f473-b4cc-4caf-bc35-a51843d66493",
+                  "answer_revision": 1
+                }
+              }
+            ],
+            "request_id": "5917f473-b4cc-4caf-bc35-a51843d66493",
+            "answered_at": "2026-09-10T14:51:31.877356+00:00",
+            "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+            "interpretation": {
+              "kind": "text_declaration",
+              "value": "Synthetic office supplies shop; no sector or collective agreement is claimed."
+            },
+            "schema_version": "minimum-wage-june2026-customer-declaration-v1",
+            "answer_revision": 1,
+            "evidence_status": "needs_confirmation",
+            "declaration_sha256": "8dc0813dd22aa855d43a8ff3dba207f85fa9893b48e49f363adb45cf744f0bb1",
+            "candidate_evidence_admitted": false,
+            "legal_classification_status": "unreviewed"
+          }
+        },
+        {
+          "state": "declared",
+          "declaration": {
+            "answer": "שכר יסוד או שכר משולב",
+            "target": {
+              "month": "2026-06",
+              "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+              "subject": {
+                "kind": "component",
+                "component": {
+                  "amount": {
+                    "currency": "ILS",
+                    "minor_units": 330000
+                  },
+                  "source": {
+                    "page": 1,
+                    "document_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c"
+                  },
+                  "component_id": "c5cf3ca6-7d5d-4d97-80f7-9f37a38344fe",
+                  "source_label": "Regular base salary"
+                }
+              },
+              "version_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c",
+              "source_sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+              "target_sha256": "09ad6d7229d8fb98ce891efa53fd5c3bb631607a43457872277007f2d00bfe79",
+              "schema_version": "minimum-wage-june2026-collection-v1",
+              "legal_policy_sha256": "7c37868d57537a143fd9bcb39071b2c707443bae85d610986f90c50f6bbda948",
+              "product_document_id": "38b7ab1d-efda-412b-8d95-cb0f2af631c3",
+              "extraction_result_sha256": "bea42eaf129bc3e01392e6da569318117517acbfea89dcd16e15634e4080f2f4",
+              "extraction_policy_version": "saved-payslip-v21-p95-v1"
+            },
+            "actor_kind": "customer_declaration",
+            "provenance": [
+              {
+                "source_type": "declared",
+                "source_reference": {
+                  "kind": "case_request_answer",
+                  "request_id": "22fb8b97-7e70-4ff2-a72f-d8c6165b2759",
+                  "answer_revision": 1
+                }
+              }
+            ],
+            "request_id": "22fb8b97-7e70-4ff2-a72f-d8c6165b2759",
+            "answered_at": "2026-09-10T14:51:31.877356+00:00",
+            "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+            "interpretation": {
+              "kind": "component_substance_declaration",
+              "value": "base_salary"
+            },
+            "schema_version": "minimum-wage-june2026-customer-declaration-v1",
+            "answer_revision": 1,
+            "evidence_status": "needs_confirmation",
+            "declaration_sha256": "58c072a7ff6e748b880f3896d80f95351556502529690fce7aff6c01c459ec84",
+            "candidate_evidence_admitted": false,
+            "legal_classification_status": "unreviewed"
+          }
+        },
+        {
+          "state": "declared",
+          "declaration": {
+            "answer": "כן, לפי המידע שברשותי",
+            "target": {
+              "month": "2026-06",
+              "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+              "subject": {
+                "kind": "applicability",
+                "field": "regular_hours_exclude_absence_overtime_rest"
+              },
+              "version_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c",
+              "source_sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+              "target_sha256": "8558a6aa95dc8fd95ee3f0a2692ae17f33ca46663676c8d9244ab1f7aab5ffb1",
+              "schema_version": "minimum-wage-june2026-collection-v1",
+              "legal_policy_sha256": "7c37868d57537a143fd9bcb39071b2c707443bae85d610986f90c50f6bbda948",
+              "product_document_id": "38b7ab1d-efda-412b-8d95-cb0f2af631c3",
+              "extraction_result_sha256": "bea42eaf129bc3e01392e6da569318117517acbfea89dcd16e15634e4080f2f4",
+              "extraction_policy_version": "saved-payslip-v21-p95-v1"
+            },
+            "actor_kind": "customer_declaration",
+            "provenance": [
+              {
+                "source_type": "declared",
+                "source_reference": {
+                  "kind": "case_request_answer",
+                  "request_id": "7214cfc0-f4e9-4eb4-95be-c229c1d7f402",
+                  "answer_revision": 1
+                }
+              }
+            ],
+            "request_id": "7214cfc0-f4e9-4eb4-95be-c229c1d7f402",
+            "answered_at": "2026-09-10T14:51:31.877356+00:00",
+            "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+            "interpretation": {
+              "kind": "boolean_declaration",
+              "value": true
+            },
+            "schema_version": "minimum-wage-june2026-customer-declaration-v1",
+            "answer_revision": 1,
+            "evidence_status": "needs_confirmation",
+            "declaration_sha256": "a98ddc24791f2733abc47874b9caf8bed30b6e0aa49ac33dfac0c9d49e0d032d",
+            "candidate_evidence_admitted": false,
+            "legal_classification_status": "unreviewed"
+          }
+        },
+        {
+          "state": "declared",
+          "declaration": {
+            "answer": "לא, לפי המידע שברשותי",
+            "target": {
+              "month": "2026-06",
+              "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+              "subject": {
+                "kind": "applicability",
+                "field": "no_adapted_minimum_wage"
+              },
+              "version_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c",
+              "source_sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+              "target_sha256": "ac233da81e6933f762772cd097f90dbd288cdb50392e71820edeb25a30098217",
+              "schema_version": "minimum-wage-june2026-collection-v1",
+              "legal_policy_sha256": "7c37868d57537a143fd9bcb39071b2c707443bae85d610986f90c50f6bbda948",
+              "product_document_id": "38b7ab1d-efda-412b-8d95-cb0f2af631c3",
+              "extraction_result_sha256": "bea42eaf129bc3e01392e6da569318117517acbfea89dcd16e15634e4080f2f4",
+              "extraction_policy_version": "saved-payslip-v21-p95-v1"
+            },
+            "actor_kind": "customer_declaration",
+            "provenance": [
+              {
+                "source_type": "declared",
+                "source_reference": {
+                  "kind": "case_request_answer",
+                  "request_id": "49f60121-a241-49ba-83c0-1f42e5e8f7cd",
+                  "answer_revision": 1
+                }
+              }
+            ],
+            "request_id": "49f60121-a241-49ba-83c0-1f42e5e8f7cd",
+            "answered_at": "2026-09-10T14:51:31.877356+00:00",
+            "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+            "interpretation": {
+              "kind": "boolean_declaration",
+              "value": true
+            },
+            "schema_version": "minimum-wage-june2026-customer-declaration-v1",
+            "answer_revision": 1,
+            "evidence_status": "needs_confirmation",
+            "declaration_sha256": "3cd3673d52a694553add9dbe92cb586d0192a3f13a08f1ba5716b7c0374813c9",
+            "candidate_evidence_admitted": false,
+            "legal_classification_status": "unreviewed"
+          }
+        },
+        {
+          "state": "declared",
+          "declaration": {
+            "answer": "לא, לפי המידע שברשותי",
+            "target": {
+              "month": "2026-06",
+              "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+              "subject": {
+                "kind": "applicability",
+                "field": "no_better_minimum_wage_arrangement"
+              },
+              "version_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c",
+              "source_sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+              "target_sha256": "b2450fe345a5bcc272a1eb83742e4fac407f09338b9621f7be297e5f7a362c3d",
+              "schema_version": "minimum-wage-june2026-collection-v1",
+              "legal_policy_sha256": "7c37868d57537a143fd9bcb39071b2c707443bae85d610986f90c50f6bbda948",
+              "product_document_id": "38b7ab1d-efda-412b-8d95-cb0f2af631c3",
+              "extraction_result_sha256": "bea42eaf129bc3e01392e6da569318117517acbfea89dcd16e15634e4080f2f4",
+              "extraction_policy_version": "saved-payslip-v21-p95-v1"
+            },
+            "actor_kind": "customer_declaration",
+            "provenance": [
+              {
+                "source_type": "declared",
+                "source_reference": {
+                  "kind": "case_request_answer",
+                  "request_id": "a7ba4745-857c-4af4-8e81-1c1be1bdccfb",
+                  "answer_revision": 1
+                }
+              }
+            ],
+            "request_id": "a7ba4745-857c-4af4-8e81-1c1be1bdccfb",
+            "answered_at": "2026-09-10T14:51:31.877356+00:00",
+            "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+            "interpretation": {
+              "kind": "boolean_declaration",
+              "value": true
+            },
+            "schema_version": "minimum-wage-june2026-customer-declaration-v1",
+            "answer_revision": 1,
+            "evidence_status": "needs_confirmation",
+            "declaration_sha256": "24cfc8b778a6377142ef9402e03953849c708483c2f463eb7e2294468314b6b0",
+            "candidate_evidence_admitted": false,
+            "legal_classification_status": "unreviewed"
+          }
+        },
+        {
+          "state": "declared",
+          "declaration": {
+            "answer": "כן, לפי המידע שברשותי",
+            "target": {
+              "month": "2026-06",
+              "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+              "subject": {
+                "kind": "earnings_completeness"
+              },
+              "version_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c",
+              "source_sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+              "target_sha256": "e51cac13f8e29ef6036f1a413e55c12d67caee6972d3953a06ec586bd351d806",
+              "schema_version": "minimum-wage-june2026-collection-v1",
+              "legal_policy_sha256": "7c37868d57537a143fd9bcb39071b2c707443bae85d610986f90c50f6bbda948",
+              "product_document_id": "38b7ab1d-efda-412b-8d95-cb0f2af631c3",
+              "extraction_result_sha256": "bea42eaf129bc3e01392e6da569318117517acbfea89dcd16e15634e4080f2f4",
+              "extraction_policy_version": "saved-payslip-v21-p95-v1"
+            },
+            "actor_kind": "customer_declaration",
+            "provenance": [
+              {
+                "source_type": "declared",
+                "source_reference": {
+                  "kind": "case_request_answer",
+                  "request_id": "1c06a54b-7d48-4318-b02e-d64eaa72256a",
+                  "answer_revision": 1
+                }
+              }
+            ],
+            "request_id": "1c06a54b-7d48-4318-b02e-d64eaa72256a",
+            "answered_at": "2026-09-10T14:51:31.877356+00:00",
+            "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+            "interpretation": {
+              "kind": "boolean_declaration",
+              "value": true
+            },
+            "schema_version": "minimum-wage-june2026-customer-declaration-v1",
+            "answer_revision": 1,
+            "evidence_status": "needs_confirmation",
+            "declaration_sha256": "18ca1a7b045d8762ee49755a25c44ee6a829b78d4e5e77b874ce0db63f905805",
+            "candidate_evidence_admitted": false,
+            "legal_classification_status": "unreviewed"
+          }
+        },
+        {
+          "state": "conflicted",
+          "declaration": {
+            "answer": "יש מידע סותר",
+            "target": {
+              "month": "2026-06",
+              "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+              "subject": {
+                "kind": "applicability",
+                "field": "age_18_entire_month"
+              },
+              "version_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c",
+              "source_sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+              "target_sha256": "f6ced49349a8bc7d78270463687cd38a5bded78b80ed7892094d2352474ef902",
+              "schema_version": "minimum-wage-june2026-collection-v1",
+              "legal_policy_sha256": "7c37868d57537a143fd9bcb39071b2c707443bae85d610986f90c50f6bbda948",
+              "product_document_id": "38b7ab1d-efda-412b-8d95-cb0f2af631c3",
+              "extraction_result_sha256": "bea42eaf129bc3e01392e6da569318117517acbfea89dcd16e15634e4080f2f4",
+              "extraction_policy_version": "saved-payslip-v21-p95-v1"
+            },
+            "actor_kind": "customer_declaration",
+            "provenance": [
+              {
+                "source_type": "declared",
+                "source_reference": {
+                  "kind": "case_request_answer",
+                  "request_id": "634275d3-8410-4e05-9b34-0587161bae0a",
+                  "answer_revision": 3
+                }
+              }
+            ],
+            "request_id": "634275d3-8410-4e05-9b34-0587161bae0a",
+            "answered_at": "2026-09-10T14:52:19.7315+00:00",
+            "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+            "interpretation": {
+              "kind": "conflicted",
+              "value": null
+            },
+            "schema_version": "minimum-wage-june2026-customer-declaration-v1",
+            "answer_revision": 3,
+            "evidence_status": "conflicted",
+            "declaration_sha256": "849dffa502bd449266a5f3934babc66387ac7b4715951d2d6928e25bca556ed2",
+            "candidate_evidence_admitted": false,
+            "legal_classification_status": "unreviewed"
+          }
+        }
+      ],
+      "evaluated_at": "2026-09-10T14:52:27.090Z",
+      "schema_version": "saved-june2026-collection-evidence-v1",
+      "rule_activation": false,
+      "legal_confirmation": false,
+      "customer_declarations": 7
+    },
+    "policy_sha256": "7c37868d57537a143fd9bcb39071b2c707443bae85d610986f90c50f6bbda948",
+    "schema_version": "saved-june2026-review-v5-unadmitted-assessment-packet",
+    "analysis_run_id": "c3b5c4bc-3200-46d7-80f7-84aacc9bd346",
+    "factual_context": {
+      "facts": {
+        "facts": [
+          {
+            "path": "compensation.base_monthly_salary",
+            "value": {
+              "currency": "ILS",
+              "minor_units": 330000
+            },
+            "status": "confirmed",
+            "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+            "fact_id": "b9a10a59-dc76-4cae-82db-68e764b5de47",
+            "confidence": 1,
+            "created_at": "2026-09-10T14:52:19.731Z",
+            "provenance": [
+              {
+                "read_by": "machine",
+                "verified": true,
+                "source_type": "documented",
+                "source_reference": {
+                  "kind": "document",
+                  "locator": {
+                    "page": 1,
+                    "text_span": "Synthetic regular base salary: 3300.00"
+                  },
+                  "document_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c"
+                },
+                "customer_confirmation": {
+                  "month": "2026-06",
+                  "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+                  "actor_kind": "customer",
+                  "request_id": "626e2352-8e52-4375-87a6-286e08cce2b8",
+                  "document_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c",
+                  "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+                  "candidate_id": "294de504-cf34-4c92-9b03-935001713c3c",
+                  "confirmed_at": "2026-09-10T14:51:31.877356+00:00",
+                  "source_sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+                  "target_sha256": "83ad5a72e9c4d7aa4b0d015bc72daa590be14c21844092f01f9603b134e4fe7a",
+                  "answer_revision": 1,
+                  "candidate_sha256": "bc3c6eac1f360890e39ca542f0d29d09c6c38095d8abdbbdbd7c8050bfe4fc21",
+                  "extraction_result_sha256": "bea42eaf129bc3e01392e6da569318117517acbfea89dcd16e15634e4080f2f4",
+                  "normalized_extraction_sha256": "ab23f93fa2b140d09e9cad68cee37133cabf345605f17b6c18821f3436427e22"
+                }
+              }
+            ],
+            "resolution": null,
+            "conflicting_fact_ids": []
+          },
+          {
+            "path": "compensation.gross_salary",
+            "value": {
+              "currency": "ILS",
+              "minor_units": 330000
+            },
+            "status": "confirmed",
+            "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+            "fact_id": "b684a1fb-b6aa-4ff3-8544-6cfc65d79080",
+            "confidence": 1,
+            "created_at": "2026-09-10T14:52:19.731Z",
+            "provenance": [
+              {
+                "read_by": "machine",
+                "verified": true,
+                "source_type": "documented",
+                "source_reference": {
+                  "kind": "document",
+                  "locator": {
+                    "page": 1,
+                    "text_span": "Synthetic regular base salary: 3300.00"
+                  },
+                  "document_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c"
+                },
+                "customer_confirmation": {
+                  "month": "2026-06",
+                  "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+                  "actor_kind": "customer",
+                  "request_id": "aab25d24-64f6-490e-8bdb-518b3f0c87bc",
+                  "document_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c",
+                  "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+                  "candidate_id": "07142353-f564-4881-a803-324041357536",
+                  "confirmed_at": "2026-09-10T14:51:31.877356+00:00",
+                  "source_sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+                  "target_sha256": "5c1610613062ed94885d54c9bf2ea3a531b5bb608bdf96ddff4b424fa3128948",
+                  "answer_revision": 1,
+                  "candidate_sha256": "d2f70e1b1a0207df3a40a5ee8d18f3822881f4af0f2ed5dd07d0c8ad7e096d97",
+                  "extraction_result_sha256": "bea42eaf129bc3e01392e6da569318117517acbfea89dcd16e15634e4080f2f4",
+                  "normalized_extraction_sha256": "ab23f93fa2b140d09e9cad68cee37133cabf345605f17b6c18821f3436427e22"
+                }
+              }
+            ],
+            "resolution": null,
+            "conflicting_fact_ids": []
+          },
+          {
+            "path": "compensation.hourly_rate",
+            "value": {
+              "currency": "ILS",
+              "minor_units": 3300
+            },
+            "status": "confirmed",
+            "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+            "fact_id": "2a3e4c0c-570e-4443-8073-f34cdd0db922",
+            "confidence": 1,
+            "created_at": "2026-09-10T14:52:19.731Z",
+            "provenance": [
+              {
+                "read_by": "machine",
+                "verified": true,
+                "source_type": "documented",
+                "source_reference": {
+                  "kind": "document",
+                  "locator": {
+                    "page": 1,
+                    "text_span": "Synthetic regular base salary: 33.00"
+                  },
+                  "document_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c"
+                },
+                "customer_confirmation": {
+                  "month": "2026-06",
+                  "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+                  "actor_kind": "customer",
+                  "request_id": "4d36d331-6677-4a37-800f-66387a471ecd",
+                  "document_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c",
+                  "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+                  "candidate_id": "72a87a80-05f8-47b7-a594-06c58f30fa18",
+                  "confirmed_at": "2026-09-10T14:51:31.877356+00:00",
+                  "source_sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+                  "target_sha256": "8927f99a8a2c9fea47f4ac61dd86e29b139db9f4bed5d8868f3d1915a97aa22e",
+                  "answer_revision": 1,
+                  "candidate_sha256": "7a43522bb54c6d66c0e674fe53b58a0898341ef3627f5119bb16f76e393ff523",
+                  "extraction_result_sha256": "bea42eaf129bc3e01392e6da569318117517acbfea89dcd16e15634e4080f2f4",
+                  "normalized_extraction_sha256": "ab23f93fa2b140d09e9cad68cee37133cabf345605f17b6c18821f3436427e22"
+                }
+              }
+            ],
+            "resolution": null,
+            "conflicting_fact_ids": []
+          },
+          {
+            "path": "compensation.net_salary",
+            "value": {
+              "currency": "ILS",
+              "minor_units": 330000
+            },
+            "status": "confirmed",
+            "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+            "fact_id": "0507932d-35d4-46b0-8f22-6317ad29979c",
+            "confidence": 1,
+            "created_at": "2026-09-10T14:52:19.731Z",
+            "provenance": [
+              {
+                "read_by": "machine",
+                "verified": true,
+                "source_type": "documented",
+                "source_reference": {
+                  "kind": "document",
+                  "locator": {
+                    "page": 1,
+                    "text_span": "Synthetic regular base salary: 3300.00"
+                  },
+                  "document_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c"
+                },
+                "customer_confirmation": {
+                  "month": "2026-06",
+                  "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+                  "actor_kind": "customer",
+                  "request_id": "762d0727-3b56-403e-8ea4-48a272bbd56e",
+                  "document_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c",
+                  "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+                  "candidate_id": "05af6a26-f65a-44e7-8e81-944e9078a4f9",
+                  "confirmed_at": "2026-09-10T14:51:31.877356+00:00",
+                  "source_sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+                  "target_sha256": "97b5be63a008e9e3145fcb2d097b96daac2f08acc66fe7688a1b67c5b5694b85",
+                  "answer_revision": 1,
+                  "candidate_sha256": "30fbea0e35c342ef0f2856e524cc4e375033f6ff444c50ac85c3e76615124e43",
+                  "extraction_result_sha256": "bea42eaf129bc3e01392e6da569318117517acbfea89dcd16e15634e4080f2f4",
+                  "normalized_extraction_sha256": "ab23f93fa2b140d09e9cad68cee37133cabf345605f17b6c18821f3436427e22"
+                }
+              }
+            ],
+            "resolution": null,
+            "conflicting_fact_ids": []
+          },
+          {
+            "path": "compensation.salary_type",
+            "value": "hourly",
+            "status": "confirmed",
+            "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+            "fact_id": "e7007f26-bcb8-4827-8dca-d71ad8f17710",
+            "confidence": 1,
+            "created_at": "2026-09-10T14:52:19.731Z",
+            "provenance": [
+              {
+                "read_by": "machine",
+                "verified": true,
+                "source_type": "documented",
+                "source_reference": {
+                  "kind": "document",
+                  "locator": {
+                    "page": 1,
+                    "text_span": "Salary type: hourly"
+                  },
+                  "document_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c"
+                },
+                "customer_confirmation": {
+                  "month": "2026-06",
+                  "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+                  "actor_kind": "customer",
+                  "request_id": "68e2cf6b-7038-4c23-aadc-8cf73b2d6e25",
+                  "document_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c",
+                  "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+                  "candidate_id": "66630d03-51cc-4e56-8ae1-be34a3b46f9d",
+                  "confirmed_at": "2026-09-10T14:51:31.877356+00:00",
+                  "source_sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+                  "target_sha256": "6a23bdfc37ebdc9df2cf7907340ff084660b6a5d99cc7dd978329f379a1363f5",
+                  "answer_revision": 1,
+                  "candidate_sha256": "6e855d758ff11a8d63e93f788998bad2d42c459054183a49f5306e960ec28027",
+                  "extraction_result_sha256": "bea42eaf129bc3e01392e6da569318117517acbfea89dcd16e15634e4080f2f4",
+                  "normalized_extraction_sha256": "ab23f93fa2b140d09e9cad68cee37133cabf345605f17b6c18821f3436427e22"
+                }
+              }
+            ],
+            "resolution": null,
+            "conflicting_fact_ids": []
+          },
+          {
+            "path": "convalescence.payment",
+            "value": null,
+            "status": "missing",
+            "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+            "fact_id": "ed6001e5-3ec6-40f4-8153-4fdbe282f585",
+            "confidence": 1,
+            "created_at": "2026-09-10T14:52:19.731Z",
+            "provenance": [
+              {
+                "read_by": "machine",
+                "verified": false,
+                "source_type": "documented",
+                "source_reference": {
+                  "kind": "document",
+                  "document_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c"
+                }
+              }
+            ],
+            "resolution": null,
+            "conflicting_fact_ids": []
+          },
+          {
+            "path": "documents.period",
+            "value": {
+              "period": {
+                "end_date": "2026-06-30",
+                "start_date": "2026-06-01"
+              },
+              "document_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c"
+            },
+            "status": "confirmed",
+            "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+            "fact_id": "11623c1b-8f8a-4e0a-8624-edc72c4a6c81",
+            "confidence": 1,
+            "created_at": "2026-09-10T14:52:19.731Z",
+            "provenance": [
+              {
+                "read_by": "machine",
+                "verified": true,
+                "source_type": "documented",
+                "source_reference": {
+                  "kind": "document",
+                  "locator": {
+                    "page": 1,
+                    "text_span": "Period: 06/2026"
+                  },
+                  "document_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c"
+                },
+                "customer_confirmation": {
+                  "month": "2026-06",
+                  "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+                  "actor_kind": "customer",
+                  "request_id": "3de7a35a-118a-4b51-8909-d1262e8b40c5",
+                  "document_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c",
+                  "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+                  "candidate_id": "28142a92-2642-40d2-962d-0c6699207b87",
+                  "confirmed_at": "2026-09-10T14:51:31.877356+00:00",
+                  "source_sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+                  "target_sha256": "e0ca3d112e463e922206d245caad91408ec86119c4f099615734966598fad8d3",
+                  "answer_revision": 1,
+                  "candidate_sha256": "0c52fa5f01c3b9a2ae06bbae8485b0b63557de064ffbb7073b4110e1dedac865",
+                  "extraction_result_sha256": "bea42eaf129bc3e01392e6da569318117517acbfea89dcd16e15634e4080f2f4",
+                  "normalized_extraction_sha256": "ab23f93fa2b140d09e9cad68cee37133cabf345605f17b6c18821f3436427e22"
+                }
+              }
+            ],
+            "resolution": null,
+            "conflicting_fact_ids": []
+          },
+          {
+            "path": "employment.start_date",
+            "value": null,
+            "status": "missing",
+            "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+            "fact_id": "a7fa41da-9029-4575-8d5f-a12ab74701b7",
+            "confidence": 1,
+            "created_at": "2026-09-10T14:52:19.731Z",
+            "provenance": [
+              {
+                "read_by": "machine",
+                "verified": false,
+                "source_type": "documented",
+                "source_reference": {
+                  "kind": "document",
+                  "document_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c"
+                }
+              }
+            ],
+            "resolution": null,
+            "conflicting_fact_ids": []
+          },
+          {
+            "path": "leave.sick_balance",
+            "value": null,
+            "status": "missing",
+            "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+            "fact_id": "410a0d75-2b87-47e0-83ad-d095226ea8c2",
+            "confidence": 1,
+            "created_at": "2026-09-10T14:52:19.731Z",
+            "provenance": [
+              {
+                "read_by": "machine",
+                "verified": false,
+                "source_type": "documented",
+                "source_reference": {
+                  "kind": "document",
+                  "document_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c"
+                }
+              }
+            ],
+            "resolution": null,
+            "conflicting_fact_ids": []
+          },
+          {
+            "path": "leave.vacation_balance",
+            "value": null,
+            "status": "missing",
+            "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+            "fact_id": "f5e52586-63ee-4c2f-8c1e-7674457d3d08",
+            "confidence": 1,
+            "created_at": "2026-09-10T14:52:19.731Z",
+            "provenance": [
+              {
+                "read_by": "machine",
+                "verified": false,
+                "source_type": "documented",
+                "source_reference": {
+                  "kind": "document",
+                  "document_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c"
+                }
+              }
+            ],
+            "resolution": null,
+            "conflicting_fact_ids": []
+          },
+          {
+            "path": "pension.base_salary",
+            "value": null,
+            "status": "missing",
+            "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+            "fact_id": "141ff077-5d11-4ae0-80c7-fb64aba01150",
+            "confidence": 1,
+            "created_at": "2026-09-10T14:52:19.731Z",
+            "provenance": [
+              {
+                "read_by": "machine",
+                "verified": false,
+                "source_type": "documented",
+                "source_reference": {
+                  "kind": "document",
+                  "document_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c"
+                }
+              }
+            ],
+            "resolution": null,
+            "conflicting_fact_ids": []
+          },
+          {
+            "path": "pension.contributions",
+            "value": null,
+            "status": "missing",
+            "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+            "fact_id": "c135b2d7-b2ad-493a-868a-69d5abc262bc",
+            "confidence": 1,
+            "created_at": "2026-09-10T14:52:19.731Z",
+            "provenance": [
+              {
+                "read_by": "machine",
+                "verified": false,
+                "source_type": "documented",
+                "source_reference": {
+                  "kind": "document",
+                  "document_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c"
+                }
+              }
+            ],
+            "resolution": null,
+            "conflicting_fact_ids": []
+          },
+          {
+            "path": "pension.severance_contribution",
+            "value": null,
+            "status": "missing",
+            "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+            "fact_id": "cd5014a2-d35d-4630-8ad7-3a2ab6bfb7a8",
+            "confidence": 1,
+            "created_at": "2026-09-10T14:52:19.731Z",
+            "provenance": [
+              {
+                "read_by": "machine",
+                "verified": false,
+                "source_type": "documented",
+                "source_reference": {
+                  "kind": "document",
+                  "document_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c"
+                }
+              }
+            ],
+            "resolution": null,
+            "conflicting_fact_ids": []
+          },
+          {
+            "path": "travel.reimbursement",
+            "value": null,
+            "status": "missing",
+            "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+            "fact_id": "ad038a59-d001-4f86-8349-4fb43ad85e80",
+            "confidence": 1,
+            "created_at": "2026-09-10T14:52:19.731Z",
+            "provenance": [
+              {
+                "read_by": "machine",
+                "verified": false,
+                "source_type": "documented",
+                "source_reference": {
+                  "kind": "document",
+                  "document_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c"
+                }
+              }
+            ],
+            "resolution": null,
+            "conflicting_fact_ids": []
+          },
+          {
+            "path": "work.overtime_125_hours",
+            "value": null,
+            "status": "missing",
+            "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+            "fact_id": "9285635b-81ab-49d0-8162-946424c7c27e",
+            "confidence": 1,
+            "created_at": "2026-09-10T14:52:19.731Z",
+            "provenance": [
+              {
+                "read_by": "machine",
+                "verified": false,
+                "source_type": "documented",
+                "source_reference": {
+                  "kind": "document",
+                  "document_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c"
+                }
+              }
+            ],
+            "resolution": null,
+            "conflicting_fact_ids": []
+          },
+          {
+            "path": "work.overtime_150_hours",
+            "value": null,
+            "status": "missing",
+            "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+            "fact_id": "94a435dd-50f5-4a6b-86bc-db97f5c4f511",
+            "confidence": 1,
+            "created_at": "2026-09-10T14:52:19.731Z",
+            "provenance": [
+              {
+                "read_by": "machine",
+                "verified": false,
+                "source_type": "documented",
+                "source_reference": {
+                  "kind": "document",
+                  "document_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c"
+                }
+              }
+            ],
+            "resolution": null,
+            "conflicting_fact_ids": []
+          },
+          {
+            "path": "work.overtime_hours",
+            "value": null,
+            "status": "missing",
+            "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+            "fact_id": "d80bb46b-c3b2-4463-8aa8-489d17fe6fb6",
+            "confidence": 1,
+            "created_at": "2026-09-10T14:52:19.731Z",
+            "provenance": [
+              {
+                "read_by": "machine",
+                "verified": false,
+                "source_type": "documented",
+                "source_reference": {
+                  "kind": "document",
+                  "document_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c"
+                }
+              }
+            ],
+            "resolution": null,
+            "conflicting_fact_ids": []
+          },
+          {
+            "path": "work.regular_hours",
+            "value": {
+              "unit": "hours_per_month",
+              "amount": "100"
+            },
+            "status": "confirmed",
+            "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+            "fact_id": "b36fa7e9-e0d4-45d4-8b9b-8ad8eb5d90f1",
+            "confidence": 1,
+            "created_at": "2026-09-10T14:52:19.731Z",
+            "provenance": [
+              {
+                "read_by": "machine",
+                "verified": true,
+                "source_type": "documented",
+                "source_reference": {
+                  "kind": "document",
+                  "locator": {
+                    "page": 1,
+                    "text_span": "Synthetic regular base salary: 100"
+                  },
+                  "document_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c"
+                },
+                "customer_confirmation": {
+                  "month": "2026-06",
+                  "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+                  "actor_kind": "customer",
+                  "request_id": "b1662ce0-5def-4e54-b0e7-2b4f597a3a0c",
+                  "document_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c",
+                  "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+                  "candidate_id": "19a6d4d1-7584-4584-ab63-69a30534dbd5",
+                  "confirmed_at": "2026-09-10T14:51:31.877356+00:00",
+                  "source_sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+                  "target_sha256": "3a30ac1afd258d8c920031d06a3a3f53bd373b7be88670083fe3223a2f58ca12",
+                  "answer_revision": 1,
+                  "candidate_sha256": "eb3495c1d6b80d74df2f2fb9387fb7f25255f21cf2a2fccd4e301878cffbe5b2",
+                  "extraction_result_sha256": "bea42eaf129bc3e01392e6da569318117517acbfea89dcd16e15634e4080f2f4",
+                  "normalized_extraction_sha256": "ab23f93fa2b140d09e9cad68cee37133cabf345605f17b6c18821f3436427e22"
+                }
+              }
+            ],
+            "resolution": null,
+            "conflicting_fact_ids": []
+          }
+        ],
+        "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+        "created_at": "2026-09-10T14:52:19.731Z",
+        "snapshot_id": "4805f40d-d60f-4577-84d6-ea454cdc5d0e",
+        "schema_version": "1.0.0",
+        "analysis_run_id": "c3b5c4bc-3200-46d7-80f7-84aacc9bd346"
+      },
+      "state": "context_loaded",
+      "context": {
+        "state": "factual_context_ready",
+        "current": {
+          "month": "2026-06",
+          "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+          "order_id": "9c7e8f62-8ba2-4bc7-a01f-df50e9ded69d",
+          "input_sha256": "4fbbab7a50f692af658efdea64695cf11f82e48c956c9fd5a9bbfae03f6e5203",
+          "input_revision": 34,
+          "analysis_run_id": "c3b5c4bc-3200-46d7-80f7-84aacc9bd346"
+        },
+        "document": {
+          "sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+          "page_count": 1,
+          "version_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c",
+          "product_document_id": "38b7ab1d-efda-412b-8d95-cb0f2af631c3"
+        },
+        "authority": "current_source_factual_mapping_only",
+        "collection": {
+          "resolutions": [
+            {
+              "state": "declared",
+              "declaration": {
+                "answer": "Synthetic adult hourly clerk with recorded hours, direct supervision and no managerial authority.",
+                "target": {
+                  "month": "2026-06",
+                  "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+                  "subject": {
+                    "kind": "applicability",
+                    "field": "hours_rest_law_applies"
+                  },
+                  "version_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c",
+                  "source_sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+                  "target_sha256": "028ff4f2d81817ef86f40f72f3d1a7c926f26b6c40d8004f1d3106c0271522a2",
+                  "schema_version": "minimum-wage-june2026-collection-v1",
+                  "legal_policy_sha256": "7c37868d57537a143fd9bcb39071b2c707443bae85d610986f90c50f6bbda948",
+                  "product_document_id": "38b7ab1d-efda-412b-8d95-cb0f2af631c3",
+                  "extraction_result_sha256": "bea42eaf129bc3e01392e6da569318117517acbfea89dcd16e15634e4080f2f4",
+                  "extraction_policy_version": "saved-payslip-v21-p95-v1"
+                },
+                "actor_kind": "customer_declaration",
+                "provenance": [
+                  {
+                    "source_type": "declared",
+                    "source_reference": {
+                      "kind": "case_request_answer",
+                      "request_id": "5d110b0c-e8f5-419e-b10f-3acf4de59ab9",
+                      "answer_revision": 1
+                    }
+                  }
+                ],
+                "request_id": "5d110b0c-e8f5-419e-b10f-3acf4de59ab9",
+                "answered_at": "2026-09-10T14:51:31.877356+00:00",
+                "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+                "interpretation": {
+                  "kind": "text_declaration",
+                  "value": "Synthetic adult hourly clerk with recorded hours, direct supervision and no managerial authority."
+                },
+                "schema_version": "minimum-wage-june2026-customer-declaration-v1",
+                "answer_revision": 1,
+                "evidence_status": "needs_confirmation",
+                "declaration_sha256": "9dbb0ef862d5ff1a10b183f14c75c8d842e8c90402419e5b426751469e3ca6c9",
+                "candidate_evidence_admitted": false,
+                "legal_classification_status": "unreviewed"
+              }
+            },
+            {
+              "state": "declared",
+              "declaration": {
+                "answer": "Synthetic office supplies shop; no sector or collective agreement is claimed.",
+                "target": {
+                  "month": "2026-06",
+                  "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+                  "subject": {
+                    "kind": "applicability",
+                    "field": "sector"
+                  },
+                  "version_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c",
+                  "source_sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+                  "target_sha256": "05927e584c0af74039214ceda209a99b610d1758624826ff6ccb0a09ea198c84",
+                  "schema_version": "minimum-wage-june2026-collection-v1",
+                  "legal_policy_sha256": "7c37868d57537a143fd9bcb39071b2c707443bae85d610986f90c50f6bbda948",
+                  "product_document_id": "38b7ab1d-efda-412b-8d95-cb0f2af631c3",
+                  "extraction_result_sha256": "bea42eaf129bc3e01392e6da569318117517acbfea89dcd16e15634e4080f2f4",
+                  "extraction_policy_version": "saved-payslip-v21-p95-v1"
+                },
+                "actor_kind": "customer_declaration",
+                "provenance": [
+                  {
+                    "source_type": "declared",
+                    "source_reference": {
+                      "kind": "case_request_answer",
+                      "request_id": "5917f473-b4cc-4caf-bc35-a51843d66493",
+                      "answer_revision": 1
+                    }
+                  }
+                ],
+                "request_id": "5917f473-b4cc-4caf-bc35-a51843d66493",
+                "answered_at": "2026-09-10T14:51:31.877356+00:00",
+                "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+                "interpretation": {
+                  "kind": "text_declaration",
+                  "value": "Synthetic office supplies shop; no sector or collective agreement is claimed."
+                },
+                "schema_version": "minimum-wage-june2026-customer-declaration-v1",
+                "answer_revision": 1,
+                "evidence_status": "needs_confirmation",
+                "declaration_sha256": "8dc0813dd22aa855d43a8ff3dba207f85fa9893b48e49f363adb45cf744f0bb1",
+                "candidate_evidence_admitted": false,
+                "legal_classification_status": "unreviewed"
+              }
+            },
+            {
+              "state": "declared",
+              "declaration": {
+                "answer": "שכר יסוד או שכר משולב",
+                "target": {
+                  "month": "2026-06",
+                  "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+                  "subject": {
+                    "kind": "component",
+                    "component": {
+                      "amount": {
+                        "currency": "ILS",
+                        "minor_units": 330000
+                      },
+                      "source": {
+                        "page": 1,
+                        "document_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c"
+                      },
+                      "component_id": "c5cf3ca6-7d5d-4d97-80f7-9f37a38344fe",
+                      "source_label": "Regular base salary"
+                    }
+                  },
+                  "version_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c",
+                  "source_sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+                  "target_sha256": "09ad6d7229d8fb98ce891efa53fd5c3bb631607a43457872277007f2d00bfe79",
+                  "schema_version": "minimum-wage-june2026-collection-v1",
+                  "legal_policy_sha256": "7c37868d57537a143fd9bcb39071b2c707443bae85d610986f90c50f6bbda948",
+                  "product_document_id": "38b7ab1d-efda-412b-8d95-cb0f2af631c3",
+                  "extraction_result_sha256": "bea42eaf129bc3e01392e6da569318117517acbfea89dcd16e15634e4080f2f4",
+                  "extraction_policy_version": "saved-payslip-v21-p95-v1"
+                },
+                "actor_kind": "customer_declaration",
+                "provenance": [
+                  {
+                    "source_type": "declared",
+                    "source_reference": {
+                      "kind": "case_request_answer",
+                      "request_id": "22fb8b97-7e70-4ff2-a72f-d8c6165b2759",
+                      "answer_revision": 1
+                    }
+                  }
+                ],
+                "request_id": "22fb8b97-7e70-4ff2-a72f-d8c6165b2759",
+                "answered_at": "2026-09-10T14:51:31.877356+00:00",
+                "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+                "interpretation": {
+                  "kind": "component_substance_declaration",
+                  "value": "base_salary"
+                },
+                "schema_version": "minimum-wage-june2026-customer-declaration-v1",
+                "answer_revision": 1,
+                "evidence_status": "needs_confirmation",
+                "declaration_sha256": "58c072a7ff6e748b880f3896d80f95351556502529690fce7aff6c01c459ec84",
+                "candidate_evidence_admitted": false,
+                "legal_classification_status": "unreviewed"
+              }
+            },
+            {
+              "state": "declared",
+              "declaration": {
+                "answer": "כן, לפי המידע שברשותי",
+                "target": {
+                  "month": "2026-06",
+                  "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+                  "subject": {
+                    "kind": "applicability",
+                    "field": "regular_hours_exclude_absence_overtime_rest"
+                  },
+                  "version_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c",
+                  "source_sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+                  "target_sha256": "8558a6aa95dc8fd95ee3f0a2692ae17f33ca46663676c8d9244ab1f7aab5ffb1",
+                  "schema_version": "minimum-wage-june2026-collection-v1",
+                  "legal_policy_sha256": "7c37868d57537a143fd9bcb39071b2c707443bae85d610986f90c50f6bbda948",
+                  "product_document_id": "38b7ab1d-efda-412b-8d95-cb0f2af631c3",
+                  "extraction_result_sha256": "bea42eaf129bc3e01392e6da569318117517acbfea89dcd16e15634e4080f2f4",
+                  "extraction_policy_version": "saved-payslip-v21-p95-v1"
+                },
+                "actor_kind": "customer_declaration",
+                "provenance": [
+                  {
+                    "source_type": "declared",
+                    "source_reference": {
+                      "kind": "case_request_answer",
+                      "request_id": "7214cfc0-f4e9-4eb4-95be-c229c1d7f402",
+                      "answer_revision": 1
+                    }
+                  }
+                ],
+                "request_id": "7214cfc0-f4e9-4eb4-95be-c229c1d7f402",
+                "answered_at": "2026-09-10T14:51:31.877356+00:00",
+                "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+                "interpretation": {
+                  "kind": "boolean_declaration",
+                  "value": true
+                },
+                "schema_version": "minimum-wage-june2026-customer-declaration-v1",
+                "answer_revision": 1,
+                "evidence_status": "needs_confirmation",
+                "declaration_sha256": "a98ddc24791f2733abc47874b9caf8bed30b6e0aa49ac33dfac0c9d49e0d032d",
+                "candidate_evidence_admitted": false,
+                "legal_classification_status": "unreviewed"
+              }
+            },
+            {
+              "state": "declared",
+              "declaration": {
+                "answer": "לא, לפי המידע שברשותי",
+                "target": {
+                  "month": "2026-06",
+                  "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+                  "subject": {
+                    "kind": "applicability",
+                    "field": "no_adapted_minimum_wage"
+                  },
+                  "version_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c",
+                  "source_sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+                  "target_sha256": "ac233da81e6933f762772cd097f90dbd288cdb50392e71820edeb25a30098217",
+                  "schema_version": "minimum-wage-june2026-collection-v1",
+                  "legal_policy_sha256": "7c37868d57537a143fd9bcb39071b2c707443bae85d610986f90c50f6bbda948",
+                  "product_document_id": "38b7ab1d-efda-412b-8d95-cb0f2af631c3",
+                  "extraction_result_sha256": "bea42eaf129bc3e01392e6da569318117517acbfea89dcd16e15634e4080f2f4",
+                  "extraction_policy_version": "saved-payslip-v21-p95-v1"
+                },
+                "actor_kind": "customer_declaration",
+                "provenance": [
+                  {
+                    "source_type": "declared",
+                    "source_reference": {
+                      "kind": "case_request_answer",
+                      "request_id": "49f60121-a241-49ba-83c0-1f42e5e8f7cd",
+                      "answer_revision": 1
+                    }
+                  }
+                ],
+                "request_id": "49f60121-a241-49ba-83c0-1f42e5e8f7cd",
+                "answered_at": "2026-09-10T14:51:31.877356+00:00",
+                "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+                "interpretation": {
+                  "kind": "boolean_declaration",
+                  "value": true
+                },
+                "schema_version": "minimum-wage-june2026-customer-declaration-v1",
+                "answer_revision": 1,
+                "evidence_status": "needs_confirmation",
+                "declaration_sha256": "3cd3673d52a694553add9dbe92cb586d0192a3f13a08f1ba5716b7c0374813c9",
+                "candidate_evidence_admitted": false,
+                "legal_classification_status": "unreviewed"
+              }
+            },
+            {
+              "state": "declared",
+              "declaration": {
+                "answer": "לא, לפי המידע שברשותי",
+                "target": {
+                  "month": "2026-06",
+                  "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+                  "subject": {
+                    "kind": "applicability",
+                    "field": "no_better_minimum_wage_arrangement"
+                  },
+                  "version_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c",
+                  "source_sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+                  "target_sha256": "b2450fe345a5bcc272a1eb83742e4fac407f09338b9621f7be297e5f7a362c3d",
+                  "schema_version": "minimum-wage-june2026-collection-v1",
+                  "legal_policy_sha256": "7c37868d57537a143fd9bcb39071b2c707443bae85d610986f90c50f6bbda948",
+                  "product_document_id": "38b7ab1d-efda-412b-8d95-cb0f2af631c3",
+                  "extraction_result_sha256": "bea42eaf129bc3e01392e6da569318117517acbfea89dcd16e15634e4080f2f4",
+                  "extraction_policy_version": "saved-payslip-v21-p95-v1"
+                },
+                "actor_kind": "customer_declaration",
+                "provenance": [
+                  {
+                    "source_type": "declared",
+                    "source_reference": {
+                      "kind": "case_request_answer",
+                      "request_id": "a7ba4745-857c-4af4-8e81-1c1be1bdccfb",
+                      "answer_revision": 1
+                    }
+                  }
+                ],
+                "request_id": "a7ba4745-857c-4af4-8e81-1c1be1bdccfb",
+                "answered_at": "2026-09-10T14:51:31.877356+00:00",
+                "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+                "interpretation": {
+                  "kind": "boolean_declaration",
+                  "value": true
+                },
+                "schema_version": "minimum-wage-june2026-customer-declaration-v1",
+                "answer_revision": 1,
+                "evidence_status": "needs_confirmation",
+                "declaration_sha256": "24cfc8b778a6377142ef9402e03953849c708483c2f463eb7e2294468314b6b0",
+                "candidate_evidence_admitted": false,
+                "legal_classification_status": "unreviewed"
+              }
+            },
+            {
+              "state": "declared",
+              "declaration": {
+                "answer": "כן, לפי המידע שברשותי",
+                "target": {
+                  "month": "2026-06",
+                  "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+                  "subject": {
+                    "kind": "earnings_completeness"
+                  },
+                  "version_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c",
+                  "source_sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+                  "target_sha256": "e51cac13f8e29ef6036f1a413e55c12d67caee6972d3953a06ec586bd351d806",
+                  "schema_version": "minimum-wage-june2026-collection-v1",
+                  "legal_policy_sha256": "7c37868d57537a143fd9bcb39071b2c707443bae85d610986f90c50f6bbda948",
+                  "product_document_id": "38b7ab1d-efda-412b-8d95-cb0f2af631c3",
+                  "extraction_result_sha256": "bea42eaf129bc3e01392e6da569318117517acbfea89dcd16e15634e4080f2f4",
+                  "extraction_policy_version": "saved-payslip-v21-p95-v1"
+                },
+                "actor_kind": "customer_declaration",
+                "provenance": [
+                  {
+                    "source_type": "declared",
+                    "source_reference": {
+                      "kind": "case_request_answer",
+                      "request_id": "1c06a54b-7d48-4318-b02e-d64eaa72256a",
+                      "answer_revision": 1
+                    }
+                  }
+                ],
+                "request_id": "1c06a54b-7d48-4318-b02e-d64eaa72256a",
+                "answered_at": "2026-09-10T14:51:31.877356+00:00",
+                "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+                "interpretation": {
+                  "kind": "boolean_declaration",
+                  "value": true
+                },
+                "schema_version": "minimum-wage-june2026-customer-declaration-v1",
+                "answer_revision": 1,
+                "evidence_status": "needs_confirmation",
+                "declaration_sha256": "18ca1a7b045d8762ee49755a25c44ee6a829b78d4e5e77b874ce0db63f905805",
+                "candidate_evidence_admitted": false,
+                "legal_classification_status": "unreviewed"
+              }
+            },
+            {
+              "state": "conflicted",
+              "declaration": {
+                "answer": "יש מידע סותר",
+                "target": {
+                  "month": "2026-06",
+                  "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+                  "subject": {
+                    "kind": "applicability",
+                    "field": "age_18_entire_month"
+                  },
+                  "version_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c",
+                  "source_sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+                  "target_sha256": "f6ced49349a8bc7d78270463687cd38a5bded78b80ed7892094d2352474ef902",
+                  "schema_version": "minimum-wage-june2026-collection-v1",
+                  "legal_policy_sha256": "7c37868d57537a143fd9bcb39071b2c707443bae85d610986f90c50f6bbda948",
+                  "product_document_id": "38b7ab1d-efda-412b-8d95-cb0f2af631c3",
+                  "extraction_result_sha256": "bea42eaf129bc3e01392e6da569318117517acbfea89dcd16e15634e4080f2f4",
+                  "extraction_policy_version": "saved-payslip-v21-p95-v1"
+                },
+                "actor_kind": "customer_declaration",
+                "provenance": [
+                  {
+                    "source_type": "declared",
+                    "source_reference": {
+                      "kind": "case_request_answer",
+                      "request_id": "634275d3-8410-4e05-9b34-0587161bae0a",
+                      "answer_revision": 3
+                    }
+                  }
+                ],
+                "request_id": "634275d3-8410-4e05-9b34-0587161bae0a",
+                "answered_at": "2026-09-10T14:52:19.7315+00:00",
+                "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+                "interpretation": {
+                  "kind": "conflicted",
+                  "value": null
+                },
+                "schema_version": "minimum-wage-june2026-customer-declaration-v1",
+                "answer_revision": 3,
+                "evidence_status": "conflicted",
+                "declaration_sha256": "849dffa502bd449266a5f3934babc66387ac7b4715951d2d6928e25bca556ed2",
+                "candidate_evidence_admitted": false,
+                "legal_classification_status": "unreviewed"
+              }
+            }
+          ],
+          "evaluated_at": "2026-09-10T14:52:28.767Z"
+        },
+        "rule_input": {
+          "snapshot_id": "rule-input:c3b5c4bc-3200-46d7-80f7-84aacc9bd346:minimum_wage",
+          "snapshot_sha256": "fb688dfcdc02e36a0e4960e4d8fc242976fdf4b93e159a5846f0d02d29b99002",
+          "snapshot_version": "canonical-facts:1.0.0:minimum_wage"
+        },
+        "bound_facts": [
+          {
+            "path": "work.regular_hours",
+            "fact_id": "b36fa7e9-e0d4-45d4-8b9b-8ad8eb5d90f1",
+            "fact_sha256": "440e5a267d3d6115eaf3c83f5fa753ab61f99f79370dc029819aaa88bd4f44d7",
+            "candidate_id": "19a6d4d1-7584-4584-ab63-69a30534dbd5",
+            "candidate_sha256": "eb3495c1d6b80d74df2f2fb9387fb7f25255f21cf2a2fccd4e301878cffbe5b2"
+          },
+          {
+            "path": "compensation.base_monthly_salary",
+            "fact_id": "b9a10a59-dc76-4cae-82db-68e764b5de47",
+            "fact_sha256": "4cece40818830b700d11bbcc907f6363a2c779bfa3a281437d93fdd0b57e4549",
+            "candidate_id": "294de504-cf34-4c92-9b03-935001713c3c",
+            "candidate_sha256": "bc3c6eac1f360890e39ca542f0d29d09c6c38095d8abdbbdbd7c8050bfe4fc21"
+          },
+          {
+            "path": "compensation.gross_salary",
+            "fact_id": "b684a1fb-b6aa-4ff3-8544-6cfc65d79080",
+            "fact_sha256": "6a8c83794cdb5e0cab174ce9d22637b8000c3f5de2a5940ce73bb426d092cf69",
+            "candidate_id": "07142353-f564-4881-a803-324041357536",
+            "candidate_sha256": "d2f70e1b1a0207df3a40a5ee8d18f3822881f4af0f2ed5dd07d0c8ad7e096d97"
+          },
+          {
+            "path": "compensation.salary_type",
+            "fact_id": "e7007f26-bcb8-4827-8dca-d71ad8f17710",
+            "fact_sha256": "3473d740857c11d663f05c792bc533225ec96911ac53130a35c3d90ecd2b7e0d",
+            "candidate_id": "66630d03-51cc-4e56-8ae1-be34a3b46f9d",
+            "candidate_sha256": "6e855d758ff11a8d63e93f788998bad2d42c459054183a49f5306e960ec28027"
+          },
+          {
+            "path": "documents.period",
+            "fact_id": "11623c1b-8f8a-4e0a-8624-edc72c4a6c81",
+            "fact_sha256": "7c4883339bb32a30fac87ef9e9a7253622ac4547ce51f4df40b7f42e10e4d90f",
+            "candidate_id": "28142a92-2642-40d2-962d-0c6699207b87",
+            "candidate_sha256": "0c52fa5f01c3b9a2ae06bbae8485b0b63557de064ffbb7073b4110e1dedac865"
+          }
+        ],
+        "legal_gates": [
+          {
+            "field": "applicability.age_18_entire_month",
+            "status": "not_admitted"
+          },
+          {
+            "field": "applicability.sector",
+            "status": "not_admitted"
+          },
+          {
+            "field": "applicability.hours_rest_law_applies",
+            "status": "not_admitted"
+          },
+          {
+            "field": "applicability.no_better_minimum_wage_arrangement",
+            "status": "not_admitted"
+          },
+          {
+            "field": "applicability.no_adapted_minimum_wage",
+            "status": "not_admitted"
+          },
+          {
+            "field": "applicability.regular_hours_exclude_absence_overtime_rest",
+            "status": "not_admitted"
+          },
+          {
+            "field": "wage_components_complete",
+            "status": "not_admitted"
+          },
+          {
+            "field": "components.legal_classification",
+            "status": "not_admitted"
+          },
+          {
+            "field": "active_legal_catalog",
+            "status": "not_admitted"
+          }
+        ],
+        "context_sha256": "103f5910ee52e0c717d27c6a9c8ff1f845b353b4d524312cbdeabf09f03c80a9",
+        "factual_issues": [],
+        "schema_version": "tivdoc-june2026-factual-context-v1",
+        "legal_activation": false,
+        "legal_policy_sha256": "7c37868d57537a143fd9bcb39071b2c707443bae85d610986f90c50f6bbda948",
+        "publication_allowed": false,
+        "source_fact_bindings": [
+          {
+            "source": {
+              "kind": "fact",
+              "fact_id": "b36fa7e9-e0d4-45d4-8b9b-8ad8eb5d90f1",
+              "value_path": []
+            },
+            "input_id": "fact.regular.hours"
+          },
+          {
+            "source": {
+              "kind": "fact",
+              "fact_id": "b9a10a59-dc76-4cae-82db-68e764b5de47",
+              "value_path": []
+            },
+            "input_id": "fact.component.1"
+          }
+        ],
+        "facts_snapshot_sha256": "9893bb95eaeb839ae19327210b001be79260c2be91e2431519100edefc5f277d",
+        "extraction_result_sha256": "bea42eaf129bc3e01392e6da569318117517acbfea89dcd16e15634e4080f2f4",
+        "extraction_policy_version": "saved-payslip-v21-p95-v1",
+        "single_monetary_component": {
+          "rate": {
+            "currency": "ILS",
+            "minor_units": 3300
+          },
+          "amount": {
+            "currency": "ILS",
+            "minor_units": 330000
+          },
+          "source": {
+            "page": 1,
+            "document_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c",
+            "text_fragment": "Regular base salary"
+          },
+          "quantity": "100",
+          "rate_raw": "33.00",
+          "amount_raw": "3300.00",
+          "confidence": 0.94,
+          "percentage": null,
+          "component_id": "c5cf3ca6-7d5d-4d97-80f7-9f37a38344fe",
+          "quantity_raw": "100",
+          "source_label": "Regular base salary",
+          "semantic_kind": "hourly_base",
+          "warning_flags": [],
+          "percentage_raw": null,
+          "normalized_label": "hourly_base",
+          "extraction_method": "ai_vision",
+          "normalization_warnings": []
+        },
+        "component_legal_classification": "unreviewed"
+      },
+      "provenance": {
+        "kind": "injected_test_provider",
+        "receipts": [
+          {
+            "cost": {
+              "status": "not_returned_by_provider",
+              "amount_usd": null
+            },
+            "origin": "injected_test_provider",
+            "status": "completed",
+            "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+            "pass_kind": "first_pass",
+            "created_at": "2026-09-10T14:51:27.630Z",
+            "error_code": null,
+            "document_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c",
+            "duration_ms": 25,
+            "http_status": null,
+            "token_usage": null,
+            "actual_model": null,
+            "extraction_id": "d71d59ed-e7b4-416c-8cb6-79079a4b676f",
+            "source_sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+            "prompt_version": "payslip-extraction-openai-v2-first-r4",
+            "receipt_sha256": "f3c5428114dc8d3e6d68556be2c976a7cd8944fc784132904e60e3e640581c8b",
+            "request_sha256": "341b290c4f30dac4069063eea4e51441b1380af2e3b9d84c065c50dad886db6d",
+            "schema_version": "tivdoc-openai-provider-receipt-v1",
+            "analysis_run_id": "65b8bd09-a44f-4a38-856d-13db1015b581",
+            "requested_model": "synthetic-june-canonical-injected",
+            "source_mime_type": "application/pdf",
+            "extractor_version": "2.0",
+            "source_page_count": 1,
+            "source_size_bytes": 1409,
+            "provider_attempted": true,
+            "provider_request_id": null,
+            "provider_response_id": "synthetic-june-canonical-7fbedcb5-c47c-48e0-8b40-52137927484e",
+            "raw_extraction_sha256": "3c847e6c377c8c379fc4a95bab02073138a879084bed564e9326ad6385f244ed"
+          }
+        ],
+        "providerAttempted": true,
+        "allPassesSucceeded": true,
+        "checkpointResultSha256": "bea42eaf129bc3e01392e6da569318117517acbfea89dcd16e15634e4080f2f4"
+      },
+      "command_sha256": "0576091b8cf297e0dff9a62973d94e09f9a53cd0dabd5d60076028d24e8a7093",
+      "schema_version": "saved-june2026-factual-context-v1",
+      "legal_activation": false,
+      "publication_allowed": false,
+      "admission_assessment": {
+        "gates": [
+          {
+            "field": "applicability.age_18_entire_month",
+            "state": "conflicted",
+            "admitted": false,
+            "assertion": {
+              "value": null,
+              "status": "conflicted",
+              "provenance": [
+                {
+                  "source_type": "declared",
+                  "source_reference": {
+                    "kind": "case_request_answer",
+                    "request_id": "634275d3-8410-4e05-9b34-0587161bae0a",
+                    "answer_revision": 3
+                  }
+                }
+              ]
+            },
+            "observations": [
+              {
+                "state": "conflicted",
+                "declaration": {
+                  "answer": "יש מידע סותר",
+                  "target": {
+                    "month": "2026-06",
+                    "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+                    "subject": {
+                      "kind": "applicability",
+                      "field": "age_18_entire_month"
+                    },
+                    "version_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c",
+                    "source_sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+                    "target_sha256": "f6ced49349a8bc7d78270463687cd38a5bded78b80ed7892094d2352474ef902",
+                    "schema_version": "minimum-wage-june2026-collection-v1",
+                    "legal_policy_sha256": "7c37868d57537a143fd9bcb39071b2c707443bae85d610986f90c50f6bbda948",
+                    "product_document_id": "38b7ab1d-efda-412b-8d95-cb0f2af631c3",
+                    "extraction_result_sha256": "bea42eaf129bc3e01392e6da569318117517acbfea89dcd16e15634e4080f2f4",
+                    "extraction_policy_version": "saved-payslip-v21-p95-v1"
+                  },
+                  "actor_kind": "customer_declaration",
+                  "provenance": [
+                    {
+                      "source_type": "declared",
+                      "source_reference": {
+                        "kind": "case_request_answer",
+                        "request_id": "634275d3-8410-4e05-9b34-0587161bae0a",
+                        "answer_revision": 3
+                      }
+                    }
+                  ],
+                  "request_id": "634275d3-8410-4e05-9b34-0587161bae0a",
+                  "answered_at": "2026-09-10T14:52:19.7315+00:00",
+                  "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+                  "interpretation": {
+                    "kind": "conflicted",
+                    "value": null
+                  },
+                  "schema_version": "minimum-wage-june2026-customer-declaration-v1",
+                  "answer_revision": 3,
+                  "evidence_status": "conflicted",
+                  "declaration_sha256": "849dffa502bd449266a5f3934babc66387ac7b4715951d2d6928e25bca556ed2",
+                  "candidate_evidence_admitted": false,
+                  "legal_classification_status": "unreviewed"
+                }
+              }
+            ],
+            "required_action": "resolve_conflicting_source_evidence",
+            "observed_declaration": {
+              "answer": "יש מידע סותר",
+              "target": {
+                "month": "2026-06",
+                "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+                "subject": {
+                  "kind": "applicability",
+                  "field": "age_18_entire_month"
+                },
+                "version_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c",
+                "source_sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+                "target_sha256": "f6ced49349a8bc7d78270463687cd38a5bded78b80ed7892094d2352474ef902",
+                "schema_version": "minimum-wage-june2026-collection-v1",
+                "legal_policy_sha256": "7c37868d57537a143fd9bcb39071b2c707443bae85d610986f90c50f6bbda948",
+                "product_document_id": "38b7ab1d-efda-412b-8d95-cb0f2af631c3",
+                "extraction_result_sha256": "bea42eaf129bc3e01392e6da569318117517acbfea89dcd16e15634e4080f2f4",
+                "extraction_policy_version": "saved-payslip-v21-p95-v1"
+              },
+              "actor_kind": "customer_declaration",
+              "provenance": [
+                {
+                  "source_type": "declared",
+                  "source_reference": {
+                    "kind": "case_request_answer",
+                    "request_id": "634275d3-8410-4e05-9b34-0587161bae0a",
+                    "answer_revision": 3
+                  }
+                }
+              ],
+              "request_id": "634275d3-8410-4e05-9b34-0587161bae0a",
+              "answered_at": "2026-09-10T14:52:19.7315+00:00",
+              "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+              "interpretation": {
+                "kind": "conflicted",
+                "value": null
+              },
+              "schema_version": "minimum-wage-june2026-customer-declaration-v1",
+              "answer_revision": 3,
+              "evidence_status": "conflicted",
+              "declaration_sha256": "849dffa502bd449266a5f3934babc66387ac7b4715951d2d6928e25bca556ed2",
+              "candidate_evidence_admitted": false,
+              "legal_classification_status": "unreviewed"
+            },
+            "current_target_sha256": "f6ced49349a8bc7d78270463687cd38a5bded78b80ed7892094d2352474ef902"
+          },
+          {
+            "field": "applicability.sector",
+            "state": "declared_unreviewed",
+            "admitted": false,
+            "assertion": {
+              "value": null,
+              "status": "missing",
+              "provenance": [
+                {
+                  "source_type": "declared",
+                  "source_reference": {
+                    "kind": "case_request_answer",
+                    "request_id": "5917f473-b4cc-4caf-bc35-a51843d66493",
+                    "answer_revision": 1
+                  }
+                }
+              ]
+            },
+            "observations": [
+              {
+                "state": "declared",
+                "declaration": {
+                  "answer": "Synthetic office supplies shop; no sector or collective agreement is claimed.",
+                  "target": {
+                    "month": "2026-06",
+                    "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+                    "subject": {
+                      "kind": "applicability",
+                      "field": "sector"
+                    },
+                    "version_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c",
+                    "source_sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+                    "target_sha256": "05927e584c0af74039214ceda209a99b610d1758624826ff6ccb0a09ea198c84",
+                    "schema_version": "minimum-wage-june2026-collection-v1",
+                    "legal_policy_sha256": "7c37868d57537a143fd9bcb39071b2c707443bae85d610986f90c50f6bbda948",
+                    "product_document_id": "38b7ab1d-efda-412b-8d95-cb0f2af631c3",
+                    "extraction_result_sha256": "bea42eaf129bc3e01392e6da569318117517acbfea89dcd16e15634e4080f2f4",
+                    "extraction_policy_version": "saved-payslip-v21-p95-v1"
+                  },
+                  "actor_kind": "customer_declaration",
+                  "provenance": [
+                    {
+                      "source_type": "declared",
+                      "source_reference": {
+                        "kind": "case_request_answer",
+                        "request_id": "5917f473-b4cc-4caf-bc35-a51843d66493",
+                        "answer_revision": 1
+                      }
+                    }
+                  ],
+                  "request_id": "5917f473-b4cc-4caf-bc35-a51843d66493",
+                  "answered_at": "2026-09-10T14:51:31.877356+00:00",
+                  "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+                  "interpretation": {
+                    "kind": "text_declaration",
+                    "value": "Synthetic office supplies shop; no sector or collective agreement is claimed."
+                  },
+                  "schema_version": "minimum-wage-june2026-customer-declaration-v1",
+                  "answer_revision": 1,
+                  "evidence_status": "needs_confirmation",
+                  "declaration_sha256": "8dc0813dd22aa855d43a8ff3dba207f85fa9893b48e49f363adb45cf744f0bb1",
+                  "candidate_evidence_admitted": false,
+                  "legal_classification_status": "unreviewed"
+                }
+              }
+            ],
+            "required_action": "authenticated_assessment_or_approved_admission_policy_required",
+            "observed_declaration": {
+              "answer": "Synthetic office supplies shop; no sector or collective agreement is claimed.",
+              "target": {
+                "month": "2026-06",
+                "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+                "subject": {
+                  "kind": "applicability",
+                  "field": "sector"
+                },
+                "version_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c",
+                "source_sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+                "target_sha256": "05927e584c0af74039214ceda209a99b610d1758624826ff6ccb0a09ea198c84",
+                "schema_version": "minimum-wage-june2026-collection-v1",
+                "legal_policy_sha256": "7c37868d57537a143fd9bcb39071b2c707443bae85d610986f90c50f6bbda948",
+                "product_document_id": "38b7ab1d-efda-412b-8d95-cb0f2af631c3",
+                "extraction_result_sha256": "bea42eaf129bc3e01392e6da569318117517acbfea89dcd16e15634e4080f2f4",
+                "extraction_policy_version": "saved-payslip-v21-p95-v1"
+              },
+              "actor_kind": "customer_declaration",
+              "provenance": [
+                {
+                  "source_type": "declared",
+                  "source_reference": {
+                    "kind": "case_request_answer",
+                    "request_id": "5917f473-b4cc-4caf-bc35-a51843d66493",
+                    "answer_revision": 1
+                  }
+                }
+              ],
+              "request_id": "5917f473-b4cc-4caf-bc35-a51843d66493",
+              "answered_at": "2026-09-10T14:51:31.877356+00:00",
+              "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+              "interpretation": {
+                "kind": "text_declaration",
+                "value": "Synthetic office supplies shop; no sector or collective agreement is claimed."
+              },
+              "schema_version": "minimum-wage-june2026-customer-declaration-v1",
+              "answer_revision": 1,
+              "evidence_status": "needs_confirmation",
+              "declaration_sha256": "8dc0813dd22aa855d43a8ff3dba207f85fa9893b48e49f363adb45cf744f0bb1",
+              "candidate_evidence_admitted": false,
+              "legal_classification_status": "unreviewed"
+            },
+            "current_target_sha256": "05927e584c0af74039214ceda209a99b610d1758624826ff6ccb0a09ea198c84"
+          },
+          {
+            "field": "applicability.hours_rest_law_applies",
+            "state": "declared_unreviewed",
+            "admitted": false,
+            "assertion": {
+              "value": null,
+              "status": "missing",
+              "provenance": [
+                {
+                  "source_type": "declared",
+                  "source_reference": {
+                    "kind": "case_request_answer",
+                    "request_id": "5d110b0c-e8f5-419e-b10f-3acf4de59ab9",
+                    "answer_revision": 1
+                  }
+                }
+              ]
+            },
+            "observations": [
+              {
+                "state": "declared",
+                "declaration": {
+                  "answer": "Synthetic adult hourly clerk with recorded hours, direct supervision and no managerial authority.",
+                  "target": {
+                    "month": "2026-06",
+                    "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+                    "subject": {
+                      "kind": "applicability",
+                      "field": "hours_rest_law_applies"
+                    },
+                    "version_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c",
+                    "source_sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+                    "target_sha256": "028ff4f2d81817ef86f40f72f3d1a7c926f26b6c40d8004f1d3106c0271522a2",
+                    "schema_version": "minimum-wage-june2026-collection-v1",
+                    "legal_policy_sha256": "7c37868d57537a143fd9bcb39071b2c707443bae85d610986f90c50f6bbda948",
+                    "product_document_id": "38b7ab1d-efda-412b-8d95-cb0f2af631c3",
+                    "extraction_result_sha256": "bea42eaf129bc3e01392e6da569318117517acbfea89dcd16e15634e4080f2f4",
+                    "extraction_policy_version": "saved-payslip-v21-p95-v1"
+                  },
+                  "actor_kind": "customer_declaration",
+                  "provenance": [
+                    {
+                      "source_type": "declared",
+                      "source_reference": {
+                        "kind": "case_request_answer",
+                        "request_id": "5d110b0c-e8f5-419e-b10f-3acf4de59ab9",
+                        "answer_revision": 1
+                      }
+                    }
+                  ],
+                  "request_id": "5d110b0c-e8f5-419e-b10f-3acf4de59ab9",
+                  "answered_at": "2026-09-10T14:51:31.877356+00:00",
+                  "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+                  "interpretation": {
+                    "kind": "text_declaration",
+                    "value": "Synthetic adult hourly clerk with recorded hours, direct supervision and no managerial authority."
+                  },
+                  "schema_version": "minimum-wage-june2026-customer-declaration-v1",
+                  "answer_revision": 1,
+                  "evidence_status": "needs_confirmation",
+                  "declaration_sha256": "9dbb0ef862d5ff1a10b183f14c75c8d842e8c90402419e5b426751469e3ca6c9",
+                  "candidate_evidence_admitted": false,
+                  "legal_classification_status": "unreviewed"
+                }
+              }
+            ],
+            "required_action": "authenticated_assessment_or_approved_admission_policy_required",
+            "observed_declaration": {
+              "answer": "Synthetic adult hourly clerk with recorded hours, direct supervision and no managerial authority.",
+              "target": {
+                "month": "2026-06",
+                "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+                "subject": {
+                  "kind": "applicability",
+                  "field": "hours_rest_law_applies"
+                },
+                "version_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c",
+                "source_sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+                "target_sha256": "028ff4f2d81817ef86f40f72f3d1a7c926f26b6c40d8004f1d3106c0271522a2",
+                "schema_version": "minimum-wage-june2026-collection-v1",
+                "legal_policy_sha256": "7c37868d57537a143fd9bcb39071b2c707443bae85d610986f90c50f6bbda948",
+                "product_document_id": "38b7ab1d-efda-412b-8d95-cb0f2af631c3",
+                "extraction_result_sha256": "bea42eaf129bc3e01392e6da569318117517acbfea89dcd16e15634e4080f2f4",
+                "extraction_policy_version": "saved-payslip-v21-p95-v1"
+              },
+              "actor_kind": "customer_declaration",
+              "provenance": [
+                {
+                  "source_type": "declared",
+                  "source_reference": {
+                    "kind": "case_request_answer",
+                    "request_id": "5d110b0c-e8f5-419e-b10f-3acf4de59ab9",
+                    "answer_revision": 1
+                  }
+                }
+              ],
+              "request_id": "5d110b0c-e8f5-419e-b10f-3acf4de59ab9",
+              "answered_at": "2026-09-10T14:51:31.877356+00:00",
+              "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+              "interpretation": {
+                "kind": "text_declaration",
+                "value": "Synthetic adult hourly clerk with recorded hours, direct supervision and no managerial authority."
+              },
+              "schema_version": "minimum-wage-june2026-customer-declaration-v1",
+              "answer_revision": 1,
+              "evidence_status": "needs_confirmation",
+              "declaration_sha256": "9dbb0ef862d5ff1a10b183f14c75c8d842e8c90402419e5b426751469e3ca6c9",
+              "candidate_evidence_admitted": false,
+              "legal_classification_status": "unreviewed"
+            },
+            "current_target_sha256": "028ff4f2d81817ef86f40f72f3d1a7c926f26b6c40d8004f1d3106c0271522a2"
+          },
+          {
+            "field": "applicability.no_better_minimum_wage_arrangement",
+            "state": "declared_unreviewed",
+            "admitted": false,
+            "assertion": {
+              "value": null,
+              "status": "missing",
+              "provenance": [
+                {
+                  "source_type": "declared",
+                  "source_reference": {
+                    "kind": "case_request_answer",
+                    "request_id": "a7ba4745-857c-4af4-8e81-1c1be1bdccfb",
+                    "answer_revision": 1
+                  }
+                }
+              ]
+            },
+            "observations": [
+              {
+                "state": "declared",
+                "declaration": {
+                  "answer": "לא, לפי המידע שברשותי",
+                  "target": {
+                    "month": "2026-06",
+                    "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+                    "subject": {
+                      "kind": "applicability",
+                      "field": "no_better_minimum_wage_arrangement"
+                    },
+                    "version_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c",
+                    "source_sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+                    "target_sha256": "b2450fe345a5bcc272a1eb83742e4fac407f09338b9621f7be297e5f7a362c3d",
+                    "schema_version": "minimum-wage-june2026-collection-v1",
+                    "legal_policy_sha256": "7c37868d57537a143fd9bcb39071b2c707443bae85d610986f90c50f6bbda948",
+                    "product_document_id": "38b7ab1d-efda-412b-8d95-cb0f2af631c3",
+                    "extraction_result_sha256": "bea42eaf129bc3e01392e6da569318117517acbfea89dcd16e15634e4080f2f4",
+                    "extraction_policy_version": "saved-payslip-v21-p95-v1"
+                  },
+                  "actor_kind": "customer_declaration",
+                  "provenance": [
+                    {
+                      "source_type": "declared",
+                      "source_reference": {
+                        "kind": "case_request_answer",
+                        "request_id": "a7ba4745-857c-4af4-8e81-1c1be1bdccfb",
+                        "answer_revision": 1
+                      }
+                    }
+                  ],
+                  "request_id": "a7ba4745-857c-4af4-8e81-1c1be1bdccfb",
+                  "answered_at": "2026-09-10T14:51:31.877356+00:00",
+                  "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+                  "interpretation": {
+                    "kind": "boolean_declaration",
+                    "value": true
+                  },
+                  "schema_version": "minimum-wage-june2026-customer-declaration-v1",
+                  "answer_revision": 1,
+                  "evidence_status": "needs_confirmation",
+                  "declaration_sha256": "24cfc8b778a6377142ef9402e03953849c708483c2f463eb7e2294468314b6b0",
+                  "candidate_evidence_admitted": false,
+                  "legal_classification_status": "unreviewed"
+                }
+              }
+            ],
+            "required_action": "authenticated_assessment_or_approved_admission_policy_required",
+            "observed_declaration": {
+              "answer": "לא, לפי המידע שברשותי",
+              "target": {
+                "month": "2026-06",
+                "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+                "subject": {
+                  "kind": "applicability",
+                  "field": "no_better_minimum_wage_arrangement"
+                },
+                "version_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c",
+                "source_sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+                "target_sha256": "b2450fe345a5bcc272a1eb83742e4fac407f09338b9621f7be297e5f7a362c3d",
+                "schema_version": "minimum-wage-june2026-collection-v1",
+                "legal_policy_sha256": "7c37868d57537a143fd9bcb39071b2c707443bae85d610986f90c50f6bbda948",
+                "product_document_id": "38b7ab1d-efda-412b-8d95-cb0f2af631c3",
+                "extraction_result_sha256": "bea42eaf129bc3e01392e6da569318117517acbfea89dcd16e15634e4080f2f4",
+                "extraction_policy_version": "saved-payslip-v21-p95-v1"
+              },
+              "actor_kind": "customer_declaration",
+              "provenance": [
+                {
+                  "source_type": "declared",
+                  "source_reference": {
+                    "kind": "case_request_answer",
+                    "request_id": "a7ba4745-857c-4af4-8e81-1c1be1bdccfb",
+                    "answer_revision": 1
+                  }
+                }
+              ],
+              "request_id": "a7ba4745-857c-4af4-8e81-1c1be1bdccfb",
+              "answered_at": "2026-09-10T14:51:31.877356+00:00",
+              "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+              "interpretation": {
+                "kind": "boolean_declaration",
+                "value": true
+              },
+              "schema_version": "minimum-wage-june2026-customer-declaration-v1",
+              "answer_revision": 1,
+              "evidence_status": "needs_confirmation",
+              "declaration_sha256": "24cfc8b778a6377142ef9402e03953849c708483c2f463eb7e2294468314b6b0",
+              "candidate_evidence_admitted": false,
+              "legal_classification_status": "unreviewed"
+            },
+            "current_target_sha256": "b2450fe345a5bcc272a1eb83742e4fac407f09338b9621f7be297e5f7a362c3d"
+          },
+          {
+            "field": "applicability.no_adapted_minimum_wage",
+            "state": "declared_unreviewed",
+            "admitted": false,
+            "assertion": {
+              "value": null,
+              "status": "missing",
+              "provenance": [
+                {
+                  "source_type": "declared",
+                  "source_reference": {
+                    "kind": "case_request_answer",
+                    "request_id": "49f60121-a241-49ba-83c0-1f42e5e8f7cd",
+                    "answer_revision": 1
+                  }
+                }
+              ]
+            },
+            "observations": [
+              {
+                "state": "declared",
+                "declaration": {
+                  "answer": "לא, לפי המידע שברשותי",
+                  "target": {
+                    "month": "2026-06",
+                    "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+                    "subject": {
+                      "kind": "applicability",
+                      "field": "no_adapted_minimum_wage"
+                    },
+                    "version_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c",
+                    "source_sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+                    "target_sha256": "ac233da81e6933f762772cd097f90dbd288cdb50392e71820edeb25a30098217",
+                    "schema_version": "minimum-wage-june2026-collection-v1",
+                    "legal_policy_sha256": "7c37868d57537a143fd9bcb39071b2c707443bae85d610986f90c50f6bbda948",
+                    "product_document_id": "38b7ab1d-efda-412b-8d95-cb0f2af631c3",
+                    "extraction_result_sha256": "bea42eaf129bc3e01392e6da569318117517acbfea89dcd16e15634e4080f2f4",
+                    "extraction_policy_version": "saved-payslip-v21-p95-v1"
+                  },
+                  "actor_kind": "customer_declaration",
+                  "provenance": [
+                    {
+                      "source_type": "declared",
+                      "source_reference": {
+                        "kind": "case_request_answer",
+                        "request_id": "49f60121-a241-49ba-83c0-1f42e5e8f7cd",
+                        "answer_revision": 1
+                      }
+                    }
+                  ],
+                  "request_id": "49f60121-a241-49ba-83c0-1f42e5e8f7cd",
+                  "answered_at": "2026-09-10T14:51:31.877356+00:00",
+                  "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+                  "interpretation": {
+                    "kind": "boolean_declaration",
+                    "value": true
+                  },
+                  "schema_version": "minimum-wage-june2026-customer-declaration-v1",
+                  "answer_revision": 1,
+                  "evidence_status": "needs_confirmation",
+                  "declaration_sha256": "3cd3673d52a694553add9dbe92cb586d0192a3f13a08f1ba5716b7c0374813c9",
+                  "candidate_evidence_admitted": false,
+                  "legal_classification_status": "unreviewed"
+                }
+              }
+            ],
+            "required_action": "authenticated_assessment_or_approved_admission_policy_required",
+            "observed_declaration": {
+              "answer": "לא, לפי המידע שברשותי",
+              "target": {
+                "month": "2026-06",
+                "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+                "subject": {
+                  "kind": "applicability",
+                  "field": "no_adapted_minimum_wage"
+                },
+                "version_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c",
+                "source_sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+                "target_sha256": "ac233da81e6933f762772cd097f90dbd288cdb50392e71820edeb25a30098217",
+                "schema_version": "minimum-wage-june2026-collection-v1",
+                "legal_policy_sha256": "7c37868d57537a143fd9bcb39071b2c707443bae85d610986f90c50f6bbda948",
+                "product_document_id": "38b7ab1d-efda-412b-8d95-cb0f2af631c3",
+                "extraction_result_sha256": "bea42eaf129bc3e01392e6da569318117517acbfea89dcd16e15634e4080f2f4",
+                "extraction_policy_version": "saved-payslip-v21-p95-v1"
+              },
+              "actor_kind": "customer_declaration",
+              "provenance": [
+                {
+                  "source_type": "declared",
+                  "source_reference": {
+                    "kind": "case_request_answer",
+                    "request_id": "49f60121-a241-49ba-83c0-1f42e5e8f7cd",
+                    "answer_revision": 1
+                  }
+                }
+              ],
+              "request_id": "49f60121-a241-49ba-83c0-1f42e5e8f7cd",
+              "answered_at": "2026-09-10T14:51:31.877356+00:00",
+              "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+              "interpretation": {
+                "kind": "boolean_declaration",
+                "value": true
+              },
+              "schema_version": "minimum-wage-june2026-customer-declaration-v1",
+              "answer_revision": 1,
+              "evidence_status": "needs_confirmation",
+              "declaration_sha256": "3cd3673d52a694553add9dbe92cb586d0192a3f13a08f1ba5716b7c0374813c9",
+              "candidate_evidence_admitted": false,
+              "legal_classification_status": "unreviewed"
+            },
+            "current_target_sha256": "ac233da81e6933f762772cd097f90dbd288cdb50392e71820edeb25a30098217"
+          },
+          {
+            "field": "applicability.regular_hours_exclude_absence_overtime_rest",
+            "state": "declared_unreviewed",
+            "admitted": false,
+            "assertion": {
+              "value": null,
+              "status": "missing",
+              "provenance": [
+                {
+                  "source_type": "declared",
+                  "source_reference": {
+                    "kind": "case_request_answer",
+                    "request_id": "7214cfc0-f4e9-4eb4-95be-c229c1d7f402",
+                    "answer_revision": 1
+                  }
+                }
+              ]
+            },
+            "observations": [
+              {
+                "state": "declared",
+                "declaration": {
+                  "answer": "כן, לפי המידע שברשותי",
+                  "target": {
+                    "month": "2026-06",
+                    "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+                    "subject": {
+                      "kind": "applicability",
+                      "field": "regular_hours_exclude_absence_overtime_rest"
+                    },
+                    "version_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c",
+                    "source_sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+                    "target_sha256": "8558a6aa95dc8fd95ee3f0a2692ae17f33ca46663676c8d9244ab1f7aab5ffb1",
+                    "schema_version": "minimum-wage-june2026-collection-v1",
+                    "legal_policy_sha256": "7c37868d57537a143fd9bcb39071b2c707443bae85d610986f90c50f6bbda948",
+                    "product_document_id": "38b7ab1d-efda-412b-8d95-cb0f2af631c3",
+                    "extraction_result_sha256": "bea42eaf129bc3e01392e6da569318117517acbfea89dcd16e15634e4080f2f4",
+                    "extraction_policy_version": "saved-payslip-v21-p95-v1"
+                  },
+                  "actor_kind": "customer_declaration",
+                  "provenance": [
+                    {
+                      "source_type": "declared",
+                      "source_reference": {
+                        "kind": "case_request_answer",
+                        "request_id": "7214cfc0-f4e9-4eb4-95be-c229c1d7f402",
+                        "answer_revision": 1
+                      }
+                    }
+                  ],
+                  "request_id": "7214cfc0-f4e9-4eb4-95be-c229c1d7f402",
+                  "answered_at": "2026-09-10T14:51:31.877356+00:00",
+                  "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+                  "interpretation": {
+                    "kind": "boolean_declaration",
+                    "value": true
+                  },
+                  "schema_version": "minimum-wage-june2026-customer-declaration-v1",
+                  "answer_revision": 1,
+                  "evidence_status": "needs_confirmation",
+                  "declaration_sha256": "a98ddc24791f2733abc47874b9caf8bed30b6e0aa49ac33dfac0c9d49e0d032d",
+                  "candidate_evidence_admitted": false,
+                  "legal_classification_status": "unreviewed"
+                }
+              }
+            ],
+            "required_action": "authenticated_assessment_or_approved_admission_policy_required",
+            "observed_declaration": {
+              "answer": "כן, לפי המידע שברשותי",
+              "target": {
+                "month": "2026-06",
+                "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+                "subject": {
+                  "kind": "applicability",
+                  "field": "regular_hours_exclude_absence_overtime_rest"
+                },
+                "version_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c",
+                "source_sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+                "target_sha256": "8558a6aa95dc8fd95ee3f0a2692ae17f33ca46663676c8d9244ab1f7aab5ffb1",
+                "schema_version": "minimum-wage-june2026-collection-v1",
+                "legal_policy_sha256": "7c37868d57537a143fd9bcb39071b2c707443bae85d610986f90c50f6bbda948",
+                "product_document_id": "38b7ab1d-efda-412b-8d95-cb0f2af631c3",
+                "extraction_result_sha256": "bea42eaf129bc3e01392e6da569318117517acbfea89dcd16e15634e4080f2f4",
+                "extraction_policy_version": "saved-payslip-v21-p95-v1"
+              },
+              "actor_kind": "customer_declaration",
+              "provenance": [
+                {
+                  "source_type": "declared",
+                  "source_reference": {
+                    "kind": "case_request_answer",
+                    "request_id": "7214cfc0-f4e9-4eb4-95be-c229c1d7f402",
+                    "answer_revision": 1
+                  }
+                }
+              ],
+              "request_id": "7214cfc0-f4e9-4eb4-95be-c229c1d7f402",
+              "answered_at": "2026-09-10T14:51:31.877356+00:00",
+              "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+              "interpretation": {
+                "kind": "boolean_declaration",
+                "value": true
+              },
+              "schema_version": "minimum-wage-june2026-customer-declaration-v1",
+              "answer_revision": 1,
+              "evidence_status": "needs_confirmation",
+              "declaration_sha256": "a98ddc24791f2733abc47874b9caf8bed30b6e0aa49ac33dfac0c9d49e0d032d",
+              "candidate_evidence_admitted": false,
+              "legal_classification_status": "unreviewed"
+            },
+            "current_target_sha256": "8558a6aa95dc8fd95ee3f0a2692ae17f33ca46663676c8d9244ab1f7aab5ffb1"
+          },
+          {
+            "field": "wage_components_complete",
+            "state": "declared_unreviewed",
+            "admitted": false,
+            "assertion": {
+              "value": null,
+              "status": "missing",
+              "provenance": [
+                {
+                  "source_type": "declared",
+                  "source_reference": {
+                    "kind": "case_request_answer",
+                    "request_id": "1c06a54b-7d48-4318-b02e-d64eaa72256a",
+                    "answer_revision": 1
+                  }
+                }
+              ]
+            },
+            "observations": [
+              {
+                "state": "declared",
+                "declaration": {
+                  "answer": "כן, לפי המידע שברשותי",
+                  "target": {
+                    "month": "2026-06",
+                    "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+                    "subject": {
+                      "kind": "earnings_completeness"
+                    },
+                    "version_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c",
+                    "source_sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+                    "target_sha256": "e51cac13f8e29ef6036f1a413e55c12d67caee6972d3953a06ec586bd351d806",
+                    "schema_version": "minimum-wage-june2026-collection-v1",
+                    "legal_policy_sha256": "7c37868d57537a143fd9bcb39071b2c707443bae85d610986f90c50f6bbda948",
+                    "product_document_id": "38b7ab1d-efda-412b-8d95-cb0f2af631c3",
+                    "extraction_result_sha256": "bea42eaf129bc3e01392e6da569318117517acbfea89dcd16e15634e4080f2f4",
+                    "extraction_policy_version": "saved-payslip-v21-p95-v1"
+                  },
+                  "actor_kind": "customer_declaration",
+                  "provenance": [
+                    {
+                      "source_type": "declared",
+                      "source_reference": {
+                        "kind": "case_request_answer",
+                        "request_id": "1c06a54b-7d48-4318-b02e-d64eaa72256a",
+                        "answer_revision": 1
+                      }
+                    }
+                  ],
+                  "request_id": "1c06a54b-7d48-4318-b02e-d64eaa72256a",
+                  "answered_at": "2026-09-10T14:51:31.877356+00:00",
+                  "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+                  "interpretation": {
+                    "kind": "boolean_declaration",
+                    "value": true
+                  },
+                  "schema_version": "minimum-wage-june2026-customer-declaration-v1",
+                  "answer_revision": 1,
+                  "evidence_status": "needs_confirmation",
+                  "declaration_sha256": "18ca1a7b045d8762ee49755a25c44ee6a829b78d4e5e77b874ce0db63f905805",
+                  "candidate_evidence_admitted": false,
+                  "legal_classification_status": "unreviewed"
+                }
+              }
+            ],
+            "required_action": "authenticated_assessment_or_approved_admission_policy_required",
+            "observed_declaration": {
+              "answer": "כן, לפי המידע שברשותי",
+              "target": {
+                "month": "2026-06",
+                "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+                "subject": {
+                  "kind": "earnings_completeness"
+                },
+                "version_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c",
+                "source_sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+                "target_sha256": "e51cac13f8e29ef6036f1a413e55c12d67caee6972d3953a06ec586bd351d806",
+                "schema_version": "minimum-wage-june2026-collection-v1",
+                "legal_policy_sha256": "7c37868d57537a143fd9bcb39071b2c707443bae85d610986f90c50f6bbda948",
+                "product_document_id": "38b7ab1d-efda-412b-8d95-cb0f2af631c3",
+                "extraction_result_sha256": "bea42eaf129bc3e01392e6da569318117517acbfea89dcd16e15634e4080f2f4",
+                "extraction_policy_version": "saved-payslip-v21-p95-v1"
+              },
+              "actor_kind": "customer_declaration",
+              "provenance": [
+                {
+                  "source_type": "declared",
+                  "source_reference": {
+                    "kind": "case_request_answer",
+                    "request_id": "1c06a54b-7d48-4318-b02e-d64eaa72256a",
+                    "answer_revision": 1
+                  }
+                }
+              ],
+              "request_id": "1c06a54b-7d48-4318-b02e-d64eaa72256a",
+              "answered_at": "2026-09-10T14:51:31.877356+00:00",
+              "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+              "interpretation": {
+                "kind": "boolean_declaration",
+                "value": true
+              },
+              "schema_version": "minimum-wage-june2026-customer-declaration-v1",
+              "answer_revision": 1,
+              "evidence_status": "needs_confirmation",
+              "declaration_sha256": "18ca1a7b045d8762ee49755a25c44ee6a829b78d4e5e77b874ce0db63f905805",
+              "candidate_evidence_admitted": false,
+              "legal_classification_status": "unreviewed"
+            },
+            "current_target_sha256": "e51cac13f8e29ef6036f1a413e55c12d67caee6972d3953a06ec586bd351d806"
+          },
+          {
+            "field": "components.legal_classification",
+            "state": "declared_unreviewed",
+            "admitted": false,
+            "assertion": {
+              "value": null,
+              "status": "missing",
+              "provenance": [
+                {
+                  "source_type": "declared",
+                  "source_reference": {
+                    "kind": "case_request_answer",
+                    "request_id": "22fb8b97-7e70-4ff2-a72f-d8c6165b2759",
+                    "answer_revision": 1
+                  }
+                }
+              ]
+            },
+            "observations": [
+              {
+                "state": "declared",
+                "declaration": {
+                  "answer": "שכר יסוד או שכר משולב",
+                  "target": {
+                    "month": "2026-06",
+                    "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+                    "subject": {
+                      "kind": "component",
+                      "component": {
+                        "amount": {
+                          "currency": "ILS",
+                          "minor_units": 330000
+                        },
+                        "source": {
+                          "page": 1,
+                          "document_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c"
+                        },
+                        "component_id": "c5cf3ca6-7d5d-4d97-80f7-9f37a38344fe",
+                        "source_label": "Regular base salary"
+                      }
+                    },
+                    "version_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c",
+                    "source_sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+                    "target_sha256": "09ad6d7229d8fb98ce891efa53fd5c3bb631607a43457872277007f2d00bfe79",
+                    "schema_version": "minimum-wage-june2026-collection-v1",
+                    "legal_policy_sha256": "7c37868d57537a143fd9bcb39071b2c707443bae85d610986f90c50f6bbda948",
+                    "product_document_id": "38b7ab1d-efda-412b-8d95-cb0f2af631c3",
+                    "extraction_result_sha256": "bea42eaf129bc3e01392e6da569318117517acbfea89dcd16e15634e4080f2f4",
+                    "extraction_policy_version": "saved-payslip-v21-p95-v1"
+                  },
+                  "actor_kind": "customer_declaration",
+                  "provenance": [
+                    {
+                      "source_type": "declared",
+                      "source_reference": {
+                        "kind": "case_request_answer",
+                        "request_id": "22fb8b97-7e70-4ff2-a72f-d8c6165b2759",
+                        "answer_revision": 1
+                      }
+                    }
+                  ],
+                  "request_id": "22fb8b97-7e70-4ff2-a72f-d8c6165b2759",
+                  "answered_at": "2026-09-10T14:51:31.877356+00:00",
+                  "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+                  "interpretation": {
+                    "kind": "component_substance_declaration",
+                    "value": "base_salary"
+                  },
+                  "schema_version": "minimum-wage-june2026-customer-declaration-v1",
+                  "answer_revision": 1,
+                  "evidence_status": "needs_confirmation",
+                  "declaration_sha256": "58c072a7ff6e748b880f3896d80f95351556502529690fce7aff6c01c459ec84",
+                  "candidate_evidence_admitted": false,
+                  "legal_classification_status": "unreviewed"
+                }
+              }
+            ],
+            "required_action": "authenticated_assessment_or_approved_admission_policy_required",
+            "observed_declaration": {
+              "answer": "שכר יסוד או שכר משולב",
+              "target": {
+                "month": "2026-06",
+                "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+                "subject": {
+                  "kind": "component",
+                  "component": {
+                    "amount": {
+                      "currency": "ILS",
+                      "minor_units": 330000
+                    },
+                    "source": {
+                      "page": 1,
+                      "document_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c"
+                    },
+                    "component_id": "c5cf3ca6-7d5d-4d97-80f7-9f37a38344fe",
+                    "source_label": "Regular base salary"
+                  }
+                },
+                "version_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c",
+                "source_sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+                "target_sha256": "09ad6d7229d8fb98ce891efa53fd5c3bb631607a43457872277007f2d00bfe79",
+                "schema_version": "minimum-wage-june2026-collection-v1",
+                "legal_policy_sha256": "7c37868d57537a143fd9bcb39071b2c707443bae85d610986f90c50f6bbda948",
+                "product_document_id": "38b7ab1d-efda-412b-8d95-cb0f2af631c3",
+                "extraction_result_sha256": "bea42eaf129bc3e01392e6da569318117517acbfea89dcd16e15634e4080f2f4",
+                "extraction_policy_version": "saved-payslip-v21-p95-v1"
+              },
+              "actor_kind": "customer_declaration",
+              "provenance": [
+                {
+                  "source_type": "declared",
+                  "source_reference": {
+                    "kind": "case_request_answer",
+                    "request_id": "22fb8b97-7e70-4ff2-a72f-d8c6165b2759",
+                    "answer_revision": 1
+                  }
+                }
+              ],
+              "request_id": "22fb8b97-7e70-4ff2-a72f-d8c6165b2759",
+              "answered_at": "2026-09-10T14:51:31.877356+00:00",
+              "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+              "interpretation": {
+                "kind": "component_substance_declaration",
+                "value": "base_salary"
+              },
+              "schema_version": "minimum-wage-june2026-customer-declaration-v1",
+              "answer_revision": 1,
+              "evidence_status": "needs_confirmation",
+              "declaration_sha256": "58c072a7ff6e748b880f3896d80f95351556502529690fce7aff6c01c459ec84",
+              "candidate_evidence_admitted": false,
+              "legal_classification_status": "unreviewed"
+            },
+            "current_target_sha256": "09ad6d7229d8fb98ce891efa53fd5c3bb631607a43457872277007f2d00bfe79"
+          }
+        ],
+        "current": {
+          "month": "2026-06",
+          "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+          "order_id": "9c7e8f62-8ba2-4bc7-a01f-df50e9ded69d",
+          "input_sha256": "4fbbab7a50f692af658efdea64695cf11f82e48c956c9fd5a9bbfae03f6e5203",
+          "input_revision": 34,
+          "analysis_run_id": "c3b5c4bc-3200-46d7-80f7-84aacc9bd346"
+        },
+        "document": {
+          "sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+          "page_count": 1,
+          "version_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c",
+          "product_document_id": "38b7ab1d-efda-412b-8d95-cb0f2af631c3"
+        },
+        "evidence": {
+          "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+          "documents": [
+            {
+              "sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+              "page_count": 1,
+              "version_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c",
+              "product_document_id": "38b7ab1d-efda-412b-8d95-cb0f2af631c3"
+            }
+          ],
+          "components": [
+            {
+              "page": 1,
+              "locator": "Regular base salary",
+              "currency": "ILS",
+              "version_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c",
+              "amount_minor": 330000,
+              "component_id": "c5cf3ca6-7d5d-4d97-80f7-9f37a38344fe",
+              "classification": "unclassified",
+              "classification_status": "missing",
+              "classification_provenance": [
+                {
+                  "source_type": "declared",
+                  "source_reference": {
+                    "kind": "case_request_answer",
+                    "request_id": "22fb8b97-7e70-4ff2-a72f-d8c6165b2759",
+                    "answer_revision": 1
+                  }
+                }
+              ]
+            }
+          ],
+          "applicability": {
+            "sector": {
+              "value": null,
+              "status": "missing",
+              "provenance": [
+                {
+                  "source_type": "declared",
+                  "source_reference": {
+                    "kind": "case_request_answer",
+                    "request_id": "5917f473-b4cc-4caf-bc35-a51843d66493",
+                    "answer_revision": 1
+                  }
+                }
+              ]
+            },
+            "age_18_entire_month": {
+              "value": null,
+              "status": "conflicted",
+              "provenance": [
+                {
+                  "source_type": "declared",
+                  "source_reference": {
+                    "kind": "case_request_answer",
+                    "request_id": "634275d3-8410-4e05-9b34-0587161bae0a",
+                    "answer_revision": 3
+                  }
+                }
+              ]
+            },
+            "hours_rest_law_applies": {
+              "value": null,
+              "status": "missing",
+              "provenance": [
+                {
+                  "source_type": "declared",
+                  "source_reference": {
+                    "kind": "case_request_answer",
+                    "request_id": "5d110b0c-e8f5-419e-b10f-3acf4de59ab9",
+                    "answer_revision": 1
+                  }
+                }
+              ]
+            },
+            "no_adapted_minimum_wage": {
+              "value": null,
+              "status": "missing",
+              "provenance": [
+                {
+                  "source_type": "declared",
+                  "source_reference": {
+                    "kind": "case_request_answer",
+                    "request_id": "49f60121-a241-49ba-83c0-1f42e5e8f7cd",
+                    "answer_revision": 1
+                  }
+                }
+              ]
+            },
+            "no_better_minimum_wage_arrangement": {
+              "value": null,
+              "status": "missing",
+              "provenance": [
+                {
+                  "source_type": "declared",
+                  "source_reference": {
+                    "kind": "case_request_answer",
+                    "request_id": "a7ba4745-857c-4af4-8e81-1c1be1bdccfb",
+                    "answer_revision": 1
+                  }
+                }
+              ]
+            },
+            "regular_hours_exclude_absence_overtime_rest": {
+              "value": null,
+              "status": "missing",
+              "provenance": [
+                {
+                  "source_type": "declared",
+                  "source_reference": {
+                    "kind": "case_request_answer",
+                    "request_id": "7214cfc0-f4e9-4eb4-95be-c229c1d7f402",
+                    "answer_revision": 1
+                  }
+                }
+              ]
+            }
+          },
+          "schema_version": "tivdoc-june2026-minimum-wage-evidence-v1",
+          "analysis_run_id": "c3b5c4bc-3200-46d7-80f7-84aacc9bd346",
+          "facts_snapshot_sha256": "9893bb95eaeb839ae19327210b001be79260c2be91e2431519100edefc5f277d",
+          "wage_components_complete": {
+            "value": null,
+            "status": "missing",
+            "provenance": [
+              {
+                "source_type": "declared",
+                "source_reference": {
+                  "kind": "case_request_answer",
+                  "request_id": "1c06a54b-7d48-4318-b02e-d64eaa72256a",
+                  "answer_revision": 1
+                }
+              }
+            ]
+          }
+        },
+        "authority": "unadmitted_assessment_packet_only",
+        "preflight": {
+          "state": "missing_input",
+          "requests": [
+            {
+              "field": "applicability.age_18_entire_month",
+              "prompt": "האם מלאו לך 18 לפני תחילת יוני 2026?",
+              "reason": "conflicting_assessment"
+            },
+            {
+              "field": "applicability.sector",
+              "prompt": "מה תחום הפעילות של המעסיק והאם חלים תנאי שכר ענפיים?",
+              "reason": "applicability_evidence_required"
+            },
+            {
+              "field": "applicability.hours_rest_law_applies",
+              "prompt": "נדרש בירור תחולת חוק שעות עבודה ומנוחה, לרבות כל חריגי סעיף 30(א).",
+              "reason": "applicability_evidence_required"
+            },
+            {
+              "field": "applicability.no_better_minimum_wage_arrangement",
+              "prompt": "האם קיים חוזה, הסכם או הסדר שמקנה שכר מינימום גבוה יותר?",
+              "reason": "applicability_evidence_required"
+            },
+            {
+              "field": "applicability.no_adapted_minimum_wage",
+              "prompt": "האם נקבע עבורך שכר מינימום מותאם לפי החלטה מוסמכת?",
+              "reason": "applicability_evidence_required"
+            },
+            {
+              "field": "applicability.regular_hours_exclude_absence_overtime_rest",
+              "prompt": "האם השעות הרגילות כוללות רק עבודה רגילה ומופרדות מהיעדרות, שעות נוספות ומנוחה שבועית?",
+              "reason": "applicability_evidence_required"
+            },
+            {
+              "field": "wage_components_complete",
+              "prompt": "נדרש פירוט מלא של רכיבי התשלום בתלוש וסיווגם, ללא ניכויים או קיזוזים בין תקופות.",
+              "reason": "complete_earnings_inventory_required"
+            },
+            {
+              "field": "components.c5cf3ca6-7d5d-4d97-80f7-9f37a38344fe.classification",
+              "prompt": "נדרש לברר את מהות רכיב השכר c5cf3ca6-7d5d-4d97-80f7-9f37a38344fe; שם הרכיב לבדו אינו קובע אם הוא נכלל.",
+              "reason": "component_classification_required"
+            }
+          ],
+          "pricingAllowed": false,
+          "activationAllowed": false
+        },
+        "rule_input": {
+          "snapshot_id": "rule-input:c3b5c4bc-3200-46d7-80f7-84aacc9bd346:minimum_wage",
+          "snapshot_sha256": "fb688dfcdc02e36a0e4960e4d8fc242976fdf4b93e159a5846f0d02d29b99002",
+          "snapshot_version": "canonical-facts:1.0.0:minimum_wage"
+        },
+        "packet_sha256": "f24572faab80c71242905dc740b4684732dfc63616d1feca5be0028856c742f7",
+        "policy_sha256": "7c37868d57537a143fd9bcb39071b2c707443bae85d610986f90c50f6bbda948",
+        "active_catalog": {
+          "state": "not_admitted",
+          "authority_supplied": false
+        },
+        "factual_issues": [],
+        "schema_version": "tivdoc-june2026-admission-assessment-v1",
+        "evidence_sha256": "6b28dc2351156c93ac577be9ee7497d8d1c06ba56064f32768a589d6d3df027c",
+        "component_mapping": {
+          "state": "documented_single_component_unclassified",
+          "observations": [
+            {
+              "state": "declared",
+              "declaration": {
+                "answer": "שכר יסוד או שכר משולב",
+                "target": {
+                  "month": "2026-06",
+                  "case_id": "670d0d16-a9ac-403b-bf1f-dcffe479e276",
+                  "subject": {
+                    "kind": "component",
+                    "component": {
+                      "amount": {
+                        "currency": "ILS",
+                        "minor_units": 330000
+                      },
+                      "source": {
+                        "page": 1,
+                        "document_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c"
+                      },
+                      "component_id": "c5cf3ca6-7d5d-4d97-80f7-9f37a38344fe",
+                      "source_label": "Regular base salary"
+                    }
+                  },
+                  "version_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c",
+                  "source_sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+                  "target_sha256": "09ad6d7229d8fb98ce891efa53fd5c3bb631607a43457872277007f2d00bfe79",
+                  "schema_version": "minimum-wage-june2026-collection-v1",
+                  "legal_policy_sha256": "7c37868d57537a143fd9bcb39071b2c707443bae85d610986f90c50f6bbda948",
+                  "product_document_id": "38b7ab1d-efda-412b-8d95-cb0f2af631c3",
+                  "extraction_result_sha256": "bea42eaf129bc3e01392e6da569318117517acbfea89dcd16e15634e4080f2f4",
+                  "extraction_policy_version": "saved-payslip-v21-p95-v1"
+                },
+                "actor_kind": "customer_declaration",
+                "provenance": [
+                  {
+                    "source_type": "declared",
+                    "source_reference": {
+                      "kind": "case_request_answer",
+                      "request_id": "22fb8b97-7e70-4ff2-a72f-d8c6165b2759",
+                      "answer_revision": 1
+                    }
+                  }
+                ],
+                "request_id": "22fb8b97-7e70-4ff2-a72f-d8c6165b2759",
+                "answered_at": "2026-09-10T14:51:31.877356+00:00",
+                "identity_id": "dcc1e30f-d516-47dd-a9d8-5365bfcd8b9a",
+                "interpretation": {
+                  "kind": "component_substance_declaration",
+                  "value": "base_salary"
+                },
+                "schema_version": "minimum-wage-june2026-customer-declaration-v1",
+                "answer_revision": 1,
+                "evidence_status": "needs_confirmation",
+                "declaration_sha256": "58c072a7ff6e748b880f3896d80f95351556502529690fce7aff6c01c459ec84",
+                "candidate_evidence_admitted": false,
+                "legal_classification_status": "unreviewed"
+              }
+            }
+          ]
+        },
+        "execution_allowed": false,
+        "publication_allowed": false,
+        "facts_snapshot_sha256": "9893bb95eaeb839ae19327210b001be79260c2be91e2431519100edefc5f277d",
+        "factual_context_sha256": "103f5910ee52e0c717d27c6a9c8ff1f845b353b4d524312cbdeabf09f03c80a9",
+        "extraction_result_sha256": "bea42eaf129bc3e01392e6da569318117517acbfea89dcd16e15634e4080f2f4",
+        "candidate_calculation_performed": false
+      },
+      "persisted_stage_sha256s": {
+        "rule_inputs": "3ca0345e091a4e474afd91890ac11c91d2dab9b2dcce3d0c03dc58311a1c4a89",
+        "input_snapshot": "e84e650d447bbd27149270daa0389f1d8f06ab23db4d558970cb811c8dd9611b",
+        "canonical_facts": "fbc66f119cf16da419a4740c934f01f1f5d48091aae3f4686a1d89c7b9abe2fd"
+      }
+    },
+    "findings_created": false,
+    "source_set_sha256": "b3bab3079230a7e9253e5e386b1d9313d6abcb4ae414c98f65f1f8ec9ba0d3f3",
+    "activation_allowed": false,
+    "source_version_ids": [
+      "IL_MIN_WAGE_LAW@20260909.4674f07928a2",
+      "IL_WORKWEEK_ORDER_2018@20260909.d99d1f420b84",
+      "IL_MIN_WAGE_NOTICE_2026@20260909.65af7940d69a",
+      "IL_MIN_WAGE_OFFICIAL_RATES@20260909.63bb67d11d02"
+    ],
+    "input_snapshot_sha256": {
+      "facts": "9893bb95eaeb839ae19327210b001be79260c2be91e2431519100edefc5f277d",
+      "declared": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "documents": "2dab9f176529afd100d2446df3c58355d18b664cf90e92b68aee64a601966e89",
+      "extraction": "f0031af966989fe49fd13b39d5731ed48e062fc3492ee4bfcf9d1b2bde4d2379"
+    },
+    "unresolved_fact_inputs": [],
+    "customer_requests_created": true,
+    "required_component_assessments": [
+      {
+        "field": "classification",
+        "status": "missing",
+        "version_id": "c17bc4fe-bfa7-47f8-96b1-cd8d149fb99c",
+        "component_id": "c5cf3ca6-7d5d-4d97-80f7-9f37a38344fe"
+      }
+    ],
+    "candidate_calculation_performed": false,
+    "required_applicability_assessments": [
+      {
+        "field": "age_18_entire_month",
+        "value": null,
+        "prompt": "האם מלאו לך 18 לפני תחילת יוני 2026?",
+        "status": "missing"
+      },
+      {
+        "field": "sector",
+        "value": null,
+        "prompt": "מה תחום הפעילות של המעסיק והאם חלים תנאי שכר ענפיים?",
+        "status": "missing"
+      },
+      {
+        "field": "hours_rest_law_applies",
+        "value": null,
+        "prompt": "נדרש בירור תחולת חוק שעות עבודה ומנוחה, לרבות כל חריגי סעיף 30(א).",
+        "status": "missing"
+      },
+      {
+        "field": "no_better_minimum_wage_arrangement",
+        "value": null,
+        "prompt": "האם קיים חוזה, הסכם או הסדר שמקנה שכר מינימום גבוה יותר?",
+        "status": "missing"
+      },
+      {
+        "field": "no_adapted_minimum_wage",
+        "value": null,
+        "prompt": "האם נקבע עבורך שכר מינימום מותאם לפי החלטה מוסמכת?",
+        "status": "missing"
+      },
+      {
+        "field": "regular_hours_exclude_absence_overtime_rest",
+        "value": null,
+        "prompt": "האם השעות הרגילות כוללות רק עבודה רגילה ומופרדות מהיעדרות, שעות נוספות ומנוחה שבועית?",
+        "status": "missing"
+      }
+    ]
+  },
+  "auto_approved": false,
+  "report_sha256": "79f94f4bdf534e09602e667c651343fac743e5887f12cd0fa2004c0f4470831d",
+  "export_eligible_before_review": false
+}

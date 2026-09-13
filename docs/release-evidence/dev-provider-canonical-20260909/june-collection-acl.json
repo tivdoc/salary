@@ -1,0 +1,118 @@
+{
+  "verdict": "PASS",
+  "observedAt": "2026-09-09T19:04:22.885Z",
+  "schema": "130 / 20260909185038",
+  "database": "tivdoc_release_replay_20260907",
+  "newDefiners": 4,
+  "functions": [
+    {
+      "signature": "case_request_june_states(uuid,uuid)",
+      "proname": "case_request_june_states",
+      "nspname": "public",
+      "prosecdef": true,
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "public_execute": false,
+      "access": {
+        "anon": false,
+        "authenticated": false,
+        "service_role": true,
+        "tivdoc_web_runtime": true,
+        "tivdoc_worker_runtime": false,
+        "tivdoc_operations_runtime": false
+      }
+    },
+    {
+      "signature": "private.guard_june2026_collection_answer()",
+      "proname": "guard_june2026_collection_answer",
+      "nspname": "private",
+      "prosecdef": true,
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "public_execute": false,
+      "access": {
+        "anon": false,
+        "authenticated": false,
+        "service_role": false,
+        "tivdoc_web_runtime": false,
+        "tivdoc_worker_runtime": false,
+        "tivdoc_operations_runtime": false
+      }
+    },
+    {
+      "signature": "private.june2026_collection_current(uuid,jsonb)",
+      "proname": "june2026_collection_current",
+      "nspname": "private",
+      "prosecdef": true,
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "public_execute": false,
+      "access": {
+        "anon": false,
+        "authenticated": false,
+        "service_role": false,
+        "tivdoc_web_runtime": false,
+        "tivdoc_worker_runtime": false,
+        "tivdoc_operations_runtime": false
+      }
+    },
+    {
+      "signature": "private.june2026_collection_question(jsonb)",
+      "proname": "june2026_collection_question",
+      "nspname": "private",
+      "prosecdef": false,
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "public_execute": false,
+      "access": {
+        "anon": false,
+        "authenticated": false,
+        "service_role": false,
+        "tivdoc_web_runtime": false,
+        "tivdoc_worker_runtime": false,
+        "tivdoc_operations_runtime": false
+      }
+    },
+    {
+      "signature": "private.june2026_collection_request_open(uuid,integer,text,jsonb,text)",
+      "proname": "june2026_collection_request_open",
+      "nspname": "private",
+      "prosecdef": true,
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "owner": "tivdoc_dev_migrator",
+      "public_execute": false,
+      "access": {
+        "anon": false,
+        "authenticated": false,
+        "service_role": false,
+        "tivdoc_web_runtime": false,
+        "tivdoc_worker_runtime": true,
+        "tivdoc_operations_runtime": false
+      }
+    }
+  ],
+  "table": {
+    "relrowsecurity": true,
+    "relforcerowsecurity": false
+  },
+  "policies": [
+    {
+      "policyname": "june2026_collection_worker_read",
+      "roles": "{tivdoc_worker_runtime}",
+      "cmd": "SELECT",
+      "qual": "(private.runtime_verified_tenant() = ('saved-case:'::text || (case_id)::text))"
+    }
+  ],
+  "readOnly": true,
+  "productionChanged": false
+}

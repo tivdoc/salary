@@ -1,0 +1,70 @@
+{
+  "origin": "https://salary-qweapotgg-tivdoccom-5042s-projects.vercel.app",
+  "deployedSha": "163bc3cb22126cea0dbbb093d5efc874927a67ab",
+  "deploymentId": "dpl_33koACBwHjhkupRtPggBwqZp2GsN",
+  "checks": [
+    {
+      "name": "cancellation Preview is exact isolated DEV with external payment disabled",
+      "passed": true
+    },
+    {
+      "name": "only the selected unstarted order offers cancellation; the paid initial order remains protected",
+      "passed": true
+    },
+    {
+      "name": "a separate customer cannot view or cancel the target through either case identifier",
+      "passed": true
+    },
+    {
+      "name": "response loss after actual successful HTTP cancellation is presented as unconfirmed",
+      "passed": true
+    },
+    {
+      "name": "retry uses the same order, receives confirmation and refreshes stored history",
+      "passed": true
+    },
+    {
+      "name": "reload preserves the cancelled order and sends neither checkout nor refund requests",
+      "passed": true
+    },
+    {
+      "name": "cancelled history fits RTL at 360px",
+      "passed": true
+    },
+    {
+      "name": "cancelled history fits RTL at 390px",
+      "passed": true
+    },
+    {
+      "name": "cancelled history fits RTL at 768px",
+      "passed": true
+    },
+    {
+      "name": "cancelled history fits RTL at 1440px",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "paymentActions": [
+    "cancel_unstarted",
+    "cancel_unstarted"
+  ],
+  "scope": "Owned synthetic quote/order/payment/readiness and seeded customer sessions. Actual hosted UI/HTTP/DEV cancellation, lost response/retry/reload. No live quote basis, provider checkout/refund, financial correctness or production.",
+  "productionChanged": false,
+  "secretsIncluded": false,
+  "ciRuns": [
+    34306005257,
+    34306002859
+  ],
+  "ci": "PASS",
+  "visualInspection": [
+    "unstarted-order.png",
+    "cancelled-390.png"
+  ],
+  "cleanup": {
+    "syntheticCases": 2,
+    "syntheticIdentities": 2,
+    "machineRevoked": true,
+    "failure": null
+  }
+}

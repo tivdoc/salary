@@ -1,0 +1,13 @@
+{
+  "checks": [
+    "mark-only run preserves both actual Storage objects and retains the linked document",
+    "disconnect before remove leaves actual bytes intact",
+    "crash after actual removal resumes the same fenced deletion and acknowledges it once",
+    "live document remains linked and byte-identical after deletion retries"
+  ],
+  "database": "tivdoc_release_replay_20260907",
+  "storageProject": "allowlisted DEV",
+  "fixtures": "synthetic QA; controlled clock/grace advancement",
+  "actualStorageRemove": true,
+  "production": "untouched"
+}

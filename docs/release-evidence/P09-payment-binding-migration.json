@@ -1,0 +1,12 @@
+{
+  "migration": "20260908182405_payment_reference_binding.sql",
+  "sha256": "f6e9caea66fee2f069d528d5bc758cdebc4a6c556e87999f6ce2122e6ff8f1a8",
+  "database": "tivdoc_release_replay_20260907",
+  "applied": true,
+  "executionAclAndSearchPathPreserved": true,
+  "workerCredential": {
+    "current_user": "tivdoc_worker_runtime",
+    "verifier_execute": true
+  },
+  "productionChanged": false
+}

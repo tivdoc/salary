@@ -1,0 +1,29 @@
+{
+  "origin": "https://salary-rb7ah8nqx-tivdoccom-5042s-projects.vercel.app",
+  "deployedSha": "1d8f28e56f447caa64fd963347f2528d0956a627",
+  "checks": [
+    {
+      "name": "customer opens case support with saved server state",
+      "passed": true
+    },
+    {
+      "name": "unsent support draft survives reload without creating a server thread",
+      "passed": true
+    },
+    {
+      "name": "lost completion response survives full reload and retries the same saved question without duplication",
+      "passed": true
+    },
+    {
+      "name": "an operations DB reply is visible after customer reload and customer can reopen it",
+      "passed": false,
+      "detail": "locator.fill: Timeout 20000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByLabel('פרטי הפנייה לתמיכה', { exact: true })\u001b[22m\n\u001b[2m    - locator resolved to <textarea rows=\"4\" disabled dir=\"auto\" maxlength=\"2000\" id=\"_R_taav5ubsnlb_\" aria-describedby=\"_R_taav5ubsnlb_-status\">Synthetic browser support question</textarea>\u001b[22m\n\u001b[2m    - fill(\"Independent unsent new support draft\")\u001b[22m\n\u001b[2m  - attempting fill action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and editable\u001b[22m\n\u001b[2m      - element is not enabled\u001b[22m\n\u001b[2m    - retrying fill action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and editable\u001b[22m\n\u001b[2m      - element is not enabled\u001b[22m\n\u001b[2m    - retrying fill action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    39 × waiting for element to be visible, enabled and editable\u001b[22m\n\u001b[2m       - element is not enabled\u001b[22m\n\u001b[2m     - retrying fill action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n"
+    }
+  ],
+  "errors": [],
+  "skipLinkStates": [],
+  "syntheticCasesRemoved": 2,
+  "scope": "Seeded QA session; hosted customer browser/API and DEV database. Owner response injected through actual operations DB role; no owner HTTP/UI, OTP, provider, real payment or professional approval proof.",
+  "productionChanged": false,
+  "secretsIncluded": false
+}

@@ -255,7 +255,7 @@ describe("node vocabulary is closed", () => {
     for (const operation of RULE_SPEC_OPERATIONS) accepted.add(operation);
     expect([...accepted].sort()).toEqual([
       "add", "aggregate.bounded", "band.lookup", "compare.gte", "constant.integer", "constant.rational",
-      "divide", "max", "min", "money.scale", "multiply", "select", "subtract", "tiered.rate",
+      "divide", "max", "min", "money.scale", "multiply", "rational.floor", "select", "subtract", "tiered.rate",
     ]);
     expect(() => ruleSpecNodeSchema.parse({ node_id: "n", operation: "band_lookup", input_ref: "a", bands: [] })).toThrow();
   });

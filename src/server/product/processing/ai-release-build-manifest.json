@@ -1,0 +1,1661 @@
+{
+  "schema_version": "tivdoc-ai-release-build-manifest-v1",
+  "normalization": "utf8-lf-v1",
+  "entrypoints": [
+    "src/engine/ai-release-decisions/apply.ts",
+    "src/engine/ai-release-decisions/catalog.ts",
+    "src/engine/ai-release-decisions/contracts.ts",
+    "src/engine/ai-release-decisions/index.ts",
+    "src/engine/ai-release-decisions/minimum-wage-case.ts",
+    "src/engine/ai-release-runtime/automatic-assessment.ts",
+    "src/engine/ai-release-runtime/index.ts",
+    "src/engine/case-analysis/service.ts",
+    "src/engine/document-review/non-payslip.ts",
+    "src/engine/entitlement-review/automatic-benefits.ts",
+    "src/engine/entitlement-review/automatic-nonpay.ts",
+    "src/engine/entitlement-review/automatic-payroll.ts",
+    "src/engine/entitlement-review/automatic-pension.ts",
+    "src/server/product/processing/ai-release-build.ts",
+    "src/server/product/processing/ai-release-configuration.ts",
+    "src/server/product/processing/automatic-dev-notifications.ts",
+    "src/server/product/processing/automatic-real-service.ts",
+    "src/server/product/processing/real-service-activation.ts",
+    "src/server/product/processing/real-service-notification-dispatch.ts",
+    "src/server/product/processing/real-service-worker-host.ts",
+    "src/server/product/processing/real-service.entry.mts",
+    "src/server/product/processing/saved-ai-release.ts",
+    "src/server/product/processing/saved-real-ai-service-configuration.ts",
+    "src/server/product/reports/ai-release-report.ts",
+    "src/server/product/reports/real-ai-service-customer.ts",
+    "src/server/product/reports/real-ai-service-delivery.ts",
+    "src/server/product/reports/real-ai-service-notification.ts"
+  ],
+  "files": [
+    {
+      "path": "package-lock.json",
+      "sha256": "7f5f3a28cabff8c3ec28133ea808ddebfa5a24aa6ecce69fda787d832c519ff6"
+    },
+    {
+      "path": "scripts/ai-release-build-manifest.mjs",
+      "sha256": "63f4918001edc29d3456f80bad87359c41b05631518f0d4662f483c1dd3952fe"
+    },
+    {
+      "path": "scripts/product-workers/managed-dev-supervisor.mjs",
+      "sha256": "fe0d651ece6939ae37fb62d2cec454fde4ebbe40744b5cd0967349532af96742"
+    },
+    {
+      "path": "src/config/product-offer.json",
+      "sha256": "d0e3af1c40b21c70da3080f40b72b3784018a6a102036c9a8112ac15c978f0f2"
+    },
+    {
+      "path": "src/engine/agents/contracts.ts",
+      "sha256": "444f367be0a8f36e505691049ce98f24225d3cb640f426cf37a6b1f4af6d5bc9"
+    },
+    {
+      "path": "src/engine/ai-release-decisions/apply.ts",
+      "sha256": "8348926ae346e33494fb879ec9bd90062517f8568cd6a0645062fe1a2637e128"
+    },
+    {
+      "path": "src/engine/ai-release-decisions/catalog.ts",
+      "sha256": "bfd2987a25bc226d3fc61fba454c008b21c3a1ecedc4996e2f1acad28b8c3a3e"
+    },
+    {
+      "path": "src/engine/ai-release-decisions/contracts.ts",
+      "sha256": "f73d0e98ce96e64e731ead6807194d8be5a5d01cc7e629c6e523f1a873d4d7cc"
+    },
+    {
+      "path": "src/engine/ai-release-decisions/index.ts",
+      "sha256": "47d1d3736002902079627ae77b78f06aafaa82c9ba2b5ede7f23b9aa75bd02c2"
+    },
+    {
+      "path": "src/engine/ai-release-decisions/minimum-wage-case.ts",
+      "sha256": "6b4b7a78badc12e21496f38e32ed644856793e3161b8bf5429751c072f9f8ce6"
+    },
+    {
+      "path": "src/engine/ai-release-runtime/automatic-assessment.ts",
+      "sha256": "1b89277ea3b5103aca9236dfe3783919b5e6bc1e271ed67c50f916baadc49fba"
+    },
+    {
+      "path": "src/engine/ai-release-runtime/contracts.ts",
+      "sha256": "79de0c506683d227b83a73cd03307d359d871eb26660e262eb3c9a757a4dc957"
+    },
+    {
+      "path": "src/engine/ai-release-runtime/generator-manifest.ts",
+      "sha256": "0b70bd2542cf1c8a9a96a53e9606313416f4f3d5200f7aef84753dcd0f8da504"
+    },
+    {
+      "path": "src/engine/ai-release-runtime/index.ts",
+      "sha256": "46df55a987e978bdad422382e8b9a8c9c87dce91d74616a5ec07cbdc7ffa108e"
+    },
+    {
+      "path": "src/engine/ai-release-runtime/owner-engineering.ts",
+      "sha256": "4b36c7d76175e2b4dff9819b3be0cf5f06ef628e000a879e374364f4409cd6e4"
+    },
+    {
+      "path": "src/engine/ai-release-runtime/runtime.ts",
+      "sha256": "25b29b7da6e38f981614ab8dc161a5e0e6924f8f9c9fbf8fb4e20a2c60a0634c"
+    },
+    {
+      "path": "src/engine/ai-release/contracts.ts",
+      "sha256": "e5ed0b19dddd479f73268bba50ffaba2ecd4e08bd8eca09b57075410d278474b"
+    },
+    {
+      "path": "src/engine/ai-release/index.ts",
+      "sha256": "b2e025b3db98790cb52e9a39fe1d6bb93b56cadb62515bc09e997e9570031056"
+    },
+    {
+      "path": "src/engine/ai-release/policy.ts",
+      "sha256": "6d05bbd44cff4cd2ae1ce58bc08b43aa2f16ae7213c7aab9a3baed8a40002ce9"
+    },
+    {
+      "path": "src/engine/calculations/contracts.ts",
+      "sha256": "d722770717fdfffddbf66c776fb2501070e3336db9982f5d268ca7c91fde6db4"
+    },
+    {
+      "path": "src/engine/calculations/source-trace.ts",
+      "sha256": "b7e5dd6b3b31f61ee7424ea2ef8e092aa26349e3d5626ba663240b98c5285adc"
+    },
+    {
+      "path": "src/engine/case-analysis/contracts.ts",
+      "sha256": "76cef5cdfd00b77bf07d5a702118c83a6c9dd2f83407ff11256fcd24665c968d"
+    },
+    {
+      "path": "src/engine/case-analysis/service.ts",
+      "sha256": "ce1afdb28318777f784148e037092d3fac0667cbb7cc8aa49c8741005ba176a1"
+    },
+    {
+      "path": "src/engine/case-operations/canonical.ts",
+      "sha256": "2fef8b71c56e812ab56df76d923b90256c59853c963b904abac9f792b0832e93"
+    },
+    {
+      "path": "src/engine/document-review/calculations.ts",
+      "sha256": "34363e3937e226e6b217ff884a79a56198766ea377dc05601cdd6445493dd2b2"
+    },
+    {
+      "path": "src/engine/document-review/completions.ts",
+      "sha256": "8598851be9438c9cb4b84e2dea3b2a8be4e911fed457083b8e58dabd65503da2"
+    },
+    {
+      "path": "src/engine/document-review/contracts.ts",
+      "sha256": "6ee992371192c3065166302e5143456925e8d94b934553db0184af2406b162fb"
+    },
+    {
+      "path": "src/engine/document-review/coverage.ts",
+      "sha256": "a03d18d3a0a868098d7342aac34ee6dc192d8114c904ec6c541ca125bf5887cf"
+    },
+    {
+      "path": "src/engine/document-review/night-entitlement-adapter.ts",
+      "sha256": "4d482dc98efa59a59547b8f9da5bc90314774ed9be2e189ecead44c5f22e8b49"
+    },
+    {
+      "path": "src/engine/document-review/non-payslip.ts",
+      "sha256": "3042361649772b892e2db14dc7bbbb160ae71bba7cd9329bf219a619a0155c9d"
+    },
+    {
+      "path": "src/engine/document-review/payslip-adapter.ts",
+      "sha256": "57b27df45a32c7af5a1f30b7cd02e9e7759d38b19127024f7136bd7d23c1deda"
+    },
+    {
+      "path": "src/engine/document-review/payslip-source-structures.ts",
+      "sha256": "a53734c18554497cff847072eede7a2a20cf3856faf79f9fc79bff9963ab16ef"
+    },
+    {
+      "path": "src/engine/document-review/service.ts",
+      "sha256": "a174f3a6d7bac361695cc7290f5411657a73b4cfa83ec9a5d96539175b69f88f"
+    },
+    {
+      "path": "src/engine/document-review/source-dependencies.ts",
+      "sha256": "b7b8226121c6a1fa38ad18e5449286a684ff4d5dea846aabde23f1310aab5b69"
+    },
+    {
+      "path": "src/engine/document-review/source-structure-evidence.ts",
+      "sha256": "9a2f906b0c05388b8c6a3e7b355d4e84dc5bf528c195d6efdbe06d0e05026f5d"
+    },
+    {
+      "path": "src/engine/domain/documents.ts",
+      "sha256": "dea0dce9fb00b6c7abe0925f69a2f70f7ebda861d58ea73858f20de8ccf08aab"
+    },
+    {
+      "path": "src/engine/domain/primitives.ts",
+      "sha256": "a96ae4a3cc5abc15050d2d9cbe943686d2ca954c630cd4123bb00c996c4630f1"
+    },
+    {
+      "path": "src/engine/entitlement-review/age-range-materialization.ts",
+      "sha256": "53244f9015722a061771686c2d17c399b3ec000204aafcfe8ba22f5c659876ef"
+    },
+    {
+      "path": "src/engine/entitlement-review/automatic-benefits.ts",
+      "sha256": "32a67f95fb892d5106cd9caf7baef430826cc68df43d93e5f14c328f0133d3ba"
+    },
+    {
+      "path": "src/engine/entitlement-review/automatic-nonpay.ts",
+      "sha256": "d98eeaa52870acd92b6c5e104369997483fdb75c9c7b4436d37a0403efe7d0d2"
+    },
+    {
+      "path": "src/engine/entitlement-review/automatic-payroll.ts",
+      "sha256": "957fba20fd59ac274579ac8dc9b75c3dfaef75598ebde5784fbf43f0c3d581e9"
+    },
+    {
+      "path": "src/engine/entitlement-review/automatic-pension.ts",
+      "sha256": "e06c64ecf96cd65637b102912c0626a5083100e1e3010e7c171a0081b7d4d8f7"
+    },
+    {
+      "path": "src/engine/entitlement-review/branch-contract.ts",
+      "sha256": "aff92b76264c5b4d18083adfa885b15b50bb6f7f17d1de1bb3c078f8d5c43cd3"
+    },
+    {
+      "path": "src/engine/entitlement-review/compose.ts",
+      "sha256": "f36950bfdc21bccf0d440ffa60f2e46be655a62e00f1a4913924ea0a0fc439a5"
+    },
+    {
+      "path": "src/engine/entitlement-review/contracts.ts",
+      "sha256": "8c05d8921a9f78247171e98bec3466f2ee72bf2a3b4d435fc04cd2a18cbe0bc9"
+    },
+    {
+      "path": "src/engine/entitlement-review/convalescence/case-bindings.ts",
+      "sha256": "4eec6ea7e3b29953bdd8f999f38056cce201076f69f46fdb8ce27147c4893b48"
+    },
+    {
+      "path": "src/engine/entitlement-review/convalescence/contracts.ts",
+      "sha256": "be23945a8d9f63162a237cec699da8396c0a6b5c302646da5347d0b501af7791"
+    },
+    {
+      "path": "src/engine/entitlement-review/convalescence/index.ts",
+      "sha256": "01b3d8a50fc2a6444bc3af56fdbea5fde8ad57f81b57da8cd7ed56ffdb72ab81"
+    },
+    {
+      "path": "src/engine/entitlement-review/convalescence/periods.ts",
+      "sha256": "282b9cc27cf7f0900ef5b59edb947bf8bbd5032d2203488a609046dcc39d794a"
+    },
+    {
+      "path": "src/engine/entitlement-review/convalescence/product-decisions.ts",
+      "sha256": "60e8f39162c88e53e5aa9fc9cdf6e33fbf7b7c08581abdc39e303543d80913b6"
+    },
+    {
+      "path": "src/engine/entitlement-review/convalescence/product-facts.ts",
+      "sha256": "076d4ae9518edf1fa92a778ec5e94593f9ce024d5ca656b4d5ddf26837df7679"
+    },
+    {
+      "path": "src/engine/entitlement-review/convalescence/resolve.ts",
+      "sha256": "81cb2dec4876ea82e0758fc2bba65867afe2e52517622f011e8db4fbdd32d50d"
+    },
+    {
+      "path": "src/engine/entitlement-review/convalescence/source-policy.ts",
+      "sha256": "951c33a99f09df150a9dcb9a990b67709296dddf6a063f6d082714f07c4ffbc2"
+    },
+    {
+      "path": "src/engine/entitlement-review/declarations.ts",
+      "sha256": "bd81b5b22bcef4bf60958c430ddc7554bf84704a5f660a8e9ca6497931b3235b"
+    },
+    {
+      "path": "src/engine/entitlement-review/legal-documents.ts",
+      "sha256": "ce7c045ef4fdb3895982c9ded803c59dc95028c48b4c3fda1456463906036c50"
+    },
+    {
+      "path": "src/engine/entitlement-review/minimum-wage/contracts.ts",
+      "sha256": "f52cbac82c4d68a3085682a76148828bfbf2b4c06c275fad061f3e48b5758e71"
+    },
+    {
+      "path": "src/engine/entitlement-review/minimum-wage/index.ts",
+      "sha256": "01b3d8a50fc2a6444bc3af56fdbea5fde8ad57f81b57da8cd7ed56ffdb72ab81"
+    },
+    {
+      "path": "src/engine/entitlement-review/minimum-wage/product-facts.ts",
+      "sha256": "6df5cf57550c2f5dead286efafdcb73743e93af857cba9d1073c83004d09f121"
+    },
+    {
+      "path": "src/engine/entitlement-review/minimum-wage/resolve.ts",
+      "sha256": "5f634f1c29e7c5369679d8a219b3fc43c69e6526426f2f86a704bbfc4cf83ac3"
+    },
+    {
+      "path": "src/engine/entitlement-review/minimum-wage/source-policy.ts",
+      "sha256": "345c1ecd41903a813507f0be6c0cbedae1554f7907fd3bcf4529be61fc6b7ebb"
+    },
+    {
+      "path": "src/engine/entitlement-review/obligations-product.ts",
+      "sha256": "8ee6cdf5885ad6021022790d05938bd6d257ff312e47ce441b9a76f75650238e"
+    },
+    {
+      "path": "src/engine/entitlement-review/obligations/case-bindings.ts",
+      "sha256": "b76ae2f05f84b730e72d39c6a5717bee593bd89d39bf08f14e60efab96766bfd"
+    },
+    {
+      "path": "src/engine/entitlement-review/obligations/case-replay.ts",
+      "sha256": "7e6105426c8ac998a3540838ac5eec69a561686d4d5e9a699a5a28c7702364e5"
+    },
+    {
+      "path": "src/engine/entitlement-review/obligations/contracts.ts",
+      "sha256": "1a741688fc57b622bd3fd7349fa1d5e94f990577aaff76e17141f866cd57a8ce"
+    },
+    {
+      "path": "src/engine/entitlement-review/obligations/identified-clause-source.ts",
+      "sha256": "dd9a690e0e23855d0dbf13e8303afa7c09d9806a0b02b4f1f282bbd32b3c2f4a"
+    },
+    {
+      "path": "src/engine/entitlement-review/obligations/identified-clause-transcriptions.ts",
+      "sha256": "eba5d806a87f69619b1269811a06d6612573e0aa3595af5b8f3853a81e84f580"
+    },
+    {
+      "path": "src/engine/entitlement-review/obligations/index.ts",
+      "sha256": "4e0ccde84572864e3606673ed068bdae176ef1f3c65c1762d2cb958026d5b833"
+    },
+    {
+      "path": "src/engine/entitlement-review/obligations/literal-promise.ts",
+      "sha256": "b1f0b1fe3b186fe81d15387d26b9ea09941e09f880c7c874c6e8c540933906ce"
+    },
+    {
+      "path": "src/engine/entitlement-review/obligations/payment-link.ts",
+      "sha256": "5c61fc03d6e87a1c4fe7bc028630b364f7763abf1468b28e04d02c219dfa5f57"
+    },
+    {
+      "path": "src/engine/entitlement-review/obligations/policy.ts",
+      "sha256": "ae1c853bc18c7328927465da776ee594fb62242205d85ce060e10d1c47520d6e"
+    },
+    {
+      "path": "src/engine/entitlement-review/obligations/product-decisions.ts",
+      "sha256": "0ee73ec725c3c7ede9dcdabfcac39ae181167d4502421282ce40667f1f1a87d9"
+    },
+    {
+      "path": "src/engine/entitlement-review/obligations/product-facts.ts",
+      "sha256": "8eec6267df0f2c1fc2ffc147313c44b3959958da99eb4047426dc0456cbf8b0f"
+    },
+    {
+      "path": "src/engine/entitlement-review/obligations/product-source-evidence.ts",
+      "sha256": "dd4c517a748e1a9e83a7d677991b13edf8dd2b806262d8a031df1e2032f236cc"
+    },
+    {
+      "path": "src/engine/entitlement-review/obligations/source-policy.ts",
+      "sha256": "7dc89cc39d72e05bc60daa1bb4ce1526f35d6ffc5bf8695f5a8a6c787f9205fb"
+    },
+    {
+      "path": "src/engine/entitlement-review/obligations/source-reading-dependencies.ts",
+      "sha256": "9523bcd790a27e8b2a15ec6acbb992f3799044fb0bb313553e61676eabf0075b"
+    },
+    {
+      "path": "src/engine/entitlement-review/pension-product.ts",
+      "sha256": "3e2b21a0ffb2c902d82007d52cb4902c1e6bef3db0c1656b74aedc0b09569eef"
+    },
+    {
+      "path": "src/engine/entitlement-review/pension/contracts.ts",
+      "sha256": "eccf87a304ef6dc17b3c877e117cf0c0420b4d7a50cd63d9e4f56ea80372e4ec"
+    },
+    {
+      "path": "src/engine/entitlement-review/pension/eligibility.ts",
+      "sha256": "63ace92f80c546a6d2d9e8d30159af2c643a593d31abeb938592a6fa564b324e"
+    },
+    {
+      "path": "src/engine/entitlement-review/pension/index.ts",
+      "sha256": "1f40272e1724e1a8a8d325a6e86424e04441b41f30526f7229a6847fc462f0eb"
+    },
+    {
+      "path": "src/engine/entitlement-review/pension/product-facts.ts",
+      "sha256": "00488106cf4205feb69113bea071205b06a360895d327fdf56786f5875483f86"
+    },
+    {
+      "path": "src/engine/entitlement-review/pension/source-fact-contracts.ts",
+      "sha256": "849f8e38ce1002f26dfd45bc6eb414f527c216512935ebd071cb5075aae76bea"
+    },
+    {
+      "path": "src/engine/entitlement-review/pension/source-facts.ts",
+      "sha256": "9cdb12d2156cd5b153e20ae366503696ba35162f83a654e5d7b5872900b7cbe9"
+    },
+    {
+      "path": "src/engine/entitlement-review/pension/sources.ts",
+      "sha256": "45ca8d539e4838dde4ee71af6974ef221daaad5569c4b0e3acfafc961efefb02"
+    },
+    {
+      "path": "src/engine/entitlement-review/pension/table-source.ts",
+      "sha256": "d5dc39311693a84f476eeb1dbf89dd75fb9975a876e518cffb8daa02c1bc6af5"
+    },
+    {
+      "path": "src/engine/entitlement-review/product-age-range.ts",
+      "sha256": "e14dc7b765ed6fb5281b72b3c53d2b66409623618f23cf73367604afdff11ecf"
+    },
+    {
+      "path": "src/engine/entitlement-review/product-source-dependencies.ts",
+      "sha256": "d68a9a04d7cb34c76d91ce7169b6ff14bbb09b8383e971c6dcd226289a42fad5"
+    },
+    {
+      "path": "src/engine/entitlement-review/questionnaire-age-range.ts",
+      "sha256": "4e1b9ba1cb425af339a5c8ffdad3989843d5b9aa845e0e2a72d6858cbf63dc06"
+    },
+    {
+      "path": "src/engine/entitlement-review/resolved-minimum-wage-needs.ts",
+      "sha256": "705d91da9da4024c0a6dd3929827281442a3a9d24726e76ea29f067400f6cc10"
+    },
+    {
+      "path": "src/engine/entitlement-review/shared-product-fact-contracts.ts",
+      "sha256": "38abb64e665b087b77dc14806b117974091da2128c03513d303884acc6936f14"
+    },
+    {
+      "path": "src/engine/entitlement-review/shared-product-facts-v3.ts",
+      "sha256": "a001b95cc89cd22650a34cea1418dbe338016045e9f40a7f249763cdc044142d"
+    },
+    {
+      "path": "src/engine/entitlement-review/shared-product-facts.ts",
+      "sha256": "be41ef8fc7ff378602d7bcfadf83e127f19ce0e39542d101bc115f90362106f7"
+    },
+    {
+      "path": "src/engine/entitlement-review/simple-product.ts",
+      "sha256": "11b9610bd66f5e0f4030e60e99a6e73ffbf72c469a6c6fa6d4771acce0b3a9d6"
+    },
+    {
+      "path": "src/engine/entitlement-review/source-admission.ts",
+      "sha256": "78fce2ba91b728bee7f2dc07e2bafb8fa3ba74baaa1cf8ad8880c13662b45b09"
+    },
+    {
+      "path": "src/engine/entitlement-review/travel/contracts.ts",
+      "sha256": "db0cb763ec2f4eb23ff2ac78d39305edf0848018c1da02fb288655aaa681d88e"
+    },
+    {
+      "path": "src/engine/entitlement-review/travel/floor-policy.ts",
+      "sha256": "991e0716c0d54e1632ff454cf108b59819ac2fa4c888d0f336224406d49307a3"
+    },
+    {
+      "path": "src/engine/entitlement-review/travel/index.ts",
+      "sha256": "d1d94daa8ee6678945cf6bd3758ba5f73a23b33eef6838a362c67b2212a9a50c"
+    },
+    {
+      "path": "src/engine/entitlement-review/travel/journey-facts.ts",
+      "sha256": "bb572db80be71fb6a58ca57a93afe8c5dbc2f8dc08c4bc82127b75cfa8b953ea"
+    },
+    {
+      "path": "src/engine/entitlement-review/travel/legacy-formula-provenance.ts",
+      "sha256": "476c7e9bf7f5f8d16759b0cd2011d5cf1521dc42aac672dde1c0e437e544dcb8"
+    },
+    {
+      "path": "src/engine/entitlement-review/travel/product-facts.ts",
+      "sha256": "46cd36f61fdbe72e0c4a9b7ae1d8efdc9a39139d3ae63eab9c1e64cc9d8b4e12"
+    },
+    {
+      "path": "src/engine/entitlement-review/travel/product-labels.ts",
+      "sha256": "d8ac8d692e3a642ea85578b91fe2025cf2e9d156b94c32824eccb00b293d33fe"
+    },
+    {
+      "path": "src/engine/entitlement-review/travel/sources.ts",
+      "sha256": "448f65e4a72329d2d5de3dcf868f68ee253a38c1c8fdf636c7b1c7a39648a30b"
+    },
+    {
+      "path": "src/engine/entitlement-review/travel/tariff-contracts.ts",
+      "sha256": "d7ff600be084927415a1861317169adf3bcfc26f26e55ee712ac07a17d2d90a1"
+    },
+    {
+      "path": "src/engine/entitlement-review/travel/tariff-source.ts",
+      "sha256": "187c0449f342003319fd238479bf1e97fb319df0524e474ab799261bfa30a09b"
+    },
+    {
+      "path": "src/engine/entitlement-review/typed-product-facts.ts",
+      "sha256": "cce6b35f0dde464b4045c12e5ee82c797093ca1864953a9e3c8cb2051e87adeb"
+    },
+    {
+      "path": "src/engine/entitlement-review/vacation/contracts.ts",
+      "sha256": "c345afde12d56f9fcd96df84f96a184e12d65c21edf70e428b44fb36f319478b"
+    },
+    {
+      "path": "src/engine/entitlement-review/vacation/index.ts",
+      "sha256": "e2d36eda54ce9d2c9e4642a4115f2ba54638a31ef2d5d40daf7749c5cbe09189"
+    },
+    {
+      "path": "src/engine/entitlement-review/vacation/product-decisions.ts",
+      "sha256": "6b64a42cb7438430bdce5d81f4a4794093e8acddee8fd9fdd7097fe23e2e8564"
+    },
+    {
+      "path": "src/engine/entitlement-review/vacation/product-facts.ts",
+      "sha256": "02ca75e8b107b8de40d6ab11e54254eb412d2ff8255e816a6e3943ac9595e8c1"
+    },
+    {
+      "path": "src/engine/entitlement-review/vacation/product-source-evidence.ts",
+      "sha256": "6dcb82b6115d8ed48f823eb9df9dd57c22368c1a8753601ddc87b22241290189"
+    },
+    {
+      "path": "src/engine/entitlement-review/vacation/rules.ts",
+      "sha256": "0cecedff6ae4e7b4827d12f57e2ec99dee21bae129b0f08a5c4495d48e4b1c9c"
+    },
+    {
+      "path": "src/engine/entitlement-review/vacation/sources.ts",
+      "sha256": "8e1bd16e790365465667b781459d652481c1aeafd7cbeca2ceb4c20a33ad9af2"
+    },
+    {
+      "path": "src/engine/entitlement-review/working-time-product.ts",
+      "sha256": "1b28534ef3d6780855251adf3b2b84a9b141cccf1feddcced77ac59f73cb4416"
+    },
+    {
+      "path": "src/engine/entitlement-review/working-time/contracts.ts",
+      "sha256": "bdd0bf7f50e610d468c65f93cb40c01a59c5b49bfd8855012cf89d71bfbb04f7"
+    },
+    {
+      "path": "src/engine/entitlement-review/working-time/index.ts",
+      "sha256": "01b3d8a50fc2a6444bc3af56fdbea5fde8ad57f81b57da8cd7ed56ffdb72ab81"
+    },
+    {
+      "path": "src/engine/entitlement-review/working-time/payroll-rate.ts",
+      "sha256": "2b8b87c666676aedda4d7d95f5b55ab3620da299979a8a0284aae674790a35bf"
+    },
+    {
+      "path": "src/engine/entitlement-review/working-time/product-decisions.ts",
+      "sha256": "a581419ac2246567bd15138081a0db0d28dc28c5fbaa714d2897e817f5bcd353"
+    },
+    {
+      "path": "src/engine/entitlement-review/working-time/product-fact-contracts.ts",
+      "sha256": "40d7b2dd7fb8f60d52bf629ffa26738b9eeef37369addd394c4788c243f9cea0"
+    },
+    {
+      "path": "src/engine/entitlement-review/working-time/product-facts.ts",
+      "sha256": "3c7dfabdab2280178d471ad016e352e0df98f22bfad2458ee799b99329a408d2"
+    },
+    {
+      "path": "src/engine/entitlement-review/working-time/protected-breaks.ts",
+      "sha256": "3f7bfce25b448ec9ec4ef7f36dc3504d06999c6842ebba40e4a9fbb25b5fd00e"
+    },
+    {
+      "path": "src/engine/entitlement-review/working-time/resolve.ts",
+      "sha256": "5632501d690493e81a11785b965c06c23f27c5fcd41abcc8c57f44617254b1d9"
+    },
+    {
+      "path": "src/engine/entitlement-review/working-time/rules.ts",
+      "sha256": "81a927ba1db3631f827a7c95601d5ac457900a920cef5249451f964c2d4efaa4"
+    },
+    {
+      "path": "src/engine/entitlement-review/working-time/source-facts.ts",
+      "sha256": "d83b69723567fefa723974c49624784fa84b760daa5eda868cf58e045bd6d1c3"
+    },
+    {
+      "path": "src/engine/entitlement-review/working-time/source-policy.ts",
+      "sha256": "fec23044ae3326a09f23f4f0a13a224b29355cf92f96f68d00729194000e6e38"
+    },
+    {
+      "path": "src/engine/entitlement-review/working-time/time-source.ts",
+      "sha256": "0369eac2987dfad39521c72f9c54417bb4e55d817a9ca167b48da11d06b9e9c8"
+    },
+    {
+      "path": "src/engine/extraction/confidence-policy.ts",
+      "sha256": "b234eae4ed91919131ba03b1a14dd6f4dd5a3d3ab792ca471845e4e7ad0b21fa"
+    },
+    {
+      "path": "src/engine/extraction/contracts.ts",
+      "sha256": "74298c1f79a258ccf176b6b0804874077afba64fef8304bc41c554021dd646b6"
+    },
+    {
+      "path": "src/engine/extraction/customer-reading.ts",
+      "sha256": "21a3a8918aa79c9a313c490c2fd6ac0bb423c9a8415938e66f0bbe4082454d77"
+    },
+    {
+      "path": "src/engine/extraction/deduction-source-scope.ts",
+      "sha256": "f813e377410fdabcf8348263cf01157bf7455d8d5f9d473f26339e69096cac2b"
+    },
+    {
+      "path": "src/engine/extraction/document-evidence/contracts.ts",
+      "sha256": "db9a3514de3657d0cde5ff5b7b243eaf665e4dde926d304f2796c31f45e5edb1"
+    },
+    {
+      "path": "src/engine/extraction/document-evidence/money.ts",
+      "sha256": "5bdf628305c7acebda2d52c08d64d1cc67e802093d0a45671755182ec0218402"
+    },
+    {
+      "path": "src/engine/extraction/document-evidence/normalization.ts",
+      "sha256": "2d04c18cc7f25560d6ea8b7eb78cd198b6bd7c29e4a78af7efc6a6dbed80b661"
+    },
+    {
+      "path": "src/engine/extraction/document-evidence/reading.ts",
+      "sha256": "411da42ec09aadff9697f6acbe809f9c8cc6a10319b6e79ac9f54225cffc2194"
+    },
+    {
+      "path": "src/engine/extraction/document-evidence/snapshot.ts",
+      "sha256": "7a945c3c150b5cce3bb818a775e04d260e000e0dedc3ec7c538f36ffc93f8a23"
+    },
+    {
+      "path": "src/engine/extraction/document-evidence/source-transcription.ts",
+      "sha256": "e8897a5f3716f8f256cc4f902f0cf837e1bbdb3e8201f6a1997a186b0860efbc"
+    },
+    {
+      "path": "src/engine/extraction/hours-conflict-answer.ts",
+      "sha256": "96b15b3c2270347b96532a6bf34eba9e49f318c3123a4957e27882544a969ba4"
+    },
+    {
+      "path": "src/engine/extraction/hours-conflict.ts",
+      "sha256": "653a8a961412c9089cfdaeeed3be3e24de64c7c152457b244bc669d0e985ecff"
+    },
+    {
+      "path": "src/engine/extraction/normalization.ts",
+      "sha256": "d45f187985c131430d889c8e5cb13486e5cf08e9f6345935e672af1f783f6658"
+    },
+    {
+      "path": "src/engine/extraction/payslip.ts",
+      "sha256": "bc411247faa18fbfab4081ddf3218ec98c4adcee6b650f97ded0b12614615a7b"
+    },
+    {
+      "path": "src/engine/extraction/provider.ts",
+      "sha256": "ff0a2c74409f79895753a6e1a748b2cece37a7943d136797513224301a9cf90a"
+    },
+    {
+      "path": "src/engine/extraction/reading-resolution.ts",
+      "sha256": "31c1b357b1656684d1de71dc4aba223c4f8354a1e4612cadcd70d07be18cf3a0"
+    },
+    {
+      "path": "src/engine/extraction/resolver.ts",
+      "sha256": "4ae6e35f3f7136c8f8bc262f2a6b70dcba1fac2c7f5666f9878a0c811ea2bb6c"
+    },
+    {
+      "path": "src/engine/extraction/source-period-association.ts",
+      "sha256": "c4aa559294268ab8824634a208c6d96bcbbeadbd9a1b4f57e8f67d2579969486"
+    },
+    {
+      "path": "src/engine/extraction/source-structure-period.ts",
+      "sha256": "3f5ef6681633184f01062def2333f97001743f31e992631e2857947b85b7f557"
+    },
+    {
+      "path": "src/engine/extraction/source-structure-resolution.ts",
+      "sha256": "2add87012c3cdd9e8a9a6c9dbe35d1d84ffe7fa92832aca591bdf2a7687197b6"
+    },
+    {
+      "path": "src/engine/extraction/source-structure.ts",
+      "sha256": "ff50f5fc0537711923d024e8495a3bad565cb786e4d462ed09fad11cad87dd54"
+    },
+    {
+      "path": "src/engine/extraction/v2.ts",
+      "sha256": "70a1224f6da5d9b8d82aae673a0b1c2da29604d6fde298be6b2d2277d3ca83d1"
+    },
+    {
+      "path": "src/engine/extraction/v21.ts",
+      "sha256": "486bfdcb4927f9e4382abc0875e43d800c9fcd3e60323c901818ba36975b32cf"
+    },
+    {
+      "path": "src/engine/extraction/validation.ts",
+      "sha256": "2b633ae0c9c383f77f77a8e3a9f9fe5e61a90d0d54cc4b4f31da2f89391953c6"
+    },
+    {
+      "path": "src/engine/facts/contracts.ts",
+      "sha256": "a0d26ddcb7304bddc4e185fafbb9436d7694fa4d1930b37667050cbce24dbf3d"
+    },
+    {
+      "path": "src/engine/facts/fact-paths.ts",
+      "sha256": "49393900683e1bea6e16c8c96e79aebc59ce645835230a0f36fd02d0266b3e49"
+    },
+    {
+      "path": "src/engine/facts/snapshot.ts",
+      "sha256": "43059471b6961a118d1fbb0b2fd91524f7d389a587ffe240c161b7a86124a10b"
+    },
+    {
+      "path": "src/engine/findings/contracts.ts",
+      "sha256": "76802707b44d3b3dfbe96e81ba69f8309ec3ed4c59bcd86f03b754c5cad17c5a"
+    },
+    {
+      "path": "src/engine/findings/source-comparison.ts",
+      "sha256": "bdcf5fd31b5465ca7f6d54bb9429aeb31894ef7714b755603f2f36fcb63da3e1"
+    },
+    {
+      "path": "src/engine/interview/contracts.ts",
+      "sha256": "31669575a5afeab03432ed0fb5bf3cba470d544c15e9c2373871c6cc33f9b416"
+    },
+    {
+      "path": "src/engine/interview/conversation.ts",
+      "sha256": "ef4dd585ad5391a5349d6baa192ec95feb8d98421be8809bd94152ce176f27f9"
+    },
+    {
+      "path": "src/engine/investigation/analysis-run.ts",
+      "sha256": "d0e5a0bd0cc44f38fc165dfb9a7acb2ec5eac8f1b61f2fdf79e2c6acf1c57be8"
+    },
+    {
+      "path": "src/engine/investigation/hypothesis.ts",
+      "sha256": "ba5c39d9af29b82d21f4bda68cc2949ece8d385e78a48b9a07a9cf2dc57e372d"
+    },
+    {
+      "path": "src/engine/legal-knowledge/canonical-readiness/evaluate-legal-readiness.ts",
+      "sha256": "f9b70722d3fc03633e2c5d0bb1e609d9272a33656213e93bfdfb04732b98a04b"
+    },
+    {
+      "path": "src/engine/legal-knowledge/contracts.ts",
+      "sha256": "17cf829d336a8082f7512519582a6cfa066a2993593e33b8ace11b02ea6672a0"
+    },
+    {
+      "path": "src/engine/legal-knowledge/taxonomy.ts",
+      "sha256": "f53065cb150f3a856d59dd10d990c9b4a083aff296059f34c06b3170c77079b0"
+    },
+    {
+      "path": "src/engine/legal-operations/canonical.ts",
+      "sha256": "7600d68c9fa11764d32975ecbcf150fa8eb94d50b98fcd88ae8e85fb51bc1be3"
+    },
+    {
+      "path": "src/engine/legal-operations/contracts.ts",
+      "sha256": "d3101600b6ec7a83dd574087d8609a97ee464dcc675dbaa3dcecd41a08ec51fb"
+    },
+    {
+      "path": "src/engine/legal-operations/derivation.ts",
+      "sha256": "8e876958fadc55f04953975e128573684098bcc0eaefd2ee9f917b1f2594ebfc"
+    },
+    {
+      "path": "src/engine/legal-operations/document-review-entitlement-night-work.ts",
+      "sha256": "b77e87f4e4e8adec201ee475d154e36a1b12a9fd1fc5d020bd98e2d65fac6883"
+    },
+    {
+      "path": "src/engine/legal-operations/document-review-entitlement-source-policy.ts",
+      "sha256": "314cedb034e92dc3eb320ba6393e35ebd9695949dc578ee6d0f87020c26d6cf5"
+    },
+    {
+      "path": "src/engine/legal-operations/human-trust.ts",
+      "sha256": "413553b0f3ad25c09163af2a4a57d81a37718585d93f13efcab0e3b060e45074"
+    },
+    {
+      "path": "src/engine/legal-operations/june2026-catalog-fingerprint.ts",
+      "sha256": "feeb276bd45d4946ad000655a9726412239fe42db108d16ef2ee51965137165d"
+    },
+    {
+      "path": "src/engine/legal-operations/real-catalog-fingerprint.ts",
+      "sha256": "03d154b583f0c3f64ccde9ceb3a9b9d0ffdd31e09043799b893af51b30d06878"
+    },
+    {
+      "path": "src/engine/legal-operations/real-catalog.ts",
+      "sha256": "f797bda72243c88768c22b6338dcee1f8316a2500473c6cc0023bbe7e80b805f"
+    },
+    {
+      "path": "src/engine/legal-operations/real-june2026-catalog.ts",
+      "sha256": "0db6261117985e5ac91fd2327adacc5840e823e9d8d8c46bdd79ab0e90925f67"
+    },
+    {
+      "path": "src/engine/legal-operations/rulespec.ts",
+      "sha256": "d1c7055593fb5a399d9ce2ce7615c66c91a0a6831980a9e7da62fbe23a2f4cf6"
+    },
+    {
+      "path": "src/engine/legal-operations/state-machine.ts",
+      "sha256": "f4466ef4c1a526d52f1541ac2d60b425e9ec85fc670dfbb671ad7a76599ab46c"
+    },
+    {
+      "path": "src/engine/legal-operations/units.ts",
+      "sha256": "e4e2dae01d628253ede6b3d0421d40360488b5dc0ea2c6129b1e976d012e9ce3"
+    },
+    {
+      "path": "src/engine/minimum-wage-june2026/admission.ts",
+      "sha256": "1fa10b811c63b0c48e0b7b3f956580c49702fd193462b8312c784b64487601db"
+    },
+    {
+      "path": "src/engine/minimum-wage-june2026/admitted-context.ts",
+      "sha256": "7b646b6c0ab5061b911e077fc0f7b72211ba17684cf8ea26df97982a036d5f2e"
+    },
+    {
+      "path": "src/engine/minimum-wage-june2026/assessment-packet.ts",
+      "sha256": "07fae248ac60e3055be337b809e1380ad0a28d51773cc16dc3ee40e51d92c417"
+    },
+    {
+      "path": "src/engine/minimum-wage-june2026/candidate.ts",
+      "sha256": "d90bf111d9e1f290257315bf1ea0c0684fc5b40fa11e099adda6aea47aacf197"
+    },
+    {
+      "path": "src/engine/minimum-wage-june2026/collection.ts",
+      "sha256": "6a6099e759d9d807fe35d57585725df3e18a4c4c5cb1dc6e98b9d125a1224bd4"
+    },
+    {
+      "path": "src/engine/minimum-wage-june2026/evidence-admission.ts",
+      "sha256": "8870f5eb945c193f44513cab123a898429b117257b73f1804a155147ff8f9e1b"
+    },
+    {
+      "path": "src/engine/minimum-wage-june2026/evidence.ts",
+      "sha256": "af1e3cd2f93aa684fc4524ecb245a6c20c82351fab6868bc5c96e02da26d08a4"
+    },
+    {
+      "path": "src/engine/minimum-wage-june2026/executor.ts",
+      "sha256": "f633b3615f3be65a61a0abb853f9798463cc4d306ecdcc02bd0d74b889d658af"
+    },
+    {
+      "path": "src/engine/minimum-wage-june2026/regular-service/authority.ts",
+      "sha256": "f62a1745b751e333f26ea245a7003c102d7652b8d93a379374ed838db3aadb11"
+    },
+    {
+      "path": "src/engine/minimum-wage-june2026/regular-service/catalog.ts",
+      "sha256": "b6a638644a9896b1199f2293691166bd4235e737bcb1bc83f0b41744f529cc80"
+    },
+    {
+      "path": "src/engine/minimum-wage-june2026/regular-service/contracts.ts",
+      "sha256": "ef0240f115f578ef7b441b7efb45e8e35f588c49cd2ea35c30161ba1f21031b2"
+    },
+    {
+      "path": "src/engine/minimum-wage-june2026/regular-service/evidence.ts",
+      "sha256": "9fbbe60e7520f0999bc44a64dae5500e42306a87aaf2b2116aa51e7496569acc"
+    },
+    {
+      "path": "src/engine/minimum-wage-june2026/regular-service/executor.ts",
+      "sha256": "79fcc49370a5085c4dc227ee3cf4efd7138f28062201bbc4b6105b4c3f939de3"
+    },
+    {
+      "path": "src/engine/minimum-wage-june2026/regular-service/hours-conflict-admission.ts",
+      "sha256": "3875696db7cd81a03c9424ea26a59aa94ce0269577903e275d39e47d363a6d97"
+    },
+    {
+      "path": "src/engine/minimum-wage-june2026/regular-service/source-admission.ts",
+      "sha256": "fa0a18ee8bf1bff4a78c498dd15d47e29abf26a543036a66aa27e38d7618328d"
+    },
+    {
+      "path": "src/engine/minimum-wage-june2026/sources.ts",
+      "sha256": "b843e4e1f7a1157c66ccd445e9aa6c2cc312f2f97dde79647e10f43cc2c46b4a"
+    },
+    {
+      "path": "src/engine/minimum-wage-june2026/test-catalog.ts",
+      "sha256": "df9bdb82bf9165bdfb8eb1950a887b6cbe40e13edf5a7ca71a15a5fdf655de02"
+    },
+    {
+      "path": "src/engine/rule-input/snapshot.ts",
+      "sha256": "50753df62dd9ee903b14da81b0dffb9f46604ccd1e128b1a0369620b3176a253"
+    },
+    {
+      "path": "src/engine/rule-runtime/canonical.ts",
+      "sha256": "9eeaf065a112609be94fb3bd4aee488226ca302d7f28cff53b80e491111855ba"
+    },
+    {
+      "path": "src/engine/rules/contracts.ts",
+      "sha256": "c6de1dad47d686eb98ef2e99aa4156ab1b2597e903266b8583241d74c1437c55"
+    },
+    {
+      "path": "src/engine/wave1/contracts.ts",
+      "sha256": "1cd654db3d3be30b1bfb623b144984bbde2361a3f0302b0f0a2c08c1796f8a70"
+    },
+    {
+      "path": "src/engine/wave2/contracts.ts",
+      "sha256": "03237416329658a87113dbe15cbc8d35ad4830f83588cf724af3c6a682cdb020"
+    },
+    {
+      "path": "src/engine/wave23/corpus-trust/lifecycle.ts",
+      "sha256": "1800556f7f3367fd8cbcd0694c56e7dfccda382540fadc8976aef296758576d6"
+    },
+    {
+      "path": "src/engine/wave3/contracts.ts",
+      "sha256": "6e2a363d5416cabcdd2a2b101d4c730d1078e4d5ece7a4fb528fad7985fe0b3a"
+    },
+    {
+      "path": "src/engine/wave4/contracts.ts",
+      "sha256": "1b115680ba82df455da10b080a611dcc6115b992f2cc9e25184d68f2da36d584"
+    },
+    {
+      "path": "src/lib/document-evidence-source-display.ts",
+      "sha256": "36aefb96b56de97b0c3e0ba8748509fbb8aa67f37729deafde23cfb8bfdc074a"
+    },
+    {
+      "path": "src/lib/document-reading-display.ts",
+      "sha256": "7168d61b5a043dab02ec27d9523d821938b6aa4078aea46f8762b5809484a928"
+    },
+    {
+      "path": "src/lib/document-upload.ts",
+      "sha256": "d0f7089d762b2de030cdc28403fdd5a5c246a447ce228a9daca16e7581468d5c"
+    },
+    {
+      "path": "src/lib/funnel-validation.ts",
+      "sha256": "49634d9628dcdefb0e5cc509b828e6df3ad725a056a719c5bb619b1cf05df6fb"
+    },
+    {
+      "path": "src/lib/legal-terms.ts",
+      "sha256": "24900936675deb52d85d1bcd1d0850eab2c598d012da1774669d21bbd767dbaa"
+    },
+    {
+      "path": "src/lib/product-offer.ts",
+      "sha256": "1ab8288f880098a3e423f27e07c5b9ca3f04053dea8ac61af2f3399eb6cbc860"
+    },
+    {
+      "path": "src/lib/request-display.ts",
+      "sha256": "af2b8d2b644f546aea63b6739376062aab296064047a37519c004b56bfcae98e"
+    },
+    {
+      "path": "src/lib/source-period-intake-display.ts",
+      "sha256": "665ea0b16e74b4939819877eb88eb3b03af71592649532c20e7e8161bd294383"
+    },
+    {
+      "path": "src/lib/source-structure-display.ts",
+      "sha256": "df126b79d7f3d1e9440123edab348898055a451430fc311b960bba68cf87c360"
+    },
+    {
+      "path": "src/lib/supabase-admin.ts",
+      "sha256": "af6f1669f740c176dbb9819bf84e7007c0819df55cf17d482a2aa513c8488927"
+    },
+    {
+      "path": "src/lib/travel-tariff-display.ts",
+      "sha256": "aaf0d1bff70fc3b0065e89d71d652f7d07c9361ee3b585f002b8560a91fc68e7"
+    },
+    {
+      "path": "src/lib/validation.ts",
+      "sha256": "8d1f52a0cec1e54d0b99bb2fd3f6b392e42d399e014175ce0871ded579ba40d4"
+    },
+    {
+      "path": "src/server/engine/extraction/preprocessing.ts",
+      "sha256": "8700279e44d6c6e7c0b7f487e6b270a686ee9ff0667e323ce81f68f153217753"
+    },
+    {
+      "path": "src/server/engine/extraction/providers/openai/config.ts",
+      "sha256": "05cc8e5c2182babf053377fa3134f93a6ffc313c61cf617b7882b641a57aef5f"
+    },
+    {
+      "path": "src/server/engine/extraction/providers/openai/document-evidence-adapter.ts",
+      "sha256": "25947aaa4de9fa5a93cb65a66eda3bc8daf370ad2830d3fe429440feae8ff4c3"
+    },
+    {
+      "path": "src/server/engine/extraction/providers/openai/document-evidence-mapper.ts",
+      "sha256": "32b28312f3cf466054074bb712d8a52df4588ddaac2396228aa95bb54e5a9f8c"
+    },
+    {
+      "path": "src/server/engine/extraction/providers/openai/document-evidence-prompt.ts",
+      "sha256": "047777d22fde8cfb580c5607e98f0f31b584fffac2940f62b8d7c9557e959cc1"
+    },
+    {
+      "path": "src/server/engine/extraction/providers/openai/document-evidence-request.ts",
+      "sha256": "aa88547910a7f8f8436292bad6955d806866333bd1010d40799549ab43dae8f8"
+    },
+    {
+      "path": "src/server/engine/extraction/providers/openai/document-evidence-schema.ts",
+      "sha256": "86e3e918dced3b8fb0c7db3097fd67245df99fff042d6422c35cb2a79905a14b"
+    },
+    {
+      "path": "src/server/engine/extraction/providers/openai/error-contract.ts",
+      "sha256": "5ffacc8066b1f26d3591924c57f709fcf678b80cc0f4853d068ecf532d23529b"
+    },
+    {
+      "path": "src/server/engine/extraction/providers/openai/errors.ts",
+      "sha256": "b916a9417a9689dae7ae100c5db04ad177ec8beebae7d3b7fd70c1ecde71d567"
+    },
+    {
+      "path": "src/server/engine/extraction/providers/openai/managed-package-recovery.ts",
+      "sha256": "c2d448e726d96da2a572fb4b5776f9ae63036edd29e647d4c912b832f64eb59b"
+    },
+    {
+      "path": "src/server/engine/extraction/providers/openai/mapper.ts",
+      "sha256": "8ee864a7e1ed45654701fe3a0d06e505bc0d517fb5f5d5dd474ed4ae66a06218"
+    },
+    {
+      "path": "src/server/engine/extraction/providers/openai/prompt.ts",
+      "sha256": "c9c2c18fc74f2513ce3d3f20752f41003f8ab8d98dde10ffcd209b7c48f0af53"
+    },
+    {
+      "path": "src/server/engine/extraction/providers/openai/provider-receipt.ts",
+      "sha256": "0c15180dca32f364b8da9dd3a569f73429d9ee0380a49ba82ec2d3377d1d21e6"
+    },
+    {
+      "path": "src/server/engine/extraction/providers/openai/request.ts",
+      "sha256": "84d0a28296d9dfa17082ba11a5cc854f5aa0f06d9c666566ba0fa0f7c2044537"
+    },
+    {
+      "path": "src/server/engine/extraction/providers/openai/schema.ts",
+      "sha256": "53c96f05e1bd16ac107c83a23bfe22091d7fbaa120f598b05ae9c63fc117d06a"
+    },
+    {
+      "path": "src/server/engine/extraction/providers/openai/v2-adapter.ts",
+      "sha256": "7e086da3ecaf46b1eb191a206d26e1fe58f813f30ac34c93d79dd2b70e5546ef"
+    },
+    {
+      "path": "src/server/engine/extraction/providers/openai/v2-aggregate-totals.ts",
+      "sha256": "66e7dea03c37986e22d216047a019daf98c8610453b012cfab64b57b4a9c7c8f"
+    },
+    {
+      "path": "src/server/engine/extraction/providers/openai/v2-hourly-row-evidence.ts",
+      "sha256": "613cf8956de81066418354640052210723b296062f213aa66e9bc0a7183fae01"
+    },
+    {
+      "path": "src/server/engine/extraction/providers/openai/v2-mapper.ts",
+      "sha256": "ac84a9aa4b45e320b9bd244043abe4a12bc224439d63318a454eac6fe6b9ed5a"
+    },
+    {
+      "path": "src/server/engine/extraction/providers/openai/v2-prompt.ts",
+      "sha256": "3606f5d0fdae322037f1d3514cf57335514dc719861a29f6646d457c3dea6e29"
+    },
+    {
+      "path": "src/server/engine/extraction/providers/openai/v2-request.ts",
+      "sha256": "277d683a0571fef00d6700dc56db8061b6a3ac894063f6910f447ba5a309a044"
+    },
+    {
+      "path": "src/server/engine/extraction/providers/openai/v2-schema.ts",
+      "sha256": "e77f919483d4f06599f91a04a4f0a2ae1f77de135238b90549df3aaa6efd31d0"
+    },
+    {
+      "path": "src/server/engine/extraction/providers/openai/v2-source-scope.ts",
+      "sha256": "003cebf69f25aa2af1a93b004daf2834f15e979f2d4dc536e43082239b2afe5c"
+    },
+    {
+      "path": "src/server/engine/extraction/providers/openai/v21-adapter.ts",
+      "sha256": "55e391b07e1f8f1d5be1ad5ce2031c66e46cd6964eb8ccaa31f60c12a8ca9e7a"
+    },
+    {
+      "path": "src/server/engine/extraction/saved-document-evidence-contract.ts",
+      "sha256": "83914796181446911b7fb86ca0ac6dec29009f771a79f1e20f94878d0008e40e"
+    },
+    {
+      "path": "src/server/engine/extraction/saved-document-evidence.ts",
+      "sha256": "41f27c7e2c8648625f3f17d66506c48e04d559e57f622d576bd4442b15c5d219"
+    },
+    {
+      "path": "src/server/engine/extraction/saved-payslip.ts",
+      "sha256": "6345e475e2d0a2066367f8b6e453996c7a45b7747347799310560412fd91a5d9"
+    },
+    {
+      "path": "src/server/engine/extraction/verified-upload-source.ts",
+      "sha256": "4acfe6c8cce36d970fe5d6ee03b0977e28f5fbf92f9aaee020a9b995bec403b2"
+    },
+    {
+      "path": "src/server/engine/persistence-contracts.ts",
+      "sha256": "cf371b0b27633e8d9bdd36e74984b153adaa2dcee20be20122b905da7006ca1c"
+    },
+    {
+      "path": "src/server/engine/safe-logging.ts",
+      "sha256": "27f2055d6a3154263eb8412002cc6c7ed7e33b5e4528170ddbd762685e4b55c3"
+    },
+    {
+      "path": "src/server/platform/composition/canonical-postgres.ts",
+      "sha256": "a0cd45b222882cfea7f06d23000fbd6fbea1fb7a2898871b09f2ae49b3d57eef"
+    },
+    {
+      "path": "src/server/platform/jobs/durable-job-queue.ts",
+      "sha256": "6bfd8cf0150103afb5b46f97ae4ae80792e9d0b17c3a2111f698d057e1a9e779"
+    },
+    {
+      "path": "src/server/platform/persistence/canonical.ts",
+      "sha256": "8dc5f400420aaeb6da209a5b42fbc5e157016084bae58b4a61850cb804549f91"
+    },
+    {
+      "path": "src/server/platform/persistence/contracts.ts",
+      "sha256": "fdf2a643cccc23cb49453a874fcfa350774afed21a57b2d495e80b30536e7fd7"
+    },
+    {
+      "path": "src/server/platform/persistence/postgres/analysis/case-analysis-repository.ts",
+      "sha256": "585fb93ff3dce6e8d7a6da8ef04ede0cccd0e4c06c2a4e1bb46d1bdf00cd85c2"
+    },
+    {
+      "path": "src/server/platform/persistence/postgres/analysis/errors.ts",
+      "sha256": "1164bb1021358915a7ddedb6ff7f969d5fb00d1fc0fbcde727ba0dcd039ab946"
+    },
+    {
+      "path": "src/server/platform/persistence/postgres/analysis/index.ts",
+      "sha256": "c9cc984b065f428c4c070993a365840d5ffc96d31424e568addb841ee80d7bd2"
+    },
+    {
+      "path": "src/server/platform/persistence/postgres/analysis/legal-pins.ts",
+      "sha256": "e014ca37e2a7ac0925b3b0853a152ed40d1c1f45cb4f3b652a77926c76bc74c4"
+    },
+    {
+      "path": "src/server/platform/persistence/postgres/analysis/reports.ts",
+      "sha256": "f5feaff8a78875ce9de30a9d8949036106433dc8593e2e4f36630d0d753c5579"
+    },
+    {
+      "path": "src/server/platform/persistence/postgres/analysis/topic-results.ts",
+      "sha256": "489e37e99f7b567f4243f70d393be342a3df98a89d6cdc37ae9a7daa4006edbb"
+    },
+    {
+      "path": "src/server/platform/persistence/postgres/analysis/traces.ts",
+      "sha256": "3b72f265b1672df1cc9ecc3fd8e5c5ac8d1e96e2ae731efe1f24387556b12d1d"
+    },
+    {
+      "path": "src/server/platform/persistence/postgres/analysis/validation.ts",
+      "sha256": "cc4ce365fc54e59acc811cc3b1ad213997330fa7a3ecbf7557876b7921a04682"
+    },
+    {
+      "path": "src/server/platform/persistence/postgres/contracts.ts",
+      "sha256": "f4b6a7d16f7a71e17e93c4ef814f38c8eb19ef1b3365fc89eb515c84010432db"
+    },
+    {
+      "path": "src/server/platform/persistence/postgres/intake/codecs.ts",
+      "sha256": "9be4561e1365751b7a0a14f71c6709abda3b37ac870e51598425add78c657eb4"
+    },
+    {
+      "path": "src/server/platform/persistence/postgres/intake/errors.ts",
+      "sha256": "3deb324e614fa21ef7227f28bbaf9aa7872e2fd1520748329393549203ff0281"
+    },
+    {
+      "path": "src/server/platform/persistence/postgres/intake/index.ts",
+      "sha256": "358630b93474e00e67a3918e417ea2733ff26971baa3133f0b89634a5241412b"
+    },
+    {
+      "path": "src/server/platform/persistence/postgres/intake/repositories.ts",
+      "sha256": "c50dce974801fa4742ed568606b069d435fa376997d7e66bde3706f43342dfbb"
+    },
+    {
+      "path": "src/server/platform/persistence/postgres/intake/sql.ts",
+      "sha256": "0b2142ee608ebf405e57ed9c59871409082ad75406f9c3c3425815151e9086fe"
+    },
+    {
+      "path": "src/server/platform/persistence/postgres/runtime/codec.ts",
+      "sha256": "9ca2507ac3608b3d398aa8c672bd8d68cacc960db07a7d5dba3318b4d92ccbcc"
+    },
+    {
+      "path": "src/server/platform/persistence/postgres/runtime/disposable-target.ts",
+      "sha256": "f8fa266985763a32408a9d94231c2fbc71c61fc6ab0a143c2c5035b6887681aa"
+    },
+    {
+      "path": "src/server/platform/persistence/postgres/runtime/errors.ts",
+      "sha256": "3f0632ac3d15eb43364e5c7bc753246d95f0142a55a81b1251879342c087ebff"
+    },
+    {
+      "path": "src/server/platform/persistence/postgres/runtime/idempotency.ts",
+      "sha256": "3cf50a97a925b6e640057af1dc3ffccc3c8059602d7cd22979510b7d553cc879"
+    },
+    {
+      "path": "src/server/platform/persistence/postgres/runtime/jobs-outbox-audit.ts",
+      "sha256": "34fa3ea56b8895c5620a0566b512dce55d3d39a22c952e8d1b4d76580fcf3dda"
+    },
+    {
+      "path": "src/server/platform/persistence/postgres/runtime/node-pg-driver.ts",
+      "sha256": "07847c1721e95f824073511f42ddbce63e9333572f0a24d11e7b110c9a218e73"
+    },
+    {
+      "path": "src/server/platform/persistence/postgres/runtime/transaction-manager.ts",
+      "sha256": "38edde6cba92b23bacde169f6a7d761eac4c9d9310d4f4d029a8d31dbc9cb715"
+    },
+    {
+      "path": "src/server/platform/trust/reviewer-trust-contracts.ts",
+      "sha256": "45983f7f09d82d11435d5e603669f3f918eeb75843b117ef8d566361fcae5bde"
+    },
+    {
+      "path": "src/server/platform/trust/reviewer-trust-store.ts",
+      "sha256": "c1b9951821d9ea49c2a11813eef3b196c4160aaa83e2b5575ae3d4253187633e"
+    },
+    {
+      "path": "src/server/product/case-access/crypto.ts",
+      "sha256": "612e3276c4b73c038ce27908f79d988f229144c44a09cc1dd5644443b0f2fe5c"
+    },
+    {
+      "path": "src/server/product/case-access/db.ts",
+      "sha256": "de7441c3e767d4c923019638d4823f0c53373d9059e80f222c87f5023ef1cd2e"
+    },
+    {
+      "path": "src/server/product/case-access/notification-outbox.ts",
+      "sha256": "ef20e6d65c8eb956579ae94b96b97899b112aec188f4b0ba33187d6232eb6623"
+    },
+    {
+      "path": "src/server/product/case-access/notifications.ts",
+      "sha256": "c4bde15bd7f1d7e0b4a8700257f661d1b10cd7c5468b362f862a8d9ea21b0442"
+    },
+    {
+      "path": "src/server/product/case-access/preview-database.ts",
+      "sha256": "41cf677455b9fdb2feb423b0032f9e3200a3d571eca6a688a32cd3b14d7c8bd9"
+    },
+    {
+      "path": "src/server/product/case-access/resend-provider.ts",
+      "sha256": "6e9be565f61fbd00417f0eff2710c2d1be4e8e41c6eeeaaa8119232f90f476b4"
+    },
+    {
+      "path": "src/server/product/case-access/supabase-ca.ts",
+      "sha256": "dc51f049aff8163babc6f2a35b3a204c731cd1d3b0bef9f4c50549bb0f96228b"
+    },
+    {
+      "path": "src/server/product/documents/physical-pages.ts",
+      "sha256": "55e24a968cb28939aae7922caac643f153a5c2021707912e5afc46f0f99d5999"
+    },
+    {
+      "path": "src/server/product/documents/review-fulfillment-saved.ts",
+      "sha256": "06901915938139a442627604886052b029461e1581da3a5b14e0ad01168e6a89"
+    },
+    {
+      "path": "src/server/product/documents/review-fulfillment.ts",
+      "sha256": "830e97edb6db98a4c1942e0ff7771289b37d8fdd0fc5c7b209816bd63eec0f4d"
+    },
+    {
+      "path": "src/server/product/documents/source-intake-upload.ts",
+      "sha256": "322e06d932d8e5d14709bcec3b72d607e25f21989cd42399de39a70399d7d600"
+    },
+    {
+      "path": "src/server/product/orders/legacy-paid-receipt.ts",
+      "sha256": "e34bd89b7ec0390da53ae18d9923a1c64467e9c1f3fd95a7d4c9283f57138e2f"
+    },
+    {
+      "path": "src/server/product/orders/price-quote.ts",
+      "sha256": "593cee1c1cb523e91e4dbb3c42ff4c98e03116729992a579e841c5f21ba2e4c9"
+    },
+    {
+      "path": "src/server/product/orders/pricing.ts",
+      "sha256": "3d5b74adcab63c7b0e6dae889bc9e8c3e74ba61191f6f061b80e5891c3fab75b"
+    },
+    {
+      "path": "src/server/product/orders/purchase-topics.ts",
+      "sha256": "b6751ce23b85f76987306d814e906c417a856f44645ef1be05aa3b745ea35c53"
+    },
+    {
+      "path": "src/server/product/orders/quote-ledger.ts",
+      "sha256": "c6d5d15e54b51b31d2ba5fe446cb4774bc016821bee48f35bac785fcc92494f4"
+    },
+    {
+      "path": "src/server/product/orders/quoted-order.ts",
+      "sha256": "69ab7cf46231365b01bc7071c1fb59589c05e4481afad4ab634576925b7a807e"
+    },
+    {
+      "path": "src/server/product/orders/release-quote-status.ts",
+      "sha256": "7d3afae12448f54383631377a380dcdc5d4bf78e2ea077894d4a2af03e42f362"
+    },
+    {
+      "path": "src/server/product/orders/saved-release-pricing-basis.ts",
+      "sha256": "1e1470e31ed4c6832a9ccf5d45d6a016f741c9f93efb372f3ae8bca117a5a0fa"
+    },
+    {
+      "path": "src/server/product/processing/ai-release-build.ts",
+      "sha256": "c9608761aa80c48f718c48b80ae5accf23bf4f11fd941e5ae63955bd9a1e7fcf"
+    },
+    {
+      "path": "src/server/product/processing/ai-release-configuration.ts",
+      "sha256": "d21383a9b1a3c21bec100d016c32246f0d4ad5b81b7b771cdbfc26715015560f"
+    },
+    {
+      "path": "src/server/product/processing/ai-release-evaluation-anchor.ts",
+      "sha256": "9458907d85ac3b8916efdc88c7e3d1ef0cb089cded9fdafb800ceddda682fcc6"
+    },
+    {
+      "path": "src/server/product/processing/automatic-dev-completion-notifications.ts",
+      "sha256": "d631ce2a6a1575dc46d8d65783d205dddd8f4a16fb708e8f365229b045d64b42"
+    },
+    {
+      "path": "src/server/product/processing/automatic-dev-notifications.ts",
+      "sha256": "6d34b10bfea85ce1d3196e9ec1b4413519cb802e7285c4a39f07d8dc3f5d0dea"
+    },
+    {
+      "path": "src/server/product/processing/automatic-real-service.ts",
+      "sha256": "685a1b6d0a690d9bd36f293751ab67fc735f7c951beee2c6afe628977d1ac474"
+    },
+    {
+      "path": "src/server/product/processing/document-review-key.ts",
+      "sha256": "6bbf43bb70451ee543c18e8c64e2098ec0ba0ac5bc8723c9814e610fd6ace4e8"
+    },
+    {
+      "path": "src/server/product/processing/extraction-checkpoint.ts",
+      "sha256": "0a36678ff5e0be34000db602f6f4b253e83e5396c911429a0e61c71c711475f6"
+    },
+    {
+      "path": "src/server/product/processing/live-extraction-provenance.ts",
+      "sha256": "f4074942645d7b22c316b53b7a11e13b25bb5bc26f98a042a9707fbc8f23df0c"
+    },
+    {
+      "path": "src/server/product/processing/live-extraction-sol-comparison-budget.ts",
+      "sha256": "888bbf8f7f67332a38ee09ff4db6eeb57ea00aa9f29a8f702692273346ead4d1"
+    },
+    {
+      "path": "src/server/product/processing/managed-sol-live-window.ts",
+      "sha256": "1c52cc03db8cafa63c0a0e1a7bc43bdf2a3f8c2f54966a87a08f30b201b1cec1"
+    },
+    {
+      "path": "src/server/product/processing/managed-worker-build.mjs",
+      "sha256": "a7e0f5fe5a8a6b793c5d16de07783fc6588d19f8029dee34e976a3a09f23d156"
+    },
+    {
+      "path": "src/server/product/processing/managed-worker-config.ts",
+      "sha256": "8c4970cd12c6dd6c1d08474a0cc991a68e0e44d8cb1c390f82ecd6ee02945138"
+    },
+    {
+      "path": "src/server/product/processing/managed-worker-contract.ts",
+      "sha256": "0b1a61b10129ba267573a9731b44ce111894677d847ad247fa2417de79c6366b"
+    },
+    {
+      "path": "src/server/product/processing/real-service-activation-contract.ts",
+      "sha256": "b7433c6348e18a04c2a4aecef4a482868b78eca99a86afa710c540093c842242"
+    },
+    {
+      "path": "src/server/product/processing/real-service-activation.ts",
+      "sha256": "ba77788ba700bb64d21269e5517e9b7936dfc19988019f1fbf25ffc9205ca0b0"
+    },
+    {
+      "path": "src/server/product/processing/real-service-budgeted-extractor.ts",
+      "sha256": "28b8860a3c0eee9137e957447f1e1c81a1cd7ccfc7ba52b5d13dfe62e8e9836a"
+    },
+    {
+      "path": "src/server/product/processing/real-service-controller.ts",
+      "sha256": "66041661051d66edf9cb317a568aeaa4545e287acc7af40ae3d68e8aef7d62d9"
+    },
+    {
+      "path": "src/server/product/processing/real-service-iteration.ts",
+      "sha256": "00c1984a82e5d74b9deeace9534d6f0c2f429279c5839d32f37cc9eef18aa422"
+    },
+    {
+      "path": "src/server/product/processing/real-service-machine-issuer.ts",
+      "sha256": "05e43995d1c1bc1a5a2676dcdf4d8ca674f3c9573c8b9d692bc0fd19cd6e2faa"
+    },
+    {
+      "path": "src/server/product/processing/real-service-machine-maintenance.ts",
+      "sha256": "e933dae64fc720713b1fe3e711971ac95520aae3c3ef8daecc6bfdd7056adc69"
+    },
+    {
+      "path": "src/server/product/processing/real-service-managed-case.ts",
+      "sha256": "a5e25c87e07afdae53c1f34821ad7924e659f23c216b19b33f1c6b09b386cff8"
+    },
+    {
+      "path": "src/server/product/processing/real-service-notification-dispatch.ts",
+      "sha256": "f9743ede9ec20e389d52ed73ae9193f9212acfdfc2a17912686c13b420f32e01"
+    },
+    {
+      "path": "src/server/product/processing/real-service-purchase-enrollment.ts",
+      "sha256": "409b1e4f968c2ce7ab85b36bc36263c838d9db0698a23216a55772f1ccd6679e"
+    },
+    {
+      "path": "src/server/product/processing/real-service-runtime.ts",
+      "sha256": "0b1a5f31a54928587f6a6bf924e3231c77d8b91ea452c5b86b2d4a99e21b6522"
+    },
+    {
+      "path": "src/server/product/processing/real-service-worker-host.ts",
+      "sha256": "67e82f9490f810f21c3a064a1ed488c47dc72c95dd5e364bd052b934918e809f"
+    },
+    {
+      "path": "src/server/product/processing/real-service.entry.mts",
+      "sha256": "17916014fd573a763e766ff565904fdfb3e0b341b86060935345c27cebb2f0df"
+    },
+    {
+      "path": "src/server/product/processing/saved-admission.ts",
+      "sha256": "0753c7890e2f3ecfa470196027a418cb9ab8c0a5dc2fcecdf6f99e957ec6e418"
+    },
+    {
+      "path": "src/server/product/processing/saved-ai-release-configuration.ts",
+      "sha256": "4663701742c0fc21c216597223b0eeae6bc7f5d812aca0f54de9d759f8bec7d0"
+    },
+    {
+      "path": "src/server/product/processing/saved-ai-release.ts",
+      "sha256": "5cb27b668420fa071dbb0f4031a88fc623dc6d2fa6031a30c91f68bfbc8c76bb"
+    },
+    {
+      "path": "src/server/product/processing/saved-analysis.ts",
+      "sha256": "da7047f5a9de92990fe82e1293081e537c4eb2ebbbc3c41fae5a37670a38e2d1"
+    },
+    {
+      "path": "src/server/product/processing/saved-document-evidence-requests.ts",
+      "sha256": "86b7382cf0ae84c61d04f3b59ca4c9763677e4cf1929ee4d097b7a78ca1daf0b"
+    },
+    {
+      "path": "src/server/product/processing/saved-document-evidence-worker.ts",
+      "sha256": "6b2c6dfe132643db3231a6d7c4d7232be56e26e53cffae975e1f57887f71e4a4"
+    },
+    {
+      "path": "src/server/product/processing/saved-document-review.ts",
+      "sha256": "8eb13cf7dda528e7d41402f497d3a7f4fed847c075b0c05a2234f441265d40a6"
+    },
+    {
+      "path": "src/server/product/processing/saved-document-source-transcription.ts",
+      "sha256": "bdf66d97e843f5119de46cd9554bfe6fab2b7d5f415c098a3f6b5f63bbc28752"
+    },
+    {
+      "path": "src/server/product/processing/saved-draft-report.ts",
+      "sha256": "fa5ad8e1861b1716ac9f8d8544453ac8bfe240b3f54cb74f6781124f9ca79fb8"
+    },
+    {
+      "path": "src/server/product/processing/saved-extraction-prompt-admission.ts",
+      "sha256": "2e708393b0f59ee673b541a73ddfcd8d634e684c1734e7016cd01b5f292d91d5"
+    },
+    {
+      "path": "src/server/product/processing/saved-extraction-prompt-derivation.ts",
+      "sha256": "3b14c512d5ec2857896ee68335e382e443d47584a617b4ad1fb741d7446caf44"
+    },
+    {
+      "path": "src/server/product/processing/saved-extraction-worker.ts",
+      "sha256": "92d92eccb39431c38063a3c451833f66c9e5e3bb801a10fd7fe76341b4089611"
+    },
+    {
+      "path": "src/server/product/processing/saved-field-readings.ts",
+      "sha256": "0c4a1dcf9822a463b962b81c91eae3c178381d2ac21baa3be4267e7e39eb5421"
+    },
+    {
+      "path": "src/server/product/processing/saved-field-requests.ts",
+      "sha256": "f7c91e2a7d04fa892567636b616abf5ac6404f8dccd0f68285acaf4365206576"
+    },
+    {
+      "path": "src/server/product/processing/saved-hours-conflict.ts",
+      "sha256": "5552f7c0e13c2cc2d64f6b02557d7c7feca43170fe2618010e466d6deda75120"
+    },
+    {
+      "path": "src/server/product/processing/saved-hours-declarations.ts",
+      "sha256": "ccbdc72fcbaa54ad339971919718516252de261138632687b23441cd8ab02210"
+    },
+    {
+      "path": "src/server/product/processing/saved-job-completion.ts",
+      "sha256": "470e2252cf2874e1c8d8591e18ac875ccef844fe768acf3dcc25d0e104055dc0"
+    },
+    {
+      "path": "src/server/product/processing/saved-job-runner.ts",
+      "sha256": "45fd874789581ea638e48e0d247c6a9a1fa6af8e8fe1c22281b03c84fece1ed6"
+    },
+    {
+      "path": "src/server/product/processing/saved-job-runtime.ts",
+      "sha256": "06f439ff78fa9aeca3d08ff21cde5da5adce88a6642db42f5085bdb5b2b67271"
+    },
+    {
+      "path": "src/server/product/processing/saved-june2026-admitted-context.ts",
+      "sha256": "06405c50e771b4a857d66f9adff9b4fac58277c6b218c5503bf7465e1adbe220"
+    },
+    {
+      "path": "src/server/product/processing/saved-june2026-canonical.ts",
+      "sha256": "ab7c268d8895182717f0b9abe0a302707806f601fce6b3e1966f50c66ae8e0d0"
+    },
+    {
+      "path": "src/server/product/processing/saved-june2026-collection.ts",
+      "sha256": "9f496d780d34b57d5658aefb3399a9d705f469aa99a894b5e7638b6ec19a44c9"
+    },
+    {
+      "path": "src/server/product/processing/saved-june2026-regular-authority.ts",
+      "sha256": "cc684493129b4f30314b2f35fbb5d12e420d9d12ff6cb7d7b9530b09f185d57d"
+    },
+    {
+      "path": "src/server/product/processing/saved-june2026-regular.ts",
+      "sha256": "eac03cdfa2a306ae208d8dff9011228664f92e3ec158bb161c2b03aead85cd8e"
+    },
+    {
+      "path": "src/server/product/processing/saved-june2026-test-authority.ts",
+      "sha256": "c59acd4aa6f5dc4df4c1597fe452f5e0f6b4ba79530015f37d47a5bd50c834fb"
+    },
+    {
+      "path": "src/server/product/processing/saved-legacy-source-intake.ts",
+      "sha256": "5aae5d7cadc234ee6b2d33f5b18817fafb502a9d2cfe053d7d6be43bdc4243b9"
+    },
+    {
+      "path": "src/server/product/processing/saved-minimum-wage-review.ts",
+      "sha256": "980157cea0cb38098528d2f71b44f1742a3ae914e3b9e38ef1970a613e7537aa"
+    },
+    {
+      "path": "src/server/product/processing/saved-non-payslip-readings.ts",
+      "sha256": "14982f1ff22da3420b5ca4c08808f3cb99be2b33ffba6940a8061c1bb66821fb"
+    },
+    {
+      "path": "src/server/product/processing/saved-non-payslip-snapshot.ts",
+      "sha256": "5fbed954a12ea10fc6e1564789ce39dcfe201bae907896a46d793007e2e399ac"
+    },
+    {
+      "path": "src/server/product/processing/saved-obligation-payment-links.ts",
+      "sha256": "5e83e2c78a560bd24764c487663a71b03bec491e19608a2adf93d6fc10429012"
+    },
+    {
+      "path": "src/server/product/processing/saved-order-scope.ts",
+      "sha256": "4159ee5d7566a517ca36669be3e5c949b922f87f02a87e5bcf225083b7228ce2"
+    },
+    {
+      "path": "src/server/product/processing/saved-owner-engineering-configuration.ts",
+      "sha256": "b3c7eabdfbc5658e8f0c4ebdfacce726f0d3d656bb2d63a40ced6727046994b6"
+    },
+    {
+      "path": "src/server/product/processing/saved-owner-engineering.ts",
+      "sha256": "93727dbc102cc6c408130c268fbcfe1fbe74d52a7ab40930b1960187897f4437"
+    },
+    {
+      "path": "src/server/product/processing/saved-questionnaire.ts",
+      "sha256": "9d353e82fc053b28e4cb1906970a211be5a8565d5b62a62dcedc77f0fbe456c6"
+    },
+    {
+      "path": "src/server/product/processing/saved-reading-dependencies.ts",
+      "sha256": "c38ef515882495dfb4dca5eb2f497d6693de3a3cb01208e8152832a950efac9a"
+    },
+    {
+      "path": "src/server/product/processing/saved-real-ai-service-configuration.ts",
+      "sha256": "18e9059e096b4a7d68f4353dadd35932279d4d051ac9b64e12481f5b9f6c4219"
+    },
+    {
+      "path": "src/server/product/processing/saved-regular-trust.ts",
+      "sha256": "116293b797f96848d77d4e40d8465c8076bcbba3d09420c10572160d83533212"
+    },
+    {
+      "path": "src/server/product/processing/saved-release-quote-stage.ts",
+      "sha256": "6ec19f4ce9ab750091dfb1a1816ac4bac0860edb7eb97d7fa0b7169a2fd1bf1c"
+    },
+    {
+      "path": "src/server/product/processing/saved-request-facts.ts",
+      "sha256": "8b41e0fada2131d9f1b8365cbaa4cbf2e55075ceeeb8d5098fe4d5591b22fc83"
+    },
+    {
+      "path": "src/server/product/processing/saved-review-requests.ts",
+      "sha256": "1b8a8624fab90cc4eb61e976e2781363a4f7b0eb447745f873d739be2eaf95c4"
+    },
+    {
+      "path": "src/server/product/processing/saved-review-source-proof.ts",
+      "sha256": "2fdc238ce900e66cd02368bf126ade5386ad1eb0d1321d906f905c19b553703f"
+    },
+    {
+      "path": "src/server/product/processing/saved-snapshot.ts",
+      "sha256": "92a62a992b0c1c70c8b4ae2074135f6528bd610c902d04d5586e42b797daf5cb"
+    },
+    {
+      "path": "src/server/product/processing/saved-source-intake-planning.ts",
+      "sha256": "a697d129cc7021c4d47e5c7e877328a876e4b66c4879154684dadcc6b6829665"
+    },
+    {
+      "path": "src/server/product/processing/saved-source-physical-pages.ts",
+      "sha256": "efe7009ab008ae3eb8d2c1e9568c177b4bb8e821a189968874997a63a8e9a27e"
+    },
+    {
+      "path": "src/server/product/processing/saved-transcription-requests.ts",
+      "sha256": "b6e153b86c14435f8f61b9b7c46480f7eefe89033cbebb06f5f4b3462898169d"
+    },
+    {
+      "path": "src/server/product/processing/saved-travel-tariff-readings.ts",
+      "sha256": "6bffe91ae4715089f3e7db39acfa7aa48a97d368a510ab7a353f12c226bdfe99"
+    },
+    {
+      "path": "src/server/product/processing/saved-worker-contracts.ts",
+      "sha256": "ec17dee346d971ce9d4023f9bee90310683a100b4cb2a3fd912af54928eb9255"
+    },
+    {
+      "path": "src/server/product/processing/saved-worker.ts",
+      "sha256": "6e6f371d2d260ab0178313528f32d8102c7b274c3c7d53f3a71902716f48a538"
+    },
+    {
+      "path": "src/server/product/processing/source-dispatch.ts",
+      "sha256": "e88bfd0c5bf2fbee29c75bbd47c90900bcf9f3e08ad9acfb30b7f6fb2bdf9524"
+    },
+    {
+      "path": "src/server/product/processing/source-intake-coverage.ts",
+      "sha256": "456177c77cf35eb725659b8afe4631f2366b41d2603cbc9f8cdcab11bc0cf566"
+    },
+    {
+      "path": "src/server/product/reports/ai-release-report.ts",
+      "sha256": "49fd2b871a9ae517b0db45e86e092966e77e56acadcf565620292efa354a4465"
+    },
+    {
+      "path": "src/server/product/reports/business-clock.ts",
+      "sha256": "1de4d4c868550d7b17ddab2c4dcb70cea73edca5288fad26b02455691a2aa3f1"
+    },
+    {
+      "path": "src/server/product/reports/case-report-projection.ts",
+      "sha256": "480dcd6f52068227d84c7f865d3ea15587ab9708fbddf054b75c5330e55328e2"
+    },
+    {
+      "path": "src/server/product/reports/case-requests.ts",
+      "sha256": "76847d82849e968732327391c08b43dd4480e7c2c58f1a42dc7fb21d80ddcb86"
+    },
+    {
+      "path": "src/server/product/reports/document-evidence-reading.ts",
+      "sha256": "3d81a9509b16ae8941c9d73c70fb56693b9d54ec60a9f10e02e1879ef91a5619"
+    },
+    {
+      "path": "src/server/product/reports/document-evidence-source-transcription.ts",
+      "sha256": "cea14eb8484314fa8311a202bb3dbfe676efd74a6b416e25017af2f45cc7b854"
+    },
+    {
+      "path": "src/server/product/reports/document-field-confirmation.ts",
+      "sha256": "67b35573acb4b4a99519ae4ce6bd5d0726a7838cdd6622776f18920a4e18da65"
+    },
+    {
+      "path": "src/server/product/reports/document-field-transcription.ts",
+      "sha256": "5ace313694795d98bd68ee469d65b66f48340dbe685c64eeb9c65c13cb38e1c5"
+    },
+    {
+      "path": "src/server/product/reports/document-hours-conflict-answer.ts",
+      "sha256": "a7381661679973fde6ec8dd564b5397c3fafea902f233616850295c9cfc0634a"
+    },
+    {
+      "path": "src/server/product/reports/document-hours-conflict.ts",
+      "sha256": "f45bf83ec57d4afc70c4c6fd11ef4d0048c9f0826ed9714833e007092bc37947"
+    },
+    {
+      "path": "src/server/product/reports/document-obligation-payment-link.ts",
+      "sha256": "1554ffb163ac6abeec731d91de876b2009f250f52fcdf62f5cdfbac8cc120164"
+    },
+    {
+      "path": "src/server/product/reports/document-review-artifacts.ts",
+      "sha256": "c2e1e5da4fb6e3566f3b27c0a98bc39e83e29551f3123c78e144b981aa90ae9e"
+    },
+    {
+      "path": "src/server/product/reports/document-review-projection.ts",
+      "sha256": "3949f05f98cb8ee596314b2e46f2328726c07973aa5fc6882dd8523952898d1f"
+    },
+    {
+      "path": "src/server/product/reports/document-review-render-policy.ts",
+      "sha256": "acd43174a23b627b5818aac3d69e10bc1c62cf6614b35b62592da16145a7ef79"
+    },
+    {
+      "path": "src/server/product/reports/document-review-source-labels.ts",
+      "sha256": "ac1a370b786dc254346010fba0053dc871c594b84664fc7e43ae7b5f0fb477ed"
+    },
+    {
+      "path": "src/server/product/reports/document-row-cell-confirmation.ts",
+      "sha256": "81be023c232cd61bafbb168ee450f4135ec24da7474fb4b3f48933b661ef99dc"
+    },
+    {
+      "path": "src/server/product/reports/document-source-period-intake.ts",
+      "sha256": "baf68f99e4826461120f3264fe1fb4d983653f8e924328c0b905484564718db1"
+    },
+    {
+      "path": "src/server/product/reports/document-source-scope-confirmation.ts",
+      "sha256": "d7700e278b7e0d68b1b8b5c937313acf50e0a53e7fbc4d9e48d2d0ee59a9bd6e"
+    },
+    {
+      "path": "src/server/product/reports/document-source-structure.ts",
+      "sha256": "3ef9b418e09399d4a2695fb0c55aff2a61f321288ca7ff9358625e4b582a0f9f"
+    },
+    {
+      "path": "src/server/product/reports/document-source-transcription.ts",
+      "sha256": "dfa08ebd56710b9dc6881d821abb2ac935abd3dab723a1875ced9fa8b05f1601"
+    },
+    {
+      "path": "src/server/product/reports/document-travel-tariff.ts",
+      "sha256": "c4988aa70779a60211f55bfbc93b6c921f968e5ad531b298ba9ae2b4bd8b5b2b"
+    },
+    {
+      "path": "src/server/product/reports/june2026-regular-service.ts",
+      "sha256": "0ad19642fb2b2cc40e87388c90ec3ef917fd71dd02178f1ec51dbd6942623bb1"
+    },
+    {
+      "path": "src/server/product/reports/owner-engineering-report.ts",
+      "sha256": "8d5814b0f1690a786782b6572d55f7d94ce85b7cffc17c18c00130a85b1b0577"
+    },
+    {
+      "path": "src/server/product/reports/private-document-review.ts",
+      "sha256": "b88d21ce6dcef9b812f347313eb8c1c965c3710110ab6a3377fb2129b0d9ef46"
+    },
+    {
+      "path": "src/server/product/reports/publication-gate.ts",
+      "sha256": "008fc8f032a2133674a75b518824ff2a64be5881b8b065542b9f96d26e1ba69d"
+    },
+    {
+      "path": "src/server/product/reports/publish-ai-report.ts",
+      "sha256": "5a63c653f7dca63ef7241198a2c5839eedf5e44fc49113c461ea854287eaee7b"
+    },
+    {
+      "path": "src/server/product/reports/reading-verification.ts",
+      "sha256": "858e91516bfd89e1b88b014680848f461b909e40cdcc4d20a6da812a8664fcd8"
+    },
+    {
+      "path": "src/server/product/reports/real-ai-service-admission.ts",
+      "sha256": "c9f25ccc0201a752f97b4c98eeb2c54ceb7a676b1b62d141ac28ab794c189323"
+    },
+    {
+      "path": "src/server/product/reports/real-ai-service-customer.ts",
+      "sha256": "1e5e14108877b1c063b6dba2aaee9af29ee67503e40121a2f0ed8e0334dd9371"
+    },
+    {
+      "path": "src/server/product/reports/real-ai-service-delivery.ts",
+      "sha256": "f8dbc6ce50aeb3844d31253851437a6fba8d871ca36bd6fc70d20abceb4bc901"
+    },
+    {
+      "path": "src/server/product/reports/real-ai-service-notification.ts",
+      "sha256": "ab00a13c0a2c39b41e11c641a5a64a656b1eac50ee71d03c52a0910fbf3ec4e5"
+    },
+    {
+      "path": "src/server/product/reports/refusal-requests.ts",
+      "sha256": "0c8332b57957d2276116c9a51520c89f79c1dbc9755a84b2d5d67891b6ed5554"
+    },
+    {
+      "path": "src/server/product/reports/report-document.ts",
+      "sha256": "5e2eb8987fc46e853ce76bb50d26f26cc6100844bd56e59ceacf87d18f062712"
+    },
+    {
+      "path": "src/server/product/reports/request-answer.ts",
+      "sha256": "0f3c15745dd61aea5e469523f708ad450812cf9d49bebdb24ac54919815e82ef"
+    },
+    {
+      "path": "src/server/product/reports/request-evidence-source-context.ts",
+      "sha256": "c1d8fd882e433c5a9efcbdf583fd7a4b960b89bb77504162e19e08c013009052"
+    },
+    {
+      "path": "src/server/product/reports/request-source-intake-context.ts",
+      "sha256": "eabaafc76319b65fa7a6f404460f5febacaf0939cf88d9803f5bf9476426455a"
+    },
+    {
+      "path": "src/server/product/reports/request-source-period-context.ts",
+      "sha256": "3ae99167c701a86b88fc6d76427a94e10133d3d1d9fef83bb4d4c3a9be66d7d4"
+    },
+    {
+      "path": "src/server/product/reports/review-field-coverage.ts",
+      "sha256": "cfa791264626339b2a11bf5f14a04865c33250d39ad01cf1c870ec1e4d261887"
+    },
+    {
+      "path": "src/server/product/reports/review-shared-personal-coverage.ts",
+      "sha256": "f8a604bbcd7ad53a631a51401d83a3a83378908750185c67e033f255f0a82a96"
+    },
+    {
+      "path": "src/server/product/reports/validate-reading-answer.ts",
+      "sha256": "a5d7a01a4ade5643c7dc476fe62de2167b0757df71516887d250298125c4dd75"
+    },
+    {
+      "path": "src/server/reports/deterministic-hebrew-pdf.ts",
+      "sha256": "9b8e322a698e4e0fdfc86cb4ea23873ecf80e1490725d5c9093e423422e21f2b"
+    },
+    {
+      "path": "src/server/reports/deterministic-report-builder.ts",
+      "sha256": "82fd60da7048573f624991c30e03381c89cef1670ad90828f1ad175308976a8e"
+    },
+    {
+      "path": "tsconfig.json",
+      "sha256": "14050db7e9b2ea12c31249112bf03d177966a516918cc781a585d94409bbc28a"
+    }
+  ],
+  "source_graph_sha256": "d4346b9ca6ff69461e7378b6f834880298229c8fd967328fb363a5005d9d491d",
+  "sha256": "ca3b4de8a5a3986a937c6b6b5521823b7e1585abec0231094c5f680f7b9ef526"
+}

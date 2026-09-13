@@ -1,0 +1,41 @@
+{
+  "origin": "https://salary-3zlixydgx-tivdoccom-5042s-projects.vercel.app",
+  "deployedSha": "1fbf0f15987a971a54f8d042832786b5a44cb0fb",
+  "deploymentId": "dpl_HTsxNstUdoQ71EMrAGbPaGXG9nPF",
+  "stage": "completed",
+  "checks": [
+    {
+      "name": "isolated Preview health preserves disabled external services",
+      "passed": true
+    },
+    {
+      "name": "one current financial run and both historical runs appear after reload with computed operands and amounts",
+      "passed": true
+    },
+    {
+      "name": "hosted PDF is the exact stored calculated artifact and carries the same run and amounts as HTML",
+      "passed": true
+    },
+    {
+      "name": "both replaced and current source links return exact immutable uploaded bytes",
+      "passed": true
+    },
+    {
+      "name": "foreign actual customer cannot read HTML, PDF or either source",
+      "passed": true
+    },
+    {
+      "name": "financial report remains readable on reload at 390px",
+      "passed": true
+    },
+    {
+      "name": "financial report remains readable on reload at 1440px",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "scope": "Actual generated DEV financial runs; hosted HTML/PDF/source/history and identified answer UI. Synthetic paid scope/session; injected OCR; no real payment, login OTP or production.",
+  "liveOcrProof": false,
+  "seededReport": false,
+  "productionChanged": false
+}

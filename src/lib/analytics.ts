@@ -1,4 +1,5 @@
 "use client";
+import {EXTERNAL_MEASUREMENT_ENABLED} from "./measurement-policy";
 
 import { currentFirstTouch, recordFunnelEvent } from "./attribution";
 
@@ -61,6 +62,7 @@ export function trackEvent(eventName: AnalyticsEvent, params?: Record<string, un
           : sessionStorage.getItem("tivdoc-public-id") || undefined,
     });
   }
+  if (!EXTERNAL_MEASUREMENT_ENABLED) return;
   if (window.gtag) {
     window.gtag("event", eventName, safeParams);
     return;

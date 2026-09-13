@@ -48,11 +48,11 @@ describe("V0.10.2 bounded fresh worker child launcher", () => {
     });
   });
 
-  it("cancels the owned child and gives its runtime a bounded clean shutdown", async () => {
+  it.each([0, 200])("cancels the owned child and closes a runtime whose factory takes %i ms after readiness", async (factoryDelayMs) => {
     await withEntrypoint("", async (entrypointPath, workingDirectory) => {
       const readyPath = join(workingDirectory, "ready.marker");
       const closedPath = join(workingDirectory, "closed.marker");
-      await writeFile(entrypointPath, cancellationProgram(readyPath, closedPath), "utf8");
+      await writeFile(entrypointPath, cancellationProgram(readyPath, closedPath, factoryDelayMs), "utf8");
       const launcher = createLauncher(entrypointPath, workingDirectory, 3_000, 1_000);
       const controller = new AbortController();
       const launched = launcher.launch({ request: fixtureRequest(), signal: controller.signal });
@@ -232,12 +232,13 @@ await serveFreshWorkerChildProcess(async () => ({
 `;
 }
 
-function cancellationProgram(readyPath: string, closedPath: string): string {
+function cancellationProgram(readyPath: string, closedPath: string, factoryDelayMs: number): string {
   return `
 import { writeFile } from "node:fs/promises";
 import { serveFreshWorkerChildProcess } from ${JSON.stringify(MODULE_URL)};
 await serveFreshWorkerChildProcess(async () => {
   await writeFile(${JSON.stringify(readyPath)}, "ready", "utf8");
+  await new Promise(resolve => setTimeout(resolve, ${factoryDelayMs}));
   return {
     worker: { async process() { return new Promise(() => {}); } },
     async close() { await writeFile(${JSON.stringify(closedPath)}, "closed", "utf8"); },

@@ -1,0 +1,12 @@
+{
+  "verdict": "PASS",
+  "gitSha": "ddeff9ae34e9eb5ca0279cbc633d9849a58b9f24",
+  "newComparisonTests": 11,
+  "focusedTests": {"files": 4, "passed": 57, "failed": 0},
+  "typecheck": "PASS",
+  "changedFileLint": "PASS",
+  "databaseEvidence": "P08-source-monetary-comparison-db.json",
+  "scope": "Exact arithmetic comparison with documented source and explicit RuleSpec subtraction. No real legal expectation, active rule, settlement, customer monetary publication or pricing permission.",
+  "browserProof": false,
+  "productionChanged": false
+}

@@ -1,0 +1,168 @@
+{
+  "snapshotAt": "2026-09-10T05:00:22.623Z",
+  "caseId": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+  "reportDelivery": {
+    "delivery_id": "1e81e4989d5f50e7172c50488254bc181199aa529e593653104d73e30ad36d95",
+    "template": "report_ready",
+    "state": "delivered",
+    "attempts": 1,
+    "provider_message_id": "28df4d9a-dd10-4c6a-ba87-6e826ad8c71c",
+    "last_error": null,
+    "delivered_at": "2026-09-10T04:55:51.828Z"
+  },
+  "reportWebhooks": [
+    {
+      "event_id": "msg_3J7dggHERCPgSb0scr2INcN2uVz",
+      "provider_message_id": "28df4d9a-dd10-4c6a-ba87-6e826ad8c71c",
+      "kind": "email.delivered",
+      "occurred_at": "2026-09-10T04:55:51.828Z",
+      "received_at": "2026-09-10T04:55:59.666Z"
+    },
+    {
+      "event_id": "msg_3J7dgX3f9DVHUzb1u2BYtFuT8Yh",
+      "provider_message_id": "28df4d9a-dd10-4c6a-ba87-6e826ad8c71c",
+      "kind": "email.sent",
+      "occurred_at": "2026-09-10T04:55:51.037Z",
+      "received_at": "2026-09-10T04:55:53.330Z"
+    }
+  ],
+  "allCaseDeliveryStates": [
+    {
+      "delivery_id": "73cf33a887c9041bd37be1045f9eff499b115767ec2295955857458001af66a0",
+      "template": "document_request",
+      "state": "queued",
+      "attempts": 0,
+      "provider_message_id": null,
+      "last_error": null,
+      "delivered_at": null
+    },
+    {
+      "delivery_id": "eeae65f5fd3978ee42437b29f398b12fb9d34f72bd4eaadaa890eeba8331c9ca",
+      "template": "document_request",
+      "state": "queued",
+      "attempts": 0,
+      "provider_message_id": null,
+      "last_error": null,
+      "delivered_at": null
+    },
+    {
+      "delivery_id": "d53b0fe5dda2c06c2948beeeea525bcfaf6a12c7922c5589e0b73f9033d8ef3c",
+      "template": "document_request",
+      "state": "delivered",
+      "attempts": 1,
+      "provider_message_id": "77d6bb40-0db8-4abb-879b-cc0069bb9825",
+      "last_error": null,
+      "delivered_at": "2026-09-10T04:55:52.308Z"
+    },
+    {
+      "delivery_id": "1e81e4989d5f50e7172c50488254bc181199aa529e593653104d73e30ad36d95",
+      "template": "report_ready",
+      "state": "delivered",
+      "attempts": 1,
+      "provider_message_id": "28df4d9a-dd10-4c6a-ba87-6e826ad8c71c",
+      "last_error": null,
+      "delivered_at": "2026-09-10T04:55:51.828Z"
+    },
+    {
+      "delivery_id": "22946818edbec775f1012d60db878fe14fd0ef3df16c730e24f30b325177a79b",
+      "template": "document_request",
+      "state": "dead_letter",
+      "attempts": 0,
+      "provider_message_id": null,
+      "last_error": "input_superseded",
+      "delivered_at": null
+    },
+    {
+      "delivery_id": "1c9c1e464710d7cb2e36518cbc64247d6646b2318f28510788d2f350d8ba66c3",
+      "template": "document_request",
+      "state": "dead_letter",
+      "attempts": 0,
+      "provider_message_id": null,
+      "last_error": "input_superseded",
+      "delivered_at": null
+    },
+    {
+      "delivery_id": "21bdaa097693dbe1a89c19ae8fa9064d5a53a105efb2e22f82d0dbd2273a5712",
+      "template": "document_request",
+      "state": "delivered",
+      "attempts": 1,
+      "provider_message_id": "764c6397-d7b0-4b36-b423-1917e865218a",
+      "last_error": null,
+      "delivered_at": "2026-09-10T04:54:52.259Z"
+    },
+    {
+      "delivery_id": "a506bbbd4fdbd0c7404aa0983e75ff4cdcbc370e7991d1211b29d68a937d9317",
+      "template": "document_request",
+      "state": "delivered",
+      "attempts": 1,
+      "provider_message_id": "03001d2d-b1de-476b-9011-c1ee071420a9",
+      "last_error": null,
+      "delivered_at": "2026-09-10T04:54:51.707Z"
+    },
+    {
+      "delivery_id": "83a76276b1312bfe5d00d7fdcd7551ccadba342443acdc7bb87071d037086754",
+      "template": "document_request",
+      "state": "dead_letter",
+      "attempts": 0,
+      "provider_message_id": null,
+      "last_error": "input_superseded",
+      "delivered_at": null
+    },
+    {
+      "delivery_id": "2467a8120ded5d7cf780c1e99ad63ba26711576fb28acb3b257f2ad0432b0811",
+      "template": "document_request",
+      "state": "delivered",
+      "attempts": 1,
+      "provider_message_id": "465e6c0e-ad11-4dd7-b796-b25ee1947f52",
+      "last_error": null,
+      "delivered_at": "2026-09-10T04:54:11.613Z"
+    },
+    {
+      "delivery_id": "59084e3773739ed1c9eb75079bb90768e8f1704f7d0c0f3ae88fba70ae42078e",
+      "template": "document_request",
+      "state": "dead_letter",
+      "attempts": 0,
+      "provider_message_id": null,
+      "last_error": "input_superseded",
+      "delivered_at": null
+    },
+    {
+      "delivery_id": "99b46316f23f7bc8f3d69249d3eefbf1ab72910db738ff6b6d854440ec4dd109",
+      "template": "document_request",
+      "state": "delivered",
+      "attempts": 1,
+      "provider_message_id": "d2da0af0-21f3-4451-b546-d5a64432d502",
+      "last_error": null,
+      "delivered_at": "2026-09-10T04:54:10.334Z"
+    },
+    {
+      "delivery_id": "24205f9d7d8b26ac517d725f6c34885f77c7baf7fc25f1b9b8a45ce8792ff549",
+      "template": "document_request",
+      "state": "delivered",
+      "attempts": 1,
+      "provider_message_id": "02f6d1ef-6a9c-42dc-8f01-62a8415b2ffa",
+      "last_error": null,
+      "delivered_at": "2026-09-10T04:38:53.715Z"
+    },
+    {
+      "delivery_id": "65c3108e3bb1e1299abb397bdf8624c472bf57cdc55f1d40f3f4bceba8002a40",
+      "template": "document_request",
+      "state": "delivered",
+      "attempts": 1,
+      "provider_message_id": "8cae9a1a-5279-456b-b4c6-d268947f1d98",
+      "last_error": null,
+      "delivered_at": "2026-09-10T04:38:52.814Z"
+    },
+    {
+      "delivery_id": "87df02ede81f1675ceceff496e6ce0c4eecefa13ae977b68fa72cc88c9477353",
+      "template": "document_request",
+      "state": "delivered",
+      "attempts": 1,
+      "provider_message_id": "b748a1c1-30e8-4c0a-8df3-d867ff5616fc",
+      "last_error": null,
+      "delivered_at": "2026-09-09T22:28:36.300Z"
+    }
+  ],
+  "observedMailbox": "owner authorized Gmail; report opened in Spam",
+  "notProofOfInboxPlacement": true
+}

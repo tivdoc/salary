@@ -1,0 +1,42 @@
+{
+  "deployment": {
+    "id": "dpl_FntJf39hsrR1ozoK2tE12jsD9Ah8",
+    "url": "salary-acl7tou5v-tivdoccom-5042s-projects.vercel.app",
+    "target": "preview",
+    "readyState": "READY",
+    "sha": "71be72242d8af06c04bd7359946efb62e6372f2a"
+  },
+  "checks": [
+    {
+      "method": "GET",
+      "path": "/operations/dev-worker",
+      "expected": 404,
+      "actual": 404,
+      "passed": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/operations/dev-worker",
+      "expected": 404,
+      "actual": 404,
+      "passed": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/operations/dev-worker",
+      "expected": 404,
+      "actual": 404,
+      "passed": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/notifications/resend",
+      "expected": 503,
+      "actual": 503,
+      "passed": true
+    }
+  ],
+  "verdict": "PASS",
+  "scope": "Actual protected Preview rejects engine operations; notification HTTP remains disabled without signed provider configuration",
+  "productionChanged": false
+}

@@ -1,0 +1,18 @@
+{
+  "at": "2026-09-10T18:39:47.294Z",
+  "gitSha": "f85916eec1047cca447da133b4703f3e5cf731ae",
+  "workingTreeClean": true,
+  "state": "PASS",
+  "error": null,
+  "migration": "20260910182000_regular_authority_worker_dependency.sql",
+  "migrationSha256": "bc3f81f26d7ef51152cea17479b8a666dd770a5e6756e516755f0235b2b91fbf",
+  "checks": [
+    "actual_worker_cannot_mint_dependency_or_call_owner_refresh",
+    "authority_change_clears_only_current_pointer_and_is_idempotent",
+    "source_revision_hash_and_historical_jobs_unchanged",
+    "registry_case_lock_inversion_fails_fast_55P03_and_admin_retry_succeeds",
+    "all_authority_and_pointer_probes_rolled_back"
+  ],
+  "providerCalls": 0,
+  "productionChanged": false
+}

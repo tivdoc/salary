@@ -1,0 +1,27 @@
+{
+  "verdict": "PASS",
+  "checks": [
+    "the private worker cancellation RPC rejects foreign identity/case and all non-worker roles",
+    "failure before commit restores both the awaiting order and its credit reservation",
+    "concurrent cancellation is idempotent, appends one event and retains the original quote/credit history",
+    "a fresh quote reuses the initial credit for the same scope while the cancelled order remains immutable history",
+    "a real web checkout claim, including creating/uncertain/ready fixture outcomes, prevents credit release",
+    "actual web checkout racing authorized cancellation cannot both create a provider attempt and release credit",
+    "changed input also blocks reopening an already-created checkout without releasing its reserved credit",
+    "source change between acceptance and checkout blocks provider claim; an unstarted stale order can still be cancelled",
+    "an owner-seeded historically accepted expired quote fails checkout against the real database clock",
+    "synthetic paid order cannot be treated as an unstarted cancellation or release its credit",
+    "exactly one active initial-credit reservation remains after cancellation, replacement and checkout races"
+  ],
+  "failure": null,
+  "cleanupFailure": null,
+  "database": "tivdoc_release_replay_20260907",
+  "migration": "20260908153942_quote_unstarted_cancellation.sql",
+  "checkoutRetryMigration": "20260908154530_quoted_checkout_retry_freshness.sql",
+  "checkoutRetryMigrationSha256": "469183ae41d4d783e11c81437c43d5db3fd6d8ff04af30e6388ddb7fa02795f8",
+  "migration_sha256": "1eb0f99dcc5143fa27d288d2664413aa6d20fccb4d284d1293dfc7c62bd6f822",
+  "syntheticCasesRemoved": 2,
+  "machineSessionRevoked": true,
+  "scope": "Actual worker/peer/web roles; injected synthetic monetary basis and synthetic verified payment row. Synthetic payslip metadata only; no Storage/provider transport. Actual web checkout-claim function is exercised, not customer HTTP/browser or provider settlement. No canonical monetary proof or production change.",
+  "productionChanged": false
+}

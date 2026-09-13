@@ -2,7 +2,7 @@ import "server-only";
 import { zodTextFormat } from "openai/helpers/zod";
 import type { PayslipFieldKey } from "@/engine/extraction/contracts";
 import type { PreparedPayslipDocument } from "../../preprocessing";
-import { openAiPayslipV2StructuredOutputSchema } from "./v2-schema";
+import { openAiPayslipV2R8StructuredOutputSchema } from "./v2-schema";
 import {
   OPENAI_PAYSLIP_V2_FIRST_PASS_PROMPT_VERSION,
   OPENAI_PAYSLIP_V2_INSTRUCTIONS,
@@ -15,12 +15,24 @@ function dataUrl(mimeType: string, bytes: Uint8Array) {
   return `data:${mimeType};base64,${Buffer.from(bytes).toString("base64")}`;
 }
 
+export const OPENAI_SOL_COMPARISON_PROFILE = 'sol-medium-comparison-v1' as const;
+export const OPENAI_SOURCE_FILE_PAGE_POLICY = 'file-pages-v1' as const;
+export function openAiV2PromptVersion(kind:'first_pass'|'targeted_recovery',policy?:typeof OPENAI_SOURCE_FILE_PAGE_POLICY){
+ if(policy!==undefined&&policy!==OPENAI_SOURCE_FILE_PAGE_POLICY)throw new TypeError('OPENAI_SOURCE_PAGE_POLICY');
+ const historical=kind==='first_pass'?OPENAI_PAYSLIP_V2_FIRST_PASS_PROMPT_VERSION:OPENAI_PAYSLIP_V2_RECOVERY_PROMPT_VERSION;
+ return policy?historical+'-fp1':historical;
+}
+
 export function buildOpenAiV2ResponsesRequest(input: {
   model: string;
   prepared: PreparedPayslipDocument;
   kind: "first_pass" | "targeted_recovery";
   requested_fields?: readonly PayslipFieldKey[];
+  executionProfile?: typeof OPENAI_SOL_COMPARISON_PROFILE;
+  sourcePagePolicy?:typeof OPENAI_SOURCE_FILE_PAGE_POLICY;
 }) {
+  if (input.executionProfile !== undefined && (input.executionProfile !== OPENAI_SOL_COMPARISON_PROFILE || input.model !== 'gpt-5.6-sol'))
+    throw new TypeError('OPENAI_COMPARISON_PROFILE_MODEL_MISMATCH');
   const text = input.kind === "first_pass"
     ? v2FirstPassUserText()
     : v2RecoveryUserText(input.requested_fields ?? []);
@@ -44,12 +56,12 @@ export function buildOpenAiV2ResponsesRequest(input: {
       detail: "high" as const,
     },
   ]);
-  const promptVersion = input.kind === "first_pass"
-    ? OPENAI_PAYSLIP_V2_FIRST_PASS_PROMPT_VERSION
-    : OPENAI_PAYSLIP_V2_RECOVERY_PROMPT_VERSION;
+  const promptVersion = openAiV2PromptVersion(input.kind,input.sourcePagePolicy);
   return {
     model: input.model,
-    instructions: OPENAI_PAYSLIP_V2_INSTRUCTIONS,
+    instructions: OPENAI_PAYSLIP_V2_INSTRUCTIONS+(input.sourcePagePolicy?`\n\nSource-file coordinates (file-pages-v1):
+- page_count and every evidence.page refer to pages of the original source file. For a PDF use its actual file pages. A single JPEG or PNG is ONE source page, even when its screenshot contains several printed payroll pages or panels.
+- Read every visible panel. Printed page numbers inside an image, duplicate views, and supplied semantic crops do not create additional source pages. Preserve literal labels and region locations without inventing values or merging repeated rows.`:''),
     input: [{
       role: "user" as const,
       content: [
@@ -59,9 +71,11 @@ export function buildOpenAiV2ResponsesRequest(input: {
         ...cropInputs,
       ],
     }],
-    text: { format: zodTextFormat(openAiPayslipV2StructuredOutputSchema, promptVersion) },
+    text: { format: zodTextFormat(openAiPayslipV2R8StructuredOutputSchema, promptVersion) },
     max_output_tokens: 10_000,
     store: false,
+    ...(input.executionProfile === OPENAI_SOL_COMPARISON_PROFILE
+      ? {reasoning: {effort: 'medium' as const}, service_tier: 'default' as const} : {}),
   };
 }
 

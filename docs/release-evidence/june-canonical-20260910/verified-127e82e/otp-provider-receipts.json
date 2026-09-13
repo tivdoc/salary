@@ -1,0 +1,22 @@
+[
+  {
+    "id": "5d06e73d-3dd0-4d25-9afd-7794f34003c2",
+    "template": "access_code",
+    "state": "sent",
+    "provider": "resend",
+    "error_code": null,
+    "provider_message_id": "10166196-aa29-4bc4-ba16-ce95bc2f5a06",
+    "created_at": "2026-09-10T15:30:22.253Z",
+    "delivered_at": null
+  },
+  {
+    "id": "e82d67eb-8962-49c4-9b46-d077d011724a",
+    "template": "access_code",
+    "state": "sent",
+    "provider": "resend",
+    "error_code": null,
+    "provider_message_id": "4d41f1f9-fc32-402d-b12b-d16fe959830a",
+    "created_at": "2026-09-10T15:22:26.897Z",
+    "delivered_at": null
+  }
+]

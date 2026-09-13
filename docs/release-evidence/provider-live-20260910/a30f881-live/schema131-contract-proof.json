@@ -1,0 +1,23 @@
+{
+  "verdict": "PASS",
+  "checkedAt": "2026-09-09T21:37:59.055Z",
+  "gitSha": "c5217762d069b32146289f4f14397042c1af16c0",
+  "gitWorktreeDirty": false,
+  "migration": "20260909212737_direct_resend_provider_receipts.sql",
+  "schema": 131,
+  "actualDatabase": true,
+  "actualConcurrentClients": true,
+  "providerCalls": 0,
+  "webhookEvents": "synthetic DB contract fixtures; no signature/live-provider claim",
+  "fixtureRemoved": true,
+  "checks": [
+    "NULL and foreign receipt guards",
+    "early and late webhook order",
+    "direct and outbox collision symmetry",
+    "unchanged outbox delivery",
+    "nullable fence refused",
+    "concurrent retry returns one receipt",
+    "web role cannot record webhook; worker cannot forge direct receipt"
+  ],
+  "productionChanged": false
+}

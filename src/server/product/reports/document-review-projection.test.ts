@@ -1,0 +1,109 @@
+import {expect,it} from 'vitest';
+import type {AnalysisResultBundle} from '@/engine/wave3/contracts';
+import {runDocumentReview} from '@/engine/document-review/service';
+import {calculateDocumentReview} from '@/engine/document-review/calculations';
+import {canonicalSha256} from '@/engine/rule-runtime/canonical';
+import {GROUPED_REVIEW_GAP_PRESENTATION,renderReviewBundle} from './document-review-projection';
+import {attachDocumentReviewCoverage} from '@/engine/document-review/coverage';
+import {minimumWageLegalDocuments} from '@/engine/entitlement-review/minimum-wage/source-policy';
+import {documentReviewSourceLabel} from './document-review-source-labels';
+
+function bundle():AnalysisResultBundle{
+ const caseId='11111111-1111-4111-8111-111111111111',sha='a'.repeat(64),period={from:'2026-06-01',to:'2026-06-30'};
+ const documents=['doc-a','doc-b'].map((document_id,i)=>({case_id:caseId,document_id,version_id:`v${i}`,file_sha256:sha,page_count:1,kind:'payslip',label:'מסמך סינתטי באותו שם',period,reading_origin:'ai_document_review',reading_sha256:sha}));
+ const source={document_id:'doc-a',version_id:'v0',file_sha256:sha,page:1,locator:'synthetic table',label:'נתון סינתטי',reading:'ai_document_review',reading_receipt_sha256:sha};
+ const review=runDocumentReview({schema_version:'document-review-product-v1',case_id:caseId,period,
+  purchased_scope:{order_id:'synthetic-order',receipt_sha256:sha,topics:['pension'],origin:'saved_order'},documents,
+  checks:[{check_id:'synthetic-check',topic:'pension',title:'בדיקת3רכיבים',explanation:'בדיקת חיסור סינתטית.',calculation:{schema_version:'document-review-calculation-input-v1',case_id:caseId,run_id:'pending',check_id:'synthetic-check',period,evaluated_at:'2026-09-11T12:00:00Z',
+   source_manifest:[{document_id:'doc-a',version_id:'v0',file_sha256:sha,page_count:1,kind:'case_document',case_id:caseId}],
+   operands:[['gross','100.00'],['deduction','10.00'],['net','90.00']].map(([id,printed_value])=>({id,observation_id:id,state:'observed',printed_value,representation:'money_ils',quantity_unit:null,precision:'printed_precision',source})),
+   operation:{kind:'reconciliation',add_refs:['gross'],subtract_refs:['deduction'],recorded_ref:'net',inventory_complete:true,inventory_basis:'synthetic entire table',disjoint_components:true,overlap_basis:'different cells'},remittance_status:'not_assessed'}}],
+  coverage_gaps:[{check_id:'internal.owner',topic:'pension',kind:'ownership',detail:'private ownership matching marker',next_step:'private account matching task'}],
+  completion_input:{case_id:caseId,period,documents:documents.map(d=>({pin:{case_id:caseId,document_id:d.document_id,version_id:d.version_id,source_sha256:sha},kind:'payslip',period,review:'complete'})),needs:[],evidence:[]}},'synthetic-run');
+ return {schema_version:'tivdoc-analysis-result-bundle-v0.6.0',analysis_run_id:'synthetic-run',case_id:caseId,case_revision:1,period:{start_date:period.from,end_date:period.to},as_of:'2026-09-11',
+  document_snapshot_sha256:sha,extraction_snapshot_sha256:sha,declared_fact_snapshot_sha256:sha,facts_snapshot_sha256:sha,facts:[],rule_inputs:[],catalog_sha256:sha,topic_results:[],known_subtotal:null,coverage_complete:false,document_review:review,result_sha256:canonicalSha256(review)};
+}
+
+it('names exact compiled law sources and distinguishes their applicability from payroll periods without changing evidence or amounts',()=>{
+ const original=bundle(),review=original.document_review!,law=minimumWageLegalDocuments(original.case_id);
+ const documents=[...review.documents,...law];
+ const next=runDocumentReview(attachDocumentReviewCoverage({...review.input,documents},
+  {schema_version:'document-review-purchase-period-v1',receipt_sha256:review.purchased_scope.receipt_sha256,state:'missing',periods:[]}),original.analysis_run_id);
+ const before=canonicalSha256(next),rendered=renderReviewBundle({...original,document_review:next},'law-label-test');
+ const body=JSON.parse(Buffer.from(rendered.json).toString('utf8')),html=Buffer.from(rendered.html).toString('utf8');
+ expect(body.documents_checked.slice(2).map((d:{label:string})=>d.label)).toEqual(law.map(d=>documentReviewSourceLabel(d).label));
+ expect(new Set(body.documents_checked.slice(2).map((d:{label:string})=>d.label)).size).toBe(4);
+ expect(html).toContain('אינם מסמכי שכר חודשיים');expect(html).toContain('תקופת המקור — מסמך סינתטי');
+ expect(html).not.toContain('מקור לשכר מינימום: לא זוהתה');expect(html).not.toContain('מקור לשכר מינימום - מקור לשכר מינימום');
+ expect(body.sources).toHaveLength(documents.reduce((n,d)=>n+(d.page_count??1),0));
+ expect(body.findings).toEqual(JSON.parse(Buffer.from(renderReviewBundle(original,'before').json).toString('utf8')).findings);
+ expect(canonicalSha256(next)).toBe(before);
+ const foreign={...law[0],version_id:'uploaded-other-version',label:'מקור לשכר מינימום'};
+ expect(documentReviewSourceLabel(foreign)).toEqual({label:foreign.label,legal:false});
+});
+
+it('binds identically named documents by identity, summarizes topics and retains ownership only in the private appendix',()=>{
+ const report=renderReviewBundle(bundle(),'synthetic-report'),body=JSON.parse(Buffer.from(report.json).toString('utf8'));
+ expect(body.documents_checked.map((d:{source_ids:string[]})=>d.source_ids)).toEqual([['doc-a:v0:1'],['doc-b:v1:1']]);
+ expect(body.what_checked).toEqual(['רישומי פנסיה: 1 בדיקה']);
+ expect(body.findings[0].title).toBe('בדיקת 3 רכיבים');
+ expect(Buffer.from(report.html).toString('utf8')).not.toContain('private ownership matching marker');
+ expect(Buffer.from(report.private_evidence_appendix).toString('utf8')).toContain('private ownership matching marker');
+});
+
+it('labels an identified recorded answer as an answer rather than a printed document amount',()=>{
+ const original=bundle(),review=original.document_review!,check=review.checks[0],source=check.calculation.input.operands[2].source,answerSha='b'.repeat(64);
+ // Projection-only synthetic fixture: arithmetic uses an explicit answer
+ // manifest. This test does not claim authenticated production admission.
+ const calculation=calculateDocumentReview({...check.calculation.input,
+  source_manifest:[...check.calculation.input.source_manifest,{document_id:'answer',version_id:'answer:1',file_sha256:answerSha,page_count:1,kind:'customer_answer',case_id:original.case_id}],
+  operands:check.calculation.input.operands.map(o=>o.id!=='net'?o:{...o,state:'declared',source:{...source,document_id:'answer',version_id:'answer:1',file_sha256:answerSha,reading:'customer_declaration',reading_receipt_sha256:answerSha}})});
+ const report=renderReviewBundle({...original,document_review:{...review,checks:[{...check,calculation}]}},'synthetic-answer-report');
+ const body=JSON.parse(Buffer.from(report.json).toString('utf8'));
+ expect(body.findings[0].amounts.map((a:{label:string})=>a.label)).toContain('סכום שנמסר בתשובה מזוהה');
+ expect(body.findings[0].amounts.map((a:{label:string})=>a.label)).not.toContain('סכום במסמך');
+ expect(body.findings[0].summary).toContain('תשובה מזוהה שנמסרה');
+});
+
+it('groups only identical gap presentations, discloses count and topics, and retains every original gap privately',()=>{
+ const original=bundle(),review=original.document_review!;
+ const same={kind:'missing_fact' as const,detail:'הבדיקה כוללת ימים מחוץ ליוני ולא פוצלה או חושבה באופן יחסי.',next_step:'יש לבדוק את התקופה המקורית בנפרד.'};
+ const gaps=[...review.coverage_gaps,
+  ...Array.from({length:23},(_,i)=>({...same,check_id:`outside.${i}`,topic:i%2?'working_time' as const:'pension' as const})),
+  {...same,check_id:'outside.may21',topic:'sick_leave' as const,detail:'בדיקה זו מתייחסת ליום 21 במאי.'},
+  {...same,check_id:'different.action',topic:'pension' as const,next_step:'יש לברר תחילה את התקופה המדויקת.'},
+  {...same,check_id:'different.kind',topic:'pension' as const,kind:'missing_applicability' as const},
+ ];
+ const input={...original,document_review:{...review,coverage_gaps:gaps}},before=JSON.stringify(input);
+ const report=renderReviewBundle(input,'synthetic-grouped-report',{gapPresentation:GROUPED_REVIEW_GAP_PRESENTATION});
+ const body=JSON.parse(Buffer.from(report.json).toString('utf8'));
+ expect(body.missing_inputs).toHaveLength(4);
+ expect(body.missing_inputs[0].detail).toContain('23 בדיקות');
+ expect(body.missing_inputs[0].detail).toContain('רישומי פנסיה, זמני עבודה ונוכחות');
+ expect(body.missing_inputs[1].detail).toBe('בדיקה זו מתייחסת ליום 21 במאי.');
+ expect(body.missing_inputs[2].next_step).toBe('יש לברר תחילה את התקופה המדויקת.');
+ expect(body.missing_inputs[3].title).toBe('בירור תחולה');
+ const appendix=JSON.parse(Buffer.from(report.private_evidence_appendix).toString('utf8'));
+ expect(JSON.stringify(appendix)).toContain('"render_policy":"group-identical-v2"');
+ expect(JSON.stringify(appendix)).toContain('outside.22');
+ for(const gap of gaps)expect(JSON.stringify(appendix)).toContain(gap.check_id);
+ expect(Buffer.from(report.html).toString('utf8')).not.toContain('private ownership matching marker');
+ expect(JSON.stringify(input)).toBe(before);
+});
+
+it('preserves legacy default artifacts byte for byte under explicit individual-v1 selection',()=>{
+ const input=bundle(),original=renderReviewBundle(input,'synthetic-legacy-report');
+ const explicit=renderReviewBundle(input,'synthetic-legacy-report',{gapPresentation:'individual-v1'});
+ for(const key of ['json','html','pdf','private_evidence_appendix'] as const)expect(Buffer.from(explicit[key]).equals(Buffer.from(original[key]))).toBe(true);
+});
+it('shows paid scope, missing purchase period and observed document periods separately only in the coverage policy',()=>{
+ const original=bundle(),review=original.document_review!;
+ const input=attachDocumentReviewCoverage({...review.input,purchased_scope:{...review.purchased_scope,
+  topics:['minimum_wage','working_time','pension','travel','convalescence','vacation','sick_leave','rest_day','bonuses']}},
+  {schema_version:'document-review-purchase-period-v1',receipt_sha256:review.purchased_scope.receipt_sha256,state:'missing',periods:[]});
+ const next=runDocumentReview(input,original.analysis_run_id),report=renderReviewBundle({...original,document_review:next},'coverage.report');
+ const text=Buffer.from(report.html).toString('utf8'),body=JSON.parse(Buffer.from(report.json).toString('utf8'));
+ expect(text).toContain('כולל 9 נושאים');expect(text).toContain('במקור הרכישה לא נרשמה תקופת בדיקה');expect(text).toContain('מסגרת הדוח הנוכחי');
+ expect(text).toContain('תקופת המקור');expect(text).toContain('מנוחה שבועית');expect(body.what_checked.some((s:string)=>s.includes('כל נושאי השירות הושלמו'))).toBe(true);
+ expect(text).not.toContain('private ownership matching marker');expect(Buffer.from(renderReviewBundle(original,'legacy.report').html).toString('utf8')).not.toContain('תקופת הרכישה');
+});

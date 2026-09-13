@@ -1,0 +1,35 @@
+{
+  "sources": [
+    {
+      "name": "vacation-base",
+      "url": "https://www.btl.gov.il/Laws1/02_0082_000000.pdf",
+      "bytes": 46532,
+      "sha256": "280b2d6c2e4fba81b02263a78cf4fc6ff6c0b22e05218228bea643b32ae0d791",
+      "retrievedAt": "2026-09-08T18:54:30.597Z"
+    },
+    {
+      "name": "vacation-amendment15",
+      "url": "https://fs.knesset.gov.il/20/law/20_lsr_321785.pdf",
+      "bytes": 81858,
+      "sha256": "ed2b522eec191c2a6d4b86967936762d4ce43598fd055c15fce98af6191ddeeb",
+      "retrievedAt": "2026-09-08T18:54:31.083Z"
+    }
+  ],
+  "visuallyInspected": [
+    {
+      "name": "vacation-base",
+      "page": 1
+    },
+    {
+      "name": "vacation-amendment15",
+      "page": 2
+    }
+  ],
+  "amendment17": {
+    "officialAnnouncement": "https://main.knesset.gov.il/News/PressReleases/Pages/press17072026l.aspx",
+    "gazetteTextCaptured": false
+  },
+  "tests": 86,
+  "active": false,
+  "humanAttestation": null
+}

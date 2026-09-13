@@ -1,0 +1,17 @@
+{
+  "sourceSha": "d6c2b16461ad0a4efde40cb4c3a34f689d61002d",
+  "file": "src/lib/payment-verification.ts",
+  "fileSha256": "dd6b4115f7ceee4c7a1c2858827f8f89c57eee08ef86e2061a488826bcc51653",
+  "command": "npx vitest run src/lib/payment-clearing-kind.test.ts --maxWorkers=1",
+  "expected": 8,
+  "failedBeforeFix": 8,
+  "defects": [
+    "refund and token-creation rows accepted as charge",
+    "request rows accepted as completed charge",
+    "already credited original charge accepted without reconciliation",
+    "documented numeric NIS currency 1 rejected without CurrencyName",
+    "conflicting numeric currency ignored when CurrencyName says ILS"
+  ],
+  "scope": "Synthetic provider-shaped fixtures only. No provider account query, payment, refund, DB mutation or production.",
+  "productionChanged": false
+}

@@ -1,0 +1,42 @@
+{
+  "state": "WIP_SAVED_ON_OWNER_STOP",
+  "baseGitSha": "5173ed1b20b1c3d2d807b71889fd9bafb5ad18a8",
+  "date": "2026-09-09",
+  "local": {
+    "beforeFix": {
+      "failed": 9,
+      "passed": 3,
+      "meaning": "Generator opened an unpurchased pension question; new scope guards absent."
+    },
+    "afterFix": {
+      "passed": 38,
+      "files": 4,
+      "command": "npx vitest run src/server/product/processing/saved-field-requests.test.ts src/server/product/processing/saved-extraction-worker.test.ts src/server/platform/persistence/postgres/security-definer-search-path.test.ts scripts/supabase-dev-guard/chain-replay.test.mjs --maxWorkers=1",
+      "qualification": "Mocked scope adapter and static migration checks, not SQL execution."
+    },
+    "typecheckAfterChange": "NOT_RUN",
+    "lintAfterChange": "NOT_RUN",
+    "fullSuiteAfterChange": "NOT_RUN"
+  },
+  "database": {
+    "reproduction": "CONFIRMED_ON_PREEXISTING_DEV_SCHEMA",
+    "candidateMigrationApplied": false,
+    "candidateSqlExecuted": false,
+    "fixVerified": false,
+    "syntheticCasesRemoved": 2,
+    "syntheticIdentitiesRemoved": 2,
+    "machineSessionRevoked": true,
+    "cleanupFailure": null
+  },
+  "browserAfterChange": "NOT_RUN",
+  "previewAfterChange": "NOT_DEPLOYED",
+  "productionChanged": false,
+  "filesSha256": {
+    "src/server/product/processing/saved-field-requests.ts": "aad1d2cc176ebda36f1449e34e10ef3448288b84c5b5ab97be57b4a19fc26246",
+    "src/server/product/processing/saved-field-requests.test.ts": "00122253c04d5c4d067875b0917ec63dedde5cb6e963b0d5752f985b5c6ecded",
+    "src/server/product/reports/document-field-confirmation.postgres.test.ts": "f73ee682d0c854d0006b7c43c08524ea0e3fbc36d7f3fae1acff9eea5ec2d59b",
+    "supabase/migrations/20260909040919_document_field_purchased_topic_scope.sql": "855149bc605fac3453f12da4e8e2e324d75cf76c87b87977f78e0a4a3a1a8474",
+    "scripts/supabase-dev-guard/chain-replay.test.mjs": "020954dba3ba54ee4468fdbf060284beaf1c672812d1cfadb7fe08de7c786d24",
+    "src/server/platform/persistence/postgres/security-definer-search-path.test.ts": "3c0d942653d2679f8057513adaef8e3c37b119c55292d0bcb625ae5b23b4cc60"
+  }
+}

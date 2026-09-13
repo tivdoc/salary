@@ -1,0 +1,98 @@
+{
+  "verdict": "PASS",
+  "gitSha": "e54b3c65c813cb491753dc23662796b8e9d7d489",
+  "dirty": false,
+  "database": "tivdoc_release_replay_20260907",
+  "schema": 159,
+  "migration": "20260911144617_document_review_identified_completions.sql",
+  "migration_sha256": "b982a27c856f5d784d84ce38b12b9a8ecd71d9651fef27d44751b67954284e3b",
+  "caseId": "44f0a4ea-e089-4c7a-9f87-a8f7bf24cb81",
+  "checks": [
+    "actual worker saves source-bound curated synthetic input through verified SID/JTI and the normal immutable source checkpoint; no OCR/checkpoint/finding/report result was seeded",
+    "failure after calculation but before request save rolls back analysis/report/target atomically",
+    "ordinary persisted analysis creates one source-bound factual question while the independent 6% ratio is available and missing hours remains blocked",
+    "parallel authenticated worker replay returns the same persisted report and does not duplicate the analysis or its question",
+    "actual foreign identity and unidentified legacy answer RPC are refused; foreign report access is refused",
+    "concurrent identified answer plus retry writes one revision; existing queue creates new source job/run; only dependent hours arithmetic changes to a 100.00 ILS accounting difference",
+    "append-only corrections preserve the first answer, unknown clears the dependent amount, and later provided hours produce a new 150.00 ILS accounting result without changing the independent ratio",
+    "a new authenticated worker connection replays the exact stored report; four historical runs, one question, zero provider invocations",
+    "actual SQL currentness refuses a replaced source and suspended entitlement inside rolled-back owned-fixture mutations; historical report bytes are unchanged",
+    "ordinary artifacts remain private drafts; no customer report publication or notification was created"
+  ],
+  "artifacts": [
+    {
+      "label": "initial",
+      "analysis_run_id": "1b5a66c3-310b-44f7-86c7-723174b2f32b",
+      "input_revision": 1,
+      "source_input_sha256": "saved-documents:2026-06:57d94ff3d400e16c54cdc1b1cce0794f8a1be3bdaaa9326c91bcd72f27938a8b",
+      "result_sha256": "dfef85ca86624ed0db1a258b2b5ce861b40b84893b67b1816ce1c4019ccfed82",
+      "review_sha256": "51ab3317caf1136516f4df60d097b84203befcd6f2db8c80caa6edc818a7c629",
+      "report_sha256": "d1c501f489109383f7c2c63dc5bd5bce8f9956f974f7ef5305ad0ed0696f3a48",
+      "html_sha256": "a500f1c806addcd93771bbde861490ed466b38838cf7c5cfcd1f92f55c3d378a",
+      "pdf_sha256": "adb959cb45b9dd0fcecf54c311216b65998b1dc71ccf7a180e68ceb8836ee540"
+    },
+    {
+      "label": "provided-ten-hours",
+      "analysis_run_id": "bbf3a3bc-a1dd-4482-853c-712f6c939da8",
+      "input_revision": 1,
+      "source_input_sha256": "saved-documents:2026-06:abb9857d84b3426bb5fc8d57d76cf61074211b2490e272b4b773234ae67c8f71",
+      "result_sha256": "7309ae53134850957cc02c294454dd4f4fdb952d21fccf027b982c8df5e90776",
+      "review_sha256": "11a8c0de1403bf5d400de030134aa9d6eae688bbaf113b8d4e500d8788b034fd",
+      "report_sha256": "67b288558c5f8fe9ff27966ebb29a4b952ca3a3c6d7866b45223386756dc8c86",
+      "html_sha256": "ea1df72426b8e83ce7eb57b513fa3d87939dfcf76edc667aed89c9b39280db37",
+      "pdf_sha256": "04f9df096d0ae85885238029962706358cd6d17da460a664b24998380ac4335d"
+    },
+    {
+      "label": "unknown-correction",
+      "analysis_run_id": "c0d0cbd1-b8b0-416d-870f-acbf8955da7d",
+      "input_revision": 1,
+      "source_input_sha256": "saved-documents:2026-06:321a29a3519f0e2163835a37bdc8e4e91d52c5a5a350d8356da0ce20ef4e44b2",
+      "result_sha256": "8c0b9e29a9e9ce8c81b84183e28fc7562fa3505049dd0ecdb663e6ef5be53022",
+      "review_sha256": "7b38b03e57865aac7d0181bd8cd2711469df68051bba8acb6f5ef7c38e46a76e",
+      "report_sha256": "a08459f4e1a993a5863c1fcad09909a1296d94d060f05825823244bfdee233da",
+      "html_sha256": "9378b5257d6b2b90f544c29fb10ab52bde4650208250c8de1d665aca62b14d19",
+      "pdf_sha256": "eed4a44fbaa5f80c62a3c5b4eea5deafb738242d8d2b4927c71904dfbbe35e15"
+    },
+    {
+      "label": "corrected-eleven-hours",
+      "analysis_run_id": "4a2f19cc-8dc5-4eca-806a-721b053df3d6",
+      "input_revision": 1,
+      "source_input_sha256": "saved-documents:2026-06:6a608bd59e439dce5214bd72853b6d74ce7095cf496977fb7a782352677d3f9f",
+      "result_sha256": "62d74849beb623114a723232a1305bdcfde6e9651bf96ba68bf8030889060498",
+      "review_sha256": "589605e9698e5aa45e5b1b51d5c3c05606ad68c70610b17c3d2fdf43a4def4fa",
+      "report_sha256": "edb8262a2beab99d74f6971fa3820b4287193161e1abe093654ce8774c06d48d",
+      "html_sha256": "394d6a2fcb2948b9c93ad63644b9eeeb869ebe4712960c310200382aaf297d9a",
+      "pdf_sha256": "90518b796a03698ca6484260584e37a4edec56cfcce382918bf5a129678d1106"
+    }
+  ],
+  "answerHistory": [
+    {
+      "revision": 1,
+      "identity_id": "ca101152-27ee-45f2-9147-db1e2a083dc9",
+      "answer_text": "10"
+    },
+    {
+      "revision": 2,
+      "identity_id": "ca101152-27ee-45f2-9147-db1e2a083dc9",
+      "answer_text": "לא יודע"
+    },
+    {
+      "revision": 3,
+      "identity_id": "ca101152-27ee-45f2-9147-db1e2a083dc9",
+      "answer_text": "11"
+    }
+  ],
+  "fixture": "synthetic source metadata and local source bytes; curated automated known-fixture readings; real worker/web principals and provisioned synthetic identities",
+  "providerCalls": 0,
+  "liveOcr": false,
+  "remoteStorageUploadReproved": false,
+  "browserVerified": false,
+  "customerSessionsCreated": false,
+  "customerPublication": false,
+  "notificationsSent": false,
+  "productionChanged": false,
+  "retainedOwnedQaCases": 2,
+  "machineRevoked": true,
+  "failure": null,
+  "cleanupFailure": null
+}

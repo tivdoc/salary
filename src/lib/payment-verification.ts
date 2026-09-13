@@ -4,6 +4,8 @@ export type PaymentVerificationErrorCode =
   | "transaction_pending"
   | "reference_missing"
   | "transaction_failed"
+  | "transaction_not_charge"
+  | "transaction_requires_reconciliation"
   | "amount_mismatch"
   | "currency_mismatch"
   | "clearing_log_mismatch"
@@ -33,14 +35,15 @@ function textValue(value: unknown) {
 }
 
 function amountInAgorot(value: unknown) {
-  const number = typeof value === "number" ? value : Number(value);
-  if (!Number.isFinite(number)) return null;
-  return Math.round(number * 100);
+  const text=typeof value==='number'?String(value):typeof value==='string'?value.trim():'';
+  const match=/^(\d+)(?:\.(\d{1,2}))?$/.exec(text);if(!match)return null;
+  const minor=Number(match[1])*100+Number((match[2]??'').padEnd(2,'0'));return Number.isSafeInteger(minor)?minor:null;
 }
 
 export function validateInvoice4uClearingLog(
   log: Invoice4uClearingLog | null,
   expectedClearingLogId: string,
+  expected: {amountMinor:number;currency:"ILS";orderId?:string;paymentId?:string|null} = {amountMinor:Math.round(INITIAL_CHECK_PRICE*100),currency:INITIAL_CHECK_CURRENCY},
 ): VerifiedInvoice4uTransaction {
   if (!log) throw new PaymentVerificationError("reference_missing");
 
@@ -65,17 +68,42 @@ export function validateInvoice4uClearingLog(
   if (log.IsSuccess !== true || errors.length > 0 || errorMessage) {
     throw new PaymentVerificationError("transaction_failed");
   }
+  if (expected.paymentId != null && paymentId !== expected.paymentId) {
+    throw new PaymentVerificationError("transaction_reused");
+  }
+
+  // Invoice4U's current Clearing Logs contract distinguishes request/response,
+  // charge/token/refund and previously credited originals. A successful refund
+  // or token creation must never authorize a new purchased entitlement.
+  // Old envelopes without these fields remain readable; present malformed or
+  // contradictory fields fail closed, rather than being coerced to false/zero.
+  if ((log.LogType !== undefined && log.LogType !== 2)
+      || (log.IsCredit !== undefined && log.IsCredit !== false)
+      || (log.TransactionType !== undefined && ![0, 2, 3, 4, 5, 7, 8].includes(log.TransactionType as number))) {
+    throw new PaymentVerificationError("transaction_not_charge");
+  }
+  if ((log.CreditedTransaction !== undefined && log.CreditedTransaction !== false)
+      || (log.CreditAmount !== undefined && amountInAgorot(log.CreditAmount) !== 0)) {
+    throw new PaymentVerificationError("transaction_requires_reconciliation");
+  }
 
   const amount = amountInAgorot(log.Amount);
-  if (amount !== Math.round(INITIAL_CHECK_PRICE * 100)) {
+  if (!Number.isSafeInteger(expected.amountMinor) || expected.amountMinor <= 0 || amount !== expected.amountMinor) {
     throw new PaymentVerificationError("amount_mismatch");
   }
 
+  // Native Currency is an enum: 1 NIS, 2 USD, 3 EUR. CurrencyName is retained
+  // for historical envelopes; neither representation may contradict the other.
   const currency = textValue(log.CurrencyName)?.toUpperCase();
-  if (currency !== INITIAL_CHECK_CURRENCY) {
+  const hasNativeCurrency = log.Currency !== undefined;
+  if (expected.currency !== 'ILS'
+      || (hasNativeCurrency && textValue(log.Currency) !== '1')
+      || (log.CurrencyName !== undefined && currency !== 'ILS' && currency !== 'NIS')
+      || (!hasNativeCurrency && currency !== 'ILS' && currency !== 'NIS')) {
     throw new PaymentVerificationError("currency_mismatch");
   }
 
+  if(expected.orderId&&log.OrderIdClientUsage!==undefined&&textValue(log.OrderIdClientUsage)!==expected.orderId)throw new PaymentVerificationError("transaction_reused");
   return {
     paymentId,
     clearingLogId,

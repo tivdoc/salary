@@ -1,0 +1,198 @@
+{
+  "schema_version": "release-baseline-v1",
+  "tested_at": "2026-09-07T05:26:09.549Z",
+  "target": "isolated DEV only",
+  "upload_functions_match": true,
+  "privilege_checks": "PASS",
+  "login_note": "Four DEV runtime login accounts are explicitly provisioned by dev-credential.mts; governance owner remains NOLOGIN. No role attribute changed for this proof.",
+  "inventory": [
+    {
+      "database": "tivdoc_v09_devruntime01",
+      "roles": [
+        {
+          "rolname": "tivdoc_governance_owner",
+          "rolcanlogin": false,
+          "rolsuper": false,
+          "rolbypassrls": false,
+          "rolcreatedb": false,
+          "rolcreaterole": false
+        },
+        {
+          "rolname": "tivdoc_identity_runtime",
+          "rolcanlogin": true,
+          "rolsuper": false,
+          "rolbypassrls": false,
+          "rolcreatedb": false,
+          "rolcreaterole": false
+        },
+        {
+          "rolname": "tivdoc_operations_runtime",
+          "rolcanlogin": true,
+          "rolsuper": false,
+          "rolbypassrls": false,
+          "rolcreatedb": false,
+          "rolcreaterole": false
+        },
+        {
+          "rolname": "tivdoc_web_runtime",
+          "rolcanlogin": true,
+          "rolsuper": false,
+          "rolbypassrls": false,
+          "rolcreatedb": false,
+          "rolcreaterole": false
+        },
+        {
+          "rolname": "tivdoc_worker_runtime",
+          "rolcanlogin": true,
+          "rolsuper": false,
+          "rolbypassrls": false,
+          "rolcreatedb": false,
+          "rolcreaterole": false
+        }
+      ],
+      "tables": [
+        {
+          "relname": "document_upload_batches",
+          "relrowsecurity": true,
+          "relforcerowsecurity": true
+        },
+        {
+          "relname": "document_versions",
+          "relrowsecurity": true,
+          "relforcerowsecurity": true
+        }
+      ],
+      "functions": [
+        {
+          "proname": "case_documents_batch",
+          "prosecdef": false,
+          "anon_execute": false,
+          "authenticated_execute": false,
+          "definition_sha256": "4eb08d3f938432fa0d02563547cbe2787b47ad594e6142d17801a0ed2d216a1c"
+        },
+        {
+          "proname": "case_documents_cancel",
+          "prosecdef": false,
+          "anon_execute": false,
+          "authenticated_execute": false,
+          "definition_sha256": "946793eb61691c755c804c133ece53aa213e2e87ad564ecf59315674cf571020"
+        },
+        {
+          "proname": "case_documents_commit",
+          "prosecdef": false,
+          "anon_execute": false,
+          "authenticated_execute": false,
+          "definition_sha256": "0c8680c9786b41edb20ad0071da3b41c82236e43466b82ea84ea3aac739fb9af"
+        },
+        {
+          "proname": "case_documents_reserve",
+          "prosecdef": false,
+          "anon_execute": false,
+          "authenticated_execute": false,
+          "definition_sha256": "c5ab9bcac73464c40b7ac0acbceb6802661a4f7a9adfd09e3d586fa077fdd1e5"
+        },
+        {
+          "proname": "case_documents_snapshot",
+          "prosecdef": false,
+          "anon_execute": false,
+          "authenticated_execute": false,
+          "definition_sha256": "8d100d5ba6fb67d38ae42c75f8b53e02074198dfe6357a61207e4e7488e8a96f"
+        }
+      ]
+    },
+    {
+      "database": "tivdoc_release_replay_20260907",
+      "roles": [
+        {
+          "rolname": "tivdoc_governance_owner",
+          "rolcanlogin": false,
+          "rolsuper": false,
+          "rolbypassrls": false,
+          "rolcreatedb": false,
+          "rolcreaterole": false
+        },
+        {
+          "rolname": "tivdoc_identity_runtime",
+          "rolcanlogin": true,
+          "rolsuper": false,
+          "rolbypassrls": false,
+          "rolcreatedb": false,
+          "rolcreaterole": false
+        },
+        {
+          "rolname": "tivdoc_operations_runtime",
+          "rolcanlogin": true,
+          "rolsuper": false,
+          "rolbypassrls": false,
+          "rolcreatedb": false,
+          "rolcreaterole": false
+        },
+        {
+          "rolname": "tivdoc_web_runtime",
+          "rolcanlogin": true,
+          "rolsuper": false,
+          "rolbypassrls": false,
+          "rolcreatedb": false,
+          "rolcreaterole": false
+        },
+        {
+          "rolname": "tivdoc_worker_runtime",
+          "rolcanlogin": true,
+          "rolsuper": false,
+          "rolbypassrls": false,
+          "rolcreatedb": false,
+          "rolcreaterole": false
+        }
+      ],
+      "tables": [
+        {
+          "relname": "document_upload_batches",
+          "relrowsecurity": true,
+          "relforcerowsecurity": true
+        },
+        {
+          "relname": "document_versions",
+          "relrowsecurity": true,
+          "relforcerowsecurity": true
+        }
+      ],
+      "functions": [
+        {
+          "proname": "case_documents_batch",
+          "prosecdef": false,
+          "anon_execute": false,
+          "authenticated_execute": false,
+          "definition_sha256": "4eb08d3f938432fa0d02563547cbe2787b47ad594e6142d17801a0ed2d216a1c"
+        },
+        {
+          "proname": "case_documents_cancel",
+          "prosecdef": false,
+          "anon_execute": false,
+          "authenticated_execute": false,
+          "definition_sha256": "946793eb61691c755c804c133ece53aa213e2e87ad564ecf59315674cf571020"
+        },
+        {
+          "proname": "case_documents_commit",
+          "prosecdef": false,
+          "anon_execute": false,
+          "authenticated_execute": false,
+          "definition_sha256": "0c8680c9786b41edb20ad0071da3b41c82236e43466b82ea84ea3aac739fb9af"
+        },
+        {
+          "proname": "case_documents_reserve",
+          "prosecdef": false,
+          "anon_execute": false,
+          "authenticated_execute": false,
+          "definition_sha256": "c5ab9bcac73464c40b7ac0acbceb6802661a4f7a9adfd09e3d586fa077fdd1e5"
+        },
+        {
+          "proname": "case_documents_snapshot",
+          "prosecdef": false,
+          "anon_execute": false,
+          "authenticated_execute": false,
+          "definition_sha256": "8d100d5ba6fb67d38ae42c75f8b53e02074198dfe6357a61207e4e7488e8a96f"
+        }
+      ]
+    }
+  ]
+}

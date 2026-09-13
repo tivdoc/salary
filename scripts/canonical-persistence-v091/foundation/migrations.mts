@@ -471,7 +471,7 @@ async function hashApprovedSqlFile(parent: string, path: string, expectedSha256?
   return sqlSha256(bytes, expectedSha256);
 }
 
-function sqlSha256(bytes: Buffer, expectedSha256?: string): string {
+export function sqlSha256(bytes: Buffer, expectedSha256?: string): string {
   const raw = createHash("sha256").update(bytes).digest("hex");
   if (!expectedSha256 || raw === expectedSha256) return raw;
   const text = bytes.toString("utf8");

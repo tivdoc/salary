@@ -1,0 +1,120 @@
+{
+  "definition_count": 229,
+  "new_release_definitions": {
+    "20260907070000_case_input_outbox.sql": [
+      "private.capture_case_input",
+      "private.capture_case_input_trigger"
+    ],
+    "20260907083000_request_revisions.sql": [
+      "public.case_request_edit",
+      "private.case_request_record_original",
+      "public.case_request_revision_list",
+      "private.case_request_capture_correction"
+    ],
+    "20260907093000_notification_outbox.sql": [
+      "public.case_notification_outbox_enqueue",
+      "public.case_notification_outbox_claim",
+      "private.apply_notification_events",
+      "public.case_notification_outbox_finish",
+      "public.case_notification_webhook_record"
+    ],
+    "20260907095000_notification_product_bridge.sql": [
+      "public.case_notification_record",
+      "public.case_notification_outbox_enqueue",
+      "private.notification_product_receipt"
+    ],
+    "20260907100000_notification_reminders.sql": [
+      "public.case_notification_request_reminders",
+      "public.case_notification_request_queued",
+      "private.notification_reminder_receipt",
+      "private.apply_notification_events"
+    ],
+    "20260907101000_notification_race_guards.sql": [
+      "public.case_notification_reminder_enqueue"
+    ],
+    "20260907103000_report_review_binding.sql": [
+      "private.report_review_fingerprint",
+      "private.case_report_current_input",
+      "private.report_published_immutable"
+    ],
+    "20260907104500_report_customer_artifacts.sql": [
+      "public.case_report_correction_submit"
+    ],
+    "20260907105500_report_delivery_intentions.sql": [
+      "private.report_delivery_intention",
+      "public.case_report_notification_pending",
+      "public.case_report_notification_queue"
+    ],
+    "20260907110000_report_review_sources.sql": [
+      "public.case_report_qa_source"
+    ],
+    "20260907120000_product_orders.sql": [
+      "public.case_order_create",
+      "public.case_order_snapshot",
+      "public.case_order_checkout_begin",
+      "public.case_order_checkout_finish",
+      "public.case_order_payment_verify",
+      "public.case_order_payment_pending",
+      "public.case_order_return_resolve",
+      "public.case_order_get"
+    ],
+    "20260907121000_order_lifecycle_guards.sql": [
+      "public.case_order_payment_pending",
+      "public.case_order_refund_request",
+      "public.case_order_sla_snapshot",
+      "public.case_order_sla_hold"
+    ],
+    "20260907122000_order_input_scope.sql": [
+      "public.case_order_funnel_state"
+    ],
+    "20260907123000_report_order_entitlement.sql": [
+      "private.case_report_order_scope",
+      "private.case_report_order_delivered"
+    ],
+    "20260907130000_privacy_requests.sql": [
+      "public.case_privacy_request",
+      "public.case_privacy_requests",
+      "public.case_privacy_export",
+      "public.case_privacy_decide"
+    ],
+    "20260907131000_storage_gc_fence.sql": [
+      "private.storage_gc_reference_reason",
+      "public.case_documents_gc_mark",
+      "public.case_documents_gc_claim",
+      "public.case_documents_gc_finish",
+      "private.storage_gc_reference_guard",
+      "private.storage_gc_report_guard"
+    ],
+    "20260907132000_privacy_operations_sweep.sql": [
+      "public.case_privacy_queue",
+      "public.case_documents_gc_pending",
+      "public.case_privacy_draft_sweep"
+    ],
+    "20260907133000_retention_hold_serialization.sql": [
+      "private.retention_hold_guard",
+      "public.case_privacy_draft_sweep"
+    ],
+    "20260907140000_product_metrics.sql": [
+      "public.case_report_open",
+      "public.case_funnel_metrics"
+    ],
+    "20260907141000_product_monitor.sql": [
+      "public.case_funnel_monitor"
+    ],
+    "20260907150000_paid_document_capacity.sql": [
+      "private.case_document_capacity"
+    ],
+    "20260907190000_request_pause_trigger_authority.sql": [
+      "private.order_request_pause_close"
+    ],
+    "20260907200000_owner_support_threads.sql": [
+      "public.case_request_support_open",
+      "private.case_correction_support_thread",
+      "public.case_request_support_list",
+      "public.case_request_support_reply",
+      "public.case_request_support_queue",
+      "public.case_request_support_owner_reply"
+    ]
+  },
+  "note": "Definition inventory, not proof of live ACLs. Empty search_path is independently checked; scoped-role DB proofs are separate."
+}

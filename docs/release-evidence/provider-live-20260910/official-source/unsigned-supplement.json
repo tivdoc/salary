@@ -1,0 +1,61 @@
+{
+  "schema_version": "tivdoc-june2026-official-cross-reference-supplement-v1",
+  "status": "unsigned_review_supplement_only",
+  "created_at": "2026-09-09T22:07:36.062875+00:00",
+  "parent_review_packet_version": "1.1.0",
+  "original_source_pins_changed": false,
+  "artifact": {
+    "file": "ministry-labor-wage-update-20260316-official-mirror.pdf",
+    "requested_url": "https://www.gov.il/BlobFolder/service/calculator-work-hour/he/workers-rights_wage-update1426.pdf",
+    "http_status": 200,
+    "retrieved_at": "2026-09-09T22:05:34.9495609Z",
+    "bytes": 270545,
+    "sha256": "c0b2206b891dd35dea319f72b7b0582b26a2b9ca8fb5e0f57f3602a29b27ba33",
+    "page_count": 4,
+    "title": "עדכון שכר מינימום ענפי לעובדים בענף השמירה והאבטחה החל מיום 1.4.2026",
+    "document_date": "2026-03-16",
+    "origin": "official_ministry_of_labor_gov_il_public_mirror",
+    "tls_verification": "system_default_not_disabled"
+  },
+  "chunk": {
+    "file": "gazette14324-cross-reference-page2.txt",
+    "page": 2,
+    "sha256": "bde966d267a5cd8c01464be4e1edf860db8bf910dad7d46b6b23153098994600",
+    "original_reported_sha256": "b671adbda5162ab7eff8bb5f8624206dfedf81170a3c649e6acc4665e4197e21",
+    "hash_verification_note": "Public addendum records the SHA-256 of the actual copied text-file bytes. The acquisition supplement reported a different text hash; that report is retained above, without claiming it identifies these bytes. PDF and text contents were copied unchanged.",
+    "selection": "full paragraph beginning publication date 4.3.2026 through the 6443.85 ILS monthly amount"
+  },
+  "visual_verification": {
+    "pages": [
+      1,
+      2
+    ],
+    "renderer": "bundled Poppler pdftoppm",
+    "status": "legible; PDF title/date and full cross-reference paragraph verified"
+  },
+  "supported_claim": {
+    "gazette_number": 14324,
+    "printed_page": 4496,
+    "gazette_publication_date": "2026-03-04",
+    "effective_from": "2026-04-01",
+    "monthly_minimum_ILS": "6443.85"
+  },
+  "claim_scope": "Official ministry correspondence cross-references the notice and monthly amount; correspondence itself concerns guard/security-sector wage updates. No sector-specific entitlement is imported into the general hourly candidate.",
+  "remaining_boundaries": [
+    "Original Gazette14324 official-origin bytes are still not acquired. This file is an official cross-reference, not the Gazette itself.",
+    "No new legal applicability, operative rounding decision, human attestation or activation has been established.",
+    "Source version1 and review packet1.1.0 remain immutable; parent may attach this unsigned evidence in a future review version.",
+    "The full letter contains differing guard-supervisor hourly figures on pages2 and3 (39.16 and39.15 in extracted text); those out-of-scope figures are not parameters for this candidate."
+  ],
+  "other_access": {
+    "new_gazette_route": "https://www.gov.il/he/departments/dynamiccollectors/gazette-official",
+    "http_status": 403,
+    "iab": "Browser is not available: iab",
+    "shared_chrome_used": false,
+    "unchanged_prior_failed_requests_retried": false
+  },
+  "source_acquisition_db_changed": false,
+  "code_changed": false,
+  "legal_activation": false,
+  "publication_allowed": false
+}

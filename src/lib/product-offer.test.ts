@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { formatDuration, formatPrice, initialCheckPriceNumber, productOffer } from "./product-offer.ts";
+import { formatDuration, formatPrice, formatFullPrices, initialCheckPriceNumber, productOffer } from "./product-offer.ts";
 
 // UX Run 1 / U9 (D-4.3): one configuration for price and delivery; no literal
 // price anywhere a customer reads it or an analytics event carries it.
@@ -11,7 +11,7 @@ describe("the product offer configuration", () => {
     expect(offer.initial_check.price).toMatchObject({ amount: "9.99", currency: "ILS" });
     expect(initialCheckPriceNumber()).toBe(9.99);
     expect(formatPrice(offer.initial_check.price)).toBe("9.99 ₪");
-    expect(formatPrice(offer.full_report.price)).toBe("149 ₪");
+    expect(formatFullPrices()).toBe("99 ₪ / 199 ₪ / 349 ₪");
     expect(formatDuration(offer.initial_check.delivery.automatic)).toBe("15 דקות");
     expect(formatDuration(offer.initial_check.delivery.human)).toBe("יום עסקים אחד");
     expect(formatDuration(offer.full_report.delivery)).toBe("3 ימי עסקים");

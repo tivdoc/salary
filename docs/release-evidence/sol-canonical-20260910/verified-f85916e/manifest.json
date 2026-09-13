@@ -1,0 +1,175 @@
+{
+  "schemaVersion": "sol-final-matching-evidence-v1",
+  "capturedAt": "2026-09-10T18:45:19.420339+00:00",
+  "gitSha": "f85916eec1047cca447da133b4703f3e5cf731ae",
+  "schemaAppliedChainCount": 148,
+  "copiesAreByteIdentical": true,
+  "priorArtifactsModified": false,
+  "newProviderCalls": 0,
+  "payment": "synthetic_paid_full_offer",
+  "authority": "isolated_test_only_not_human_approval",
+  "files": [
+    {
+      "path": "authority-dependency-f85916e.json",
+      "bytes": 6041,
+      "sha256": "4eab4a64552f12ba8b6045eb926b4106fbbb373eccb71003141850f7a0b3fd8f",
+      "source": "output/release-completion/june-regular/absent-hours-e6cc9d3f/authority-dependency-f85916e.json"
+    },
+    {
+      "path": "browser-90334e0-original-503.json",
+      "bytes": 903,
+      "sha256": "132054af2cd1d9cb96c6370140232304584c7abb351df3988f2a05f78820b103",
+      "source": "output/release-completion/june-regular/browser-90334e0-original-503.json"
+    },
+    {
+      "path": "browser-preview.json",
+      "bytes": 4491,
+      "sha256": "450bc23c6bb6e4ada72888adaa4153cb09b1080980067102775837aa73c39f2e",
+      "source": "Root evidence summary; not a generated report"
+    },
+    {
+      "path": "checkpoint.json",
+      "bytes": 61958,
+      "sha256": "9dfb2628bc4a054913c23080e844f9b37869e5102d4b6998ddc7d95e017ef47b",
+      "source": "output/release-completion/june-regular/absent-hours-e6cc9d3f/checkpoint.json"
+    },
+    {
+      "path": "ci.json",
+      "bytes": 465,
+      "sha256": "1f15410e43611a8b224fcac9ec66005a54624b2a857230c5272582187d7e69ac",
+      "source": "Root evidence summary; not a generated report"
+    },
+    {
+      "path": "critical-field-comparison.json",
+      "bytes": 6551,
+      "sha256": "d60da1a217a20963fa14271468fa453ca04cd2a53215e1f6d9c3707d348d2740",
+      "source": "output/release-completion/june-regular/absent-hours-e6cc9d3f/critical-field-comparison.json"
+    },
+    {
+      "path": "current-authority-1789065584105.json",
+      "bytes": 1321,
+      "sha256": "a77b082f220c01b06070ddfa11c79fae1e0a613b5338dc1eb4acee72153b84f8",
+      "source": "output/release-completion/june-regular/current-authority-1789065584105.json"
+    },
+    {
+      "path": "dependency-current-f85916e.html",
+      "bytes": 2413,
+      "sha256": "3b67e76114ca9c9ed1d9f3ed7e9c5120f545932e524d6725bf1503a80ddf2c23",
+      "source": "output/release-completion/june-regular/absent-hours-e6cc9d3f/dependency-current-f85916e.html"
+    },
+    {
+      "path": "dependency-current-f85916e.json",
+      "bytes": 209125,
+      "sha256": "e7dcfc672803e39051cc8e4855b747ad2ee2b6bcb035c26338311fc59ed123b6",
+      "source": "output/release-completion/june-regular/absent-hours-e6cc9d3f/dependency-current-f85916e.json"
+    },
+    {
+      "path": "dependency-current-f85916e.manifest",
+      "bytes": 407,
+      "sha256": "68680a0ca910046aed0f8a90ce7f1521e2519e4a76820015bf1a7dd9d7a5743a",
+      "source": "output/release-completion/june-regular/absent-hours-e6cc9d3f/dependency-current-f85916e.manifest"
+    },
+    {
+      "path": "dependency-current-f85916e.pdf",
+      "bytes": 774275,
+      "sha256": "809e50ff2d9d178e0e5ca4c636c3775f003da210a38bd6e4e3924fdf53003fd1",
+      "source": "output/release-completion/june-regular/absent-hours-e6cc9d3f/dependency-current-f85916e.pdf"
+    },
+    {
+      "path": "dependency-current-f85916e.png",
+      "bytes": 107915,
+      "sha256": "361e9708510621a30f8ca4e78f8aca90b32bcbb73c7ddcaae03aee0f76ea2562",
+      "source": "output/release-completion/june-regular/dependency-current-f85916e.png"
+    },
+    {
+      "path": "dependency-db-1789065587294.json",
+      "bytes": 715,
+      "sha256": "d6c5062e17b68be3a4aec96053fb1c0468ef8832560d586b3fb8bb0a08ea0b16",
+      "source": "output/release-completion/june-regular/dependency-db-1789065587294.json"
+    },
+    {
+      "path": "independent-oracle.json",
+      "bytes": 780,
+      "sha256": "2eef4c017bb14542168647a634031b7a06004e37995626969b64fa0b31deee79",
+      "source": "output/release-completion/june-regular/absent-hours-e6cc9d3f/independent-oracle.json"
+    },
+    {
+      "path": "input.pdf",
+      "bytes": 770176,
+      "sha256": "76f6f01e3b1f10792afcf31966bb7362970f4f652af8540525de3a2c65335e1b",
+      "source": "output/release-completion/june-regular/absent-hours-e6cc9d3f/input.pdf"
+    },
+    {
+      "path": "managed-completion-f85916e.json",
+      "bytes": 2856,
+      "sha256": "bab90f4c4c66bf90af80908ccd2707e4ff3da6b52ef053dc736df8361443b48e",
+      "source": "output/release-completion/june-regular/absent-hours-e6cc9d3f/managed-completion-f85916e.json"
+    },
+    {
+      "path": "migration-applied-1789064039339.json",
+      "bytes": 1740,
+      "sha256": "d98747a526ef43b60f7507892a1c1100b06086a594ce3efb8b26a5df28126cf9",
+      "source": "output/release-completion/june-regular/migration-applied-1789064039339.json"
+    },
+    {
+      "path": "migration-applied-1789064586663.json",
+      "bytes": 1734,
+      "sha256": "7c295cb098d743796dc4d89c7557d70d83a5309d3d505ac03f0989d5d077384f",
+      "source": "output/release-completion/june-regular/migration-applied-1789064586663.json"
+    },
+    {
+      "path": "migration-applied-1789064957018.json",
+      "bytes": 1741,
+      "sha256": "4d56a3712d5e748aedbdfe9ce199eccae51ab2b2a3b0b2b0da21658388dd411b",
+      "source": "output/release-completion/june-regular/migration-applied-1789064957018.json"
+    },
+    {
+      "path": "original-FAIL-proof-3e600fb-1789064294632.json",
+      "bytes": 2713,
+      "sha256": "0e7ae4c8ebd5d6c15c1b08285175051e5bd5955bc934845962a0d9939e8c1bb5",
+      "source": "output/release-completion/june-regular/absent-hours-e6cc9d3f/proof-3e600fb-1789064294632.json"
+    },
+    {
+      "path": "original-FAIL-proof-8c7a924-1789064484151.json",
+      "bytes": 3472,
+      "sha256": "558e1f46661e8d1647192998a4b210ab03ee7dcc25a0e7b7ac648e97bfa874db",
+      "source": "output/release-completion/june-regular/absent-hours-e6cc9d3f/proof-8c7a924-1789064484151.json"
+    },
+    {
+      "path": "otp-provider-receipts-f85916e.json",
+      "bytes": 302,
+      "sha256": "1c87b7cf7ee6a41d0605ddf00482dffe0610f806a4f5dbcfbbeb84251092a488",
+      "source": "output/release-completion/june-regular/otp-provider-receipts-f85916e.json"
+    },
+    {
+      "path": "proof-f85916e-1789065535517.json",
+      "bytes": 3667,
+      "sha256": "fc100eb206791a8f5c64763d7f7d3827070c5e7a4832160e731a67466cd28d12",
+      "source": "output/release-completion/june-regular/absent-hours-e6cc9d3f/proof-f85916e-1789065535517.json"
+    },
+    {
+      "path": "report-resume-f85916e.html",
+      "bytes": 2413,
+      "sha256": "cb4ad850c8978d723dbe834032ba5124c623019e59a818e7b6ad25509aadb2c4",
+      "source": "output/release-completion/june-regular/absent-hours-e6cc9d3f/report-resume-f85916e.html"
+    },
+    {
+      "path": "report-resume-f85916e.json",
+      "bytes": 209125,
+      "sha256": "127cae7aef1653f1e0705f0bc63b5b538132034b037aba3a015e733a7a799bf9",
+      "source": "output/release-completion/june-regular/absent-hours-e6cc9d3f/report-resume-f85916e.json"
+    },
+    {
+      "path": "report-resume-f85916e.manifest",
+      "bytes": 407,
+      "sha256": "835b0530222d93082fc5f6da49977851e20657de5519175afc09cef1217a9d47",
+      "source": "output/release-completion/june-regular/absent-hours-e6cc9d3f/report-resume-f85916e.manifest"
+    },
+    {
+      "path": "report-resume-f85916e.pdf",
+      "bytes": 774275,
+      "sha256": "36cd30dff535be276cf7daf8e391a8a400f92e1a8ef941b6d41990645a218077",
+      "source": "output/release-completion/june-regular/absent-hours-e6cc9d3f/report-resume-f85916e.pdf"
+    }
+  ]
+}

@@ -3,8 +3,12 @@
 // the same ones.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
-import { TERMS_VERSION, termsVersionLabel } from "./legal-terms.ts";
+import { describe, expect, it, vi } from "vitest";
+import {offerSnapshot,releaseInitialOfferSnapshot,orderRequestSchema} from "../server/product/orders/contracts.ts";
+import {orderCheckout} from "../server/product/orders/service.ts";
+import { TERMS_VERSION, RETAINED_TERMS_VERSION, termsVersionLabel,resolveTermsPresentationVersion,termsVersionHref,privacyVersionHref,hasReportNotificationTerms } from "./legal-terms.ts";
+
+vi.mock("server-only",()=>({}));
 
 describe("the terms version", () => {
   it("is a date, so a reader can tell which text they agreed to", () => {
@@ -24,11 +28,21 @@ describe("the terms version", () => {
     expect(page).not.toMatch(/\d{1,2}\.\d{1,2}\.20\d\d/u);
   });
 
-  it("is what the payment route records, and it is not taken from the caller", () => {
+  it("pins both order snapshots to the server terms and rejects caller-selected versions", async () => {
+    expect(offerSnapshot('initial').terms_version).toBe(TERMS_VERSION);
+    expect(releaseInitialOfferSnapshot().terms_version).toBe(TERMS_VERSION);
+    expect(() => offerSnapshot('full')).toThrow('ORDER_PRICING_BASIS_UNAVAILABLE');
+    expect(orderRequestSchema.safeParse({kind:'initial',from:'2026-06',to:'2026-06',terms_version:'2000-01-01'}).success).toBe(false);
+    await expect(orderCheckout({caseId:'synthetic',identityId:null,orderId:'synthetic',termsAccepted:false},{provider:'fake',rpc:async()=>{throw new Error('CHECKOUT_MUST_NOT_REACH_STORE');}})).rejects.toThrow('ORDER_TERMS_REQUIRED');
     const route = readFileSync(join(process.cwd(), "src", "app", "api", "payments", "start", "route.ts"), "utf8");
-    expect(route).toContain("terms_version: TERMS_VERSION");
-    // The body may say whether the box was ticked; it may not say which terms.
-    expect(route).not.toMatch(/body\??\.\s*termsVersion/u);
-    expect(route).toContain("terms_not_accepted");
+    expect(route).toContain('createReleaseInitialOrder');expect(route).toContain('customerReleaseQuote');expect(route).toContain('orderCheckout');
+  });
+  it('resolves the exact saved version and never substitutes latest for unknown or ambiguous versions',()=>{
+    expect(resolveTermsPresentationVersion(undefined)).toBe(TERMS_VERSION);
+    expect(resolveTermsPresentationVersion(RETAINED_TERMS_VERSION)).toBe(RETAINED_TERMS_VERSION);
+    for(const value of ['2026-08-22','unknown',[TERMS_VERSION],null])expect(resolveTermsPresentationVersion(value)).toBeNull();
+    expect(termsVersionHref(RETAINED_TERMS_VERSION)).toBe(`/terms?version=${RETAINED_TERMS_VERSION}`);
+    expect(privacyVersionHref(RETAINED_TERMS_VERSION)).toBe(`/privacy?version=${RETAINED_TERMS_VERSION}`);
+    expect(hasReportNotificationTerms(RETAINED_TERMS_VERSION)).toBe(false);expect(hasReportNotificationTerms(TERMS_VERSION)).toBe(true);
   });
 });

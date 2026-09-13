@@ -1,3 +1,4 @@
+import { loadCaseOverview } from "@/server/product/case-access/overview";
 import { notFound, redirect } from "next/navigation";
 import { AccessChallenge } from "@/components/case/access-challenge";
 import { CaseShell } from "@/components/case/case-shell";
@@ -8,6 +9,8 @@ import { LinkExchange } from "@/components/case/link-exchange";
 import { describeChallenge, listIdentityCases, peekLinkToken, resolveIdentitySession } from "@/server/product/case-access/service";
 import { readCaseChallengeCookie, readCaseSessionCookie } from "@/server/product/case-access/session-cookie";
 import { guardStableAppEntrypoint } from "@/server/platform/capabilities/stable-next-entrypoint";
+import { LegacyPaidOrders } from "@/components/case/legacy-paid-orders";
+import { legacyCustomerReceipts } from "@/server/product/orders/legacy-customer";
 
 // UX Run 1 / U3 (D-1.2, D-1.5), corrected by the external review #1,
 // finding 8. One segment, two readings. A 22-character link token is
@@ -47,14 +50,43 @@ export default async function CaseAccessPage({ params }: { params: Promise<{ tok
   }
 
   if (!/^TV-[A-Z0-9]{8}$/u.test(token)) notFound();
-  const session = await resolveIdentitySession(await readCaseSessionCookie());
+  const sessionToken = await readCaseSessionCookie();
+  const session = await resolveIdentitySession(sessionToken);
   if (session) {
     const cases = await listIdentityCases(session.identity_id);
     const item = cases.find((candidate) => candidate.public_id === token);
     if (!item) notFound();
+    const overview = await loadCaseOverview(item, session.identity_id, sessionToken);
+    // Read only after authenticated case membership. The protected receipt RPC
+    // is independent of the optional DEV financial-artifact preview.
+    // A legacy receipt is separate evidence; never mutate the original case's
+    // payment flag or apply today's initial-product limits to its nine topics.
+    let legacy: Awaited<ReturnType<typeof legacyCustomerReceipts>> = [];
+    let legacyUnavailable = false;
+    try { legacy = await legacyCustomerReceipts(item.case_id, session.identity_id); }
+    catch { legacyUnavailable = true; }
     return (
-      <CaseShell eyebrow={`תיק ${item.public_id}`}>
-        <CaseView item={item} otherCases={cases.length - 1} />
+      <CaseShell publicId={item.public_id} eyebrow={`תיק ${item.public_id}`}>
+        {legacy.length > 0 || legacyUnavailable ? (
+          <div className="received-card">
+            <span className="mono">תיק {item.public_id}</span><h1>התיק שלך</h1>
+            {legacyUnavailable ? <p role="alert">לא ניתן לטעון את פרטי הרכישה ההיסטורית כרגע. אין בכך קביעה שהתשלום חסר, ואין צורך לשלם שוב לפני בירור.</p> : <>
+              <p>ההיקף המאומת במידע השמור כולל תשעה נושאים.</p>
+              <LegacyPaidOrders receipts={legacy} publicId={item.public_id} />
+            </>}
+            {!overview.requestsAvailable ? <p role="alert">לא ניתן לטעון את מצב בקשות ההשלמה כרגע.</p>
+              : overview.blocking ? <div className="received-card__next"><b>נדרשת השלמה כדי להתקדם</b><span>{overview.blocking.question}</span></div>
+              : <p>{overview.openRequests ? `${overview.openRequests} בקשות פתוחות מופיעות בהודעות.` : 'אין כרגע בקשות השלמה פתוחות.'}</p>}
+            {!overview.reportsAvailable ? <p role="alert">לא ניתן לטעון את מצב הדוחות כרגע.</p>
+              : <p>מצב התיק והתשלום לבדם אינם אישור שהדוח מוכן. במסך הדוחות מוצג המצב של כל תוצר שנשמר.</p>}
+            <a className="button button--primary" href={overview.blocking ? `/case/${item.public_id}/thread#request-${overview.blocking.id}` : `/case/${item.public_id}/thread`}>
+              {overview.blocking ? 'השלמת הפרט החסר' : 'להודעות ולעדכונים בתיק'}
+            </a>
+            <p><a href={`/case/${item.public_id}/reports`}>למצב הדוחות</a></p>
+            <p><a href={`/case/${item.public_id}/orders`}>להזמנות ולתקבולים השמורים</a></p>
+            {cases.length > 1 ? <a href="/cases">כל התיקים שלי ({cases.length})</a> : null}
+          </div>
+        ) : <CaseView item={item} otherCases={cases.length - 1} overview={overview} />}
       </CaseShell>
     );
   }

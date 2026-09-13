@@ -12,6 +12,7 @@ import { buildPassEvaluation, type ExtractionRegion } from "@/engine/extraction/
 import {
   PAYSLIP_EXTRACTION_V21_VERSION,
   recoveryDecisionForV21,
+  recoveryDecisionSchema,
   resolvePayslipExtractionPassesV21,
   selectTargetedRecoveryV21,
   type PayslipExtractionV21Result,
@@ -19,6 +20,8 @@ import {
 import { preprocessPayslipDocument, type PreparedPayslipDocument } from "../../preprocessing";
 import { resolveOpenAiExtractionConfig } from "./config";
 import { OpenAiPayslipV2PassExtractor } from "./v2-adapter";
+import type {OpenAiProviderReceipt} from './provider-receipt';
+import {inspectExtractionBytes} from '../../verified-upload-source';
 import {
   OPENAI_PAYSLIP_V2_FIRST_PASS_PROMPT_VERSION,
   OPENAI_PAYSLIP_V2_RECOVERY_PROMPT_VERSION,
@@ -35,6 +38,7 @@ export type OpenAiPayslipV21Run = Readonly<{
   result: PayslipExtractionV21Result;
   snapshot: EmploymentSnapshot | null;
   preprocessing: readonly PreparedPayslipDocument["metadata"][];
+  provider_receipts?:readonly OpenAiProviderReceipt[];
 }>;
 
 export async function runOpenAiPayslipExtractionV21(input: {
@@ -46,6 +50,8 @@ export async function runOpenAiPayslipExtractionV21(input: {
 }): Promise<OpenAiPayslipV21Run> {
   const request = extractionRequestSchema.parse(input.request);
   const bytes = await input.source.read(request.document);
+  if(bytes.byteLength!==request.document.size_bytes||createHash("sha256").update(bytes).digest("hex")!==request.document.content_sha256)throw new TypeError("extraction_source_changed");
+  const inspected=await inspectExtractionBytes(bytes,request.document.mime_type);
   const firstPassId = uuidFrom(`${request.extraction_id}:v2.1:first-pass`);
   const firstPassRequest = { ...request, extraction_id: firstPassId };
   const firstRegions: readonly ExtractionRegion[] = ["header", "earnings", "totals", "pension"];
@@ -59,13 +65,16 @@ export async function runOpenAiPayslipExtractionV21(input: {
     prepared: firstPrepared,
     kind: "first_pass",
     requestedFields: payslipFieldKeySchema.options,
+    sourcePageCount:inspected.pages,
   });
   const firstPass = buildPassEvaluation({
     pass_id: firstPassId,
     kind: "first_pass",
     requested_fields: payslipFieldKeySchema.options,
     selected_regions: firstPrepared.crops.map((crop) => crop.region),
-    prompt_version: OPENAI_PAYSLIP_V2_FIRST_PASS_PROMPT_VERSION,
+    // The provider may use a versioned physical-page policy (for example fp1).
+    // Keep its recorded prompt identity; the checkpoint guard binds the receipt.
+    prompt_version: firstMapped.provider_receipt?.prompt_version ?? OPENAI_PAYSLIP_V2_FIRST_PASS_PROMPT_VERSION,
     model: firstMapped.extraction.provider.model_version ?? "unknown",
     raw_extraction: firstMapped.extraction,
     salary_type_assessment: firstMapped.salary_type_assessment,
@@ -73,12 +82,18 @@ export async function runOpenAiPayslipExtractionV21(input: {
     totals_section_visible: firstMapped.totals_section_visible,
     critical_context: firstMapped.critical_context,
     reference_year: input.reference_year,
+    component_duplicate_policy: input.extractor.componentDuplicatePolicy,
   });
   const plan = firstMapped.extraction.status === "failed" ? null : selectTargetedRecoveryV21(firstPass);
-  const recoveryDecision = recoveryDecisionForV21(plan);
+  const providerReceipts=firstMapped.provider_receipt?[firstMapped.provider_receipt]:[];
+  const skipForBudget=plan!==null&&['skip_package_budget','skip_managed_package_budget'].includes(input.extractor.recoveryExecution);
+  const recoveryDecision = skipForBudget
+    ? recoveryDecisionSchema.parse({requested:false,skipped:true,fields_requested:plan.fields,regions:plan.regions,
+      reason_codes:[...plan.reason_codes,'recovery_skipped_package_budget'],expected_information_gain:plan.expected_information_gain})
+    : recoveryDecisionForV21(plan);
   const recoveryPasses = [];
   const preprocessing = [firstPrepared.metadata];
-  if (plan) {
+  if (plan && !skipForBudget) {
     const recoveryPassId = uuidFrom(`${request.extraction_id}:v2.1:targeted-recovery`);
     const recoveryPrepared = await preprocessPayslipDocument({
       bytes,
@@ -91,13 +106,15 @@ export async function runOpenAiPayslipExtractionV21(input: {
       prepared: recoveryPrepared,
       kind: "targeted_recovery",
       requestedFields: plan.fields,
+      sourcePageCount:inspected.pages,
     });
+    if(recoveryMapped.provider_receipt)providerReceipts.push(recoveryMapped.provider_receipt);
     recoveryPasses.push(buildPassEvaluation({
       pass_id: recoveryPassId,
       kind: "targeted_recovery",
       requested_fields: plan.fields,
       selected_regions: recoveryPrepared.crops.map((crop) => crop.region),
-      prompt_version: OPENAI_PAYSLIP_V2_RECOVERY_PROMPT_VERSION,
+      prompt_version: recoveryMapped.provider_receipt?.prompt_version ?? OPENAI_PAYSLIP_V2_RECOVERY_PROMPT_VERSION,
       model: recoveryMapped.extraction.provider.model_version ?? "unknown",
       raw_extraction: recoveryMapped.extraction,
       salary_type_assessment: recoveryMapped.salary_type_assessment,
@@ -108,6 +125,7 @@ export async function runOpenAiPayslipExtractionV21(input: {
         required_fields: plan.fields,
       },
       reference_year: input.reference_year,
+      component_duplicate_policy: input.extractor.componentDuplicatePolicy,
     }));
   }
   const finalResult = resolvePayslipExtractionPassesV21({
@@ -126,7 +144,7 @@ export async function runOpenAiPayslipExtractionV21(input: {
         validation: finalResult.final_validation,
         context: input.snapshot_context,
       });
-  return { result: finalResult, snapshot, preprocessing };
+  return { result: finalResult, snapshot, preprocessing,provider_receipts:providerReceipts };
 }
 
 export function createOpenAiPayslipV21ExtractorFromEnv(

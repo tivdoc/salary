@@ -1,0 +1,117 @@
+{
+  "at": "2026-09-10T05:12:12.065Z",
+  "caseId": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+  "claims": 4,
+  "jobs": [
+    {
+      "job_id": "saved_6b8efcd6f19eb3b3dd91ff210a1201254f4e5398967dadcff16066b677f14d0a",
+      "state": "cancelled",
+      "revision": "3",
+      "attempt_count": 1
+    },
+    {
+      "job_id": "saved_95a2b6fd74c037cf9f9a43a886e43c0a1c41d9a2ce1e2ceb2fec08871669520d",
+      "state": "succeeded",
+      "revision": "7",
+      "attempt_count": 1
+    },
+    {
+      "job_id": "saved_0f6c50ce5f4fc0b62bc053d14b2e632081d65f150d5b79c4038532ca17bbd3f1",
+      "state": "succeeded",
+      "revision": "11",
+      "attempt_count": 2
+    },
+    {
+      "job_id": "saved_902fc511204d5d6a23450ba5f0e6478d9aad1fe21bcca78796f905aa2fb24eb6",
+      "state": "cancelled",
+      "revision": "3",
+      "attempt_count": 1
+    },
+    {
+      "job_id": "saved_d335093f262c4323a054812c2c1bebac458e3db6734de923a4ed4fe03a5733d7",
+      "state": "cancelled",
+      "revision": "3",
+      "attempt_count": 1
+    },
+    {
+      "job_id": "saved_5e5e59cfc9d4f206df1afda0f64561dc55aca91f926c2f43147a6b1638029ffa",
+      "state": "succeeded",
+      "revision": "7",
+      "attempt_count": 1
+    },
+    {
+      "job_id": "saved_cf1f0bcf66bb0d4150f48ddf8d1564557f63a4e2ecf0b42e0512b73dfbf094b8",
+      "state": "cancelled",
+      "revision": "2",
+      "attempt_count": 0
+    }
+  ],
+  "before": {
+    "head": [
+      {
+        "revision": 29,
+        "input_sha256": "19850939c6634936c991a58027e2ad26d11550cd336a2601ba8553a1309bf32f"
+      }
+    ],
+    "runs": [
+      {
+        "id": "0fd6c29d-cfb2-4349-80a7-c5383a25a056",
+        "input_revision": 16,
+        "payload_sha256": "1e3df2fb0af7b7d2e08655fac5a1e94bf246a3db05b4432c499ab9b3bf00d2f5",
+        "html_sha256": "418e5773073745311897477552643cca2d1b060c3ad65fa1c5b6680f353a2d9f",
+        "pdf_sha256": "4689563afa2cc20ed8e4f50de6b312f0ba5391c5705e4c64ac4094721152a2f1"
+      },
+      {
+        "id": "714111c2-26c2-4913-86ac-8b4d7789a863",
+        "input_revision": 27,
+        "payload_sha256": "dba5bbe7d880fca757e446b6664147cdf019ab05697004694886cb3511854f4c",
+        "html_sha256": "9d36dc64922b3302fe9622fd9fa1df6a2712a330e10aff94e64319b6bcb76547",
+        "pdf_sha256": "652146926e0bf300d751b410593fd9f215f3a429ed93e0b837c65311ebd4655f"
+      },
+      {
+        "id": "b4d823c8-dafc-41ee-80ef-3f1ce48124e2",
+        "input_revision": 29,
+        "payload_sha256": "e2f2d318cdc6c3428e3e87ea77d01951bb03db535a2c044b570e55831eef7d7b",
+        "html_sha256": "7ec4ac83db0d523663189f13a9827ea6817f5d4689fe6bbf07adf6b179287c93",
+        "pdf_sha256": "53ec291f5bec204e65dbf9d918f42d76f749820da1f6c85da74733b42d72d6e3"
+      }
+    ]
+  },
+  "after": {
+    "head": [
+      {
+        "revision": 29,
+        "input_sha256": "19850939c6634936c991a58027e2ad26d11550cd336a2601ba8553a1309bf32f"
+      }
+    ],
+    "runs": [
+      {
+        "id": "0fd6c29d-cfb2-4349-80a7-c5383a25a056",
+        "input_revision": 16,
+        "payload_sha256": "1e3df2fb0af7b7d2e08655fac5a1e94bf246a3db05b4432c499ab9b3bf00d2f5",
+        "html_sha256": "418e5773073745311897477552643cca2d1b060c3ad65fa1c5b6680f353a2d9f",
+        "pdf_sha256": "4689563afa2cc20ed8e4f50de6b312f0ba5391c5705e4c64ac4094721152a2f1"
+      },
+      {
+        "id": "714111c2-26c2-4913-86ac-8b4d7789a863",
+        "input_revision": 27,
+        "payload_sha256": "dba5bbe7d880fca757e446b6664147cdf019ab05697004694886cb3511854f4c",
+        "html_sha256": "9d36dc64922b3302fe9622fd9fa1df6a2712a330e10aff94e64319b6bcb76547",
+        "pdf_sha256": "652146926e0bf300d751b410593fd9f215f3a429ed93e0b837c65311ebd4655f"
+      },
+      {
+        "id": "b4d823c8-dafc-41ee-80ef-3f1ce48124e2",
+        "input_revision": 29,
+        "payload_sha256": "e2f2d318cdc6c3428e3e87ea77d01951bb03db535a2c044b570e55831eef7d7b",
+        "html_sha256": "7ec4ac83db0d523663189f13a9827ea6817f5d4689fe6bbf07adf6b179287c93",
+        "pdf_sha256": "53ec291f5bec204e65dbf9d918f42d76f749820da1f6c85da74733b42d72d6e3"
+      }
+    ]
+  },
+  "workerMappingDisabled": true,
+  "capabilityDisabled": true,
+  "machineRevoked": true,
+  "localProviderFlagsDisabled": true,
+  "customerReportsPreserved": true,
+  "productionChanged": false
+}

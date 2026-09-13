@@ -1,0 +1,9 @@
+{
+  "verdict": "PASS",
+  "casesRemoved": 2,
+  "identitiesRemoved": 2,
+  "machineSessionsRevoked": 1,
+  "storageObjectsCreated": 0,
+  "scope": "Exact failed-run ownership manifest; no shared cleanup or policy change",
+  "productionChanged": false
+}

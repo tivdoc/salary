@@ -1,6 +1,8 @@
 // UX Run 1 / U7 acceptance: /check/upload with no case cookie redirects to
 // /check rather than rendering the picker.
 import { beforeEach, describe, expect, it, vi } from "vitest";
+// Server adapter marker is mocked only in this hermetic test module.
+vi.mock('server-only',()=>({}));
 
 const cookieJar = new Map<string, string>();
 
@@ -44,7 +46,7 @@ describe("/check/upload without a case", () => {
   // files, so the budget is generous on purpose: this test measures a redirect, not import speed.
   it("redirects to /check instead of rendering the file picker", async () => {
     const { default: UploadPage } = await import("./page.tsx");
-    await expect(UploadPage()).rejects.toThrow("REDIRECT:/check");
+    await expect(UploadPage({})).rejects.toThrow("REDIRECT:/check");
   }, 30_000);
 
   // External review #1, finding 1: a case whose contact was never verified is sent to the verification step, not to the picker.
@@ -55,7 +57,7 @@ describe("/check/upload without a case", () => {
     installCaseAccessDbForTests(fakeCaseAccessDb([{ id: caseId, public_id: "TV-UPLOAD01", email: "u@example.com", phone: null, first_name: null, status: "questionnaire_completed", payment_status: "not_started", created_at: "2026-09-05T09:00:00.000Z", payment_verified: false }]));
     cookieJar.set("tivdoc_salary_case", `${caseId}.${createHmac("sha256", process.env.CASE_TOKEN_SECRET!).update(caseId).digest("base64url")}`);
     const { default: UploadPage } = await import("./page.tsx");
-    await expect(UploadPage()).rejects.toThrow("REDIRECT:/check?verify=1");
+    await expect(UploadPage({})).rejects.toThrow("REDIRECT:/check?verify=1");
     installCaseAccessDbForTests(null);
   });
 
@@ -66,7 +68,7 @@ describe("/check/upload without a case", () => {
     installCaseAccessDbForTests(fakeCaseAccessDb([verifiedCase()]));
     cookieJar.set("tivdoc_salary_case", `${caseId}.${createHmac("sha256", process.env.CASE_TOKEN_SECRET!).update(caseId).digest("base64url")}`);
     const { default: UploadPage } = await import("./page.tsx");
-    await expect(UploadPage()).resolves.toBeDefined();
+    await expect(UploadPage({})).resolves.toBeDefined();
     installCaseAccessDbForTests(null);
   });
 
@@ -86,7 +88,7 @@ describe("/check/upload without a case", () => {
     cookieJar.set("tivdoc_salary_case", `${caseId}.${createHmac("sha256", process.env.CASE_TOKEN_SECRET!).update(caseId).digest("base64url")}`);
 
     const { default: UploadPage } = await import("./page.tsx");
-    const markup = renderToStaticMarkup(await UploadPage());
+    const markup = renderToStaticMarkup(await UploadPage({}));
     expect(markup).toContain("\u05d4\u05ea\u05d9\u05e7 \u05e9\u05dc\u05da \u05e9\u05de\u05d5\u05e8 \u05d5\u05de\u05de\u05ea\u05d9\u05df \u05dc\u05ea\u05dc\u05d5\u05e9");
     expect(markup).toContain("10");
     installCaseAccessDbForTests(null);
@@ -100,7 +102,7 @@ describe("/check/upload without a case", () => {
     installCaseAccessDbForTests(fakeCaseAccessDb([verifiedCase()]));
     cookieJar.set("tivdoc_salary_case", `${caseId}.${createHmac("sha256", process.env.CASE_TOKEN_SECRET!).update(caseId).digest("base64url")}`);
     const { default: UploadPage } = await import("./page.tsx");
-    const markup = renderToStaticMarkup(await UploadPage());
+    const markup = renderToStaticMarkup(await UploadPage({}));
     expect(markup).not.toContain("\u05de\u05de\u05ea\u05d9\u05df \u05dc\u05ea\u05dc\u05d5\u05e9");
     installCaseAccessDbForTests(null);
   });

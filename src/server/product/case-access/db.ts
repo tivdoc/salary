@@ -4,6 +4,11 @@
 // service role, exactly as the MVP's payment functions are called; on the
 // local runtime it is a `pg` call as the web runtime role. The service never
 // sees which, and a test hands it a fake.
+import { isolatedPreviewDatabase } from './preview-database.ts';
+import { SUPABASE_ROOT_2021_CA } from './supabase-ca.ts';
+import pg from 'pg';
+import {attachDatabasePool} from '@vercel/functions';
+
 export type CaseAccessDb = Readonly<{
   provider: "supabase" | "postgres" | "fake";
   rpc<T = Record<string, unknown>>(fn: string, args: Readonly<Record<string, unknown>>): Promise<readonly T[]>;
@@ -17,7 +22,34 @@ export type CaseAccessDb = Readonly<{
 // (`case_funnel_event_counts`) and S4's abandonment sweep and opt-out
 // (`case_abandonment_*`, `case_reminder_*`); a call
 // to a family that is not listed is a programming error, not a runtime one.
-const FUNCTION_NAME = /^case_(?:access|notification|request|documents|report|funnel|abandonment|reminder)_[a-z_]+$/u;
+const FUNCTION_NAME = /^case_(?:access|notification|request|documents|report|order|privacy|funnel|abandonment|reminder)_[a-z_]+$/u;
+// This existing versioned report boundary has a historical non-case prefix.
+// Admit its exact name; no wildcard for other June or private functions.
+// Both nonexistent and foreign versions intentionally share this refusal.
+// Only the exact source RPC's explicit authorization result becomes no rows;
+// database outages and corrupt/missing authorized storage remain failures.
+function sourceNotVisible(fn:string,error:unknown):boolean {
+  return typeof error==='object' && error!==null
+    && 'code' in error && error.code==='P0001'
+    && 'message' in error && (fn==='case_report_source'&&error.message==='REPORT_SOURCE_FORBIDDEN'
+      ||fn==='case_request_document_source'&&error.message==='REQUEST_FIELD_FORBIDDEN');
+}
+const VERSIONED_REPORT_FUNCTIONS = new Set(['june2026_regular_report_artifact']);
+const REVIEW_REQUEST_CLIENT_FUNCTIONS=new Set(['case_request_answer_identified','case_request_edit','case_request_review_states']);
+/** A source can change after the application preflight but before the locked
+ * SQL write. Translate only this function family's exact public refusal codes;
+ * unrelated SQL, transport errors and internal integrity failures stay errors. */
+function reviewRequestRefusal(fn:string,error:unknown):string|null{
+ if(!REVIEW_REQUEST_CLIENT_FUNCTIONS.has(fn)||typeof error!=='object'||error===null
+  ||!('code' in error)||error.code!=='P0001'||!('message' in error))return null;
+ switch(error.message){
+  case 'REVIEW_REQUEST_SOURCE_CHANGED':return 'REQUEST_FIELD_SOURCE_CHANGED';
+  case 'REVIEW_REQUEST_ANSWER_INVALID':return 'REQUEST_ANSWER_INVALID';
+  case 'REVIEW_REQUEST_CLOSED':return 'REQUEST_EDIT_CLOSED';
+  case 'REVIEW_REQUEST_FORBIDDEN':return 'REQUEST_FIELD_FORBIDDEN';
+  default:return null;
+ }
+}
 
 export function supabaseCaseAccessDb(client: {
   rpc(fn: string, args?: Record<string, unknown>): PromiseLike<{ data: unknown; error: { code?: string; message?: string } | null }>;
@@ -25,9 +57,13 @@ export function supabaseCaseAccessDb(client: {
   return Object.freeze({
     provider: "supabase" as const,
     async rpc<T>(fn: string, args: Readonly<Record<string, unknown>>): Promise<readonly T[]> {
-      if (!FUNCTION_NAME.test(fn)) throw new Error(`CASE_ACCESS_DB_FUNCTION_UNKNOWN:${fn}`);
+      if (!FUNCTION_NAME.test(fn) && !VERSIONED_REPORT_FUNCTIONS.has(fn)) throw new Error(`CASE_ACCESS_DB_FUNCTION_UNKNOWN:${fn}`);
       const result = await client.rpc(fn, { ...args });
-      if (result.error) throw Object.assign(new Error(`CASE_ACCESS_DB_RPC_FAILED:${fn}:${/^UPLOAD_[A-Z_]+$/u.test(result.error.message ?? "") ? result.error.message : "rpc_failed"}`), { code: result.error.code ?? "rpc_failed" });
+      if (sourceNotVisible(fn,result.error)) return [];
+      if (result.error){
+       const safe=reviewRequestRefusal(fn,result.error)??(/^(?:UPLOAD|ORDER|PRIVACY|REQUEST|JUNE_COLLECTION)_[A-Z_]+$/u.test(result.error.message ?? "")?result.error.message:'rpc_failed');
+       throw Object.assign(new Error(`CASE_ACCESS_DB_RPC_FAILED:${fn}:${safe}`), { code: result.error.code ?? "rpc_failed" });
+      }
       const data = result.data;
       if (Array.isArray(data)) return data as T[];
       if (data === null || data === undefined) return [];
@@ -43,11 +79,18 @@ export function postgresCaseAccessDb(pool: PgPoolLike): CaseAccessDb {
   return Object.freeze({
     provider: "postgres" as const,
     async rpc<T>(fn: string, args: Readonly<Record<string, unknown>>): Promise<readonly T[]> {
-      if (!FUNCTION_NAME.test(fn)) throw new Error(`CASE_ACCESS_DB_FUNCTION_UNKNOWN:${fn}`);
+      if (!FUNCTION_NAME.test(fn) && !VERSIONED_REPORT_FUNCTIONS.has(fn)) throw new Error(`CASE_ACCESS_DB_FUNCTION_UNKNOWN:${fn}`);
       const names = Object.keys(args);
       for (const name of names) if (!/^[a-z_][a-z0-9_]*$/u.test(name)) throw new Error(`CASE_ACCESS_DB_ARGUMENT_UNKNOWN:${name}`);
       const placeholders = names.map((name, index) => `${name} => $${index + 1}`).join(", ");
-      const result = await pool.query(`select * from public.${fn}(${placeholders})`, names.map((name) => args[name]));
+      let result:Awaited<ReturnType<PgPoolLike['query']>>;
+      try { result = await pool.query(`select * from public.${fn}(${placeholders})`, names.map((name) => args[name])); }
+      catch(error) {
+       if(sourceNotVisible(fn,error))return [];
+       const safe=reviewRequestRefusal(fn,error);
+       if(safe)throw Object.assign(new Error(`CASE_ACCESS_DB_RPC_FAILED:${fn}:${safe}`),{code:'P0001'});
+       throw error;
+      }
       return result.rows.map((row) => {
         // A scalar-returning function yields one column named after the function; expose it as { value }.
         const record = row as Record<string, unknown>;
@@ -58,16 +101,38 @@ export function postgresCaseAccessDb(pool: PgPoolLike): CaseAccessDb {
   });
 }
 
-let pool: PgPoolLike | null = null;
+let pool: pg.Pool | null = null;
 let poolUrl: string | null = null;
 
-async function postgresPool(connectionString: string): Promise<PgPoolLike> {
-  if (pool && poolUrl === connectionString) return pool;
-  const { default: pg } = await import("pg");
-  const created = new pg.Pool({ connectionString, max: 2, connectionTimeoutMillis: 20_000, application_name: "tivdoc_case_access" });
+async function postgresPool(connectionString: string, tls?: Readonly<{ca:string;rejectUnauthorized:true}>): Promise<pg.Pool> {
+  const cacheKey = `${connectionString}:${tls?.ca ?? ""}`;
+  if (pool && poolUrl === cacheKey) return pool;
+  // Construction/cache assignment must not yield: parallel cold requests used
+  // to create a separate pool each while awaiting the dynamic driver import.
+  const created = new pg.Pool({ connectionString, ...(tls ? {ssl:tls} : {}), max: 2, min:0, idleTimeoutMillis:5000, connectionTimeoutMillis: 20_000, application_name: "tivdoc_case_access" });
+  created.on('error',()=>console.error('CASE_ACCESS_POOL_IDLE_ERROR'));
+  attachDatabasePool(created);
   pool = created;
-  poolUrl = connectionString;
+  poolUrl = cacheKey;
   return created;
+}
+
+/** REAL customer reads need one authenticated transaction, not a sequence of
+ * independent pooled RPCs. Never substitute service_role/PostgREST here. */
+export async function withCaseAccessPostgresTransaction<T>(operation:(db:CaseAccessDb)=>Promise<T>):Promise<T>{
+ const connection=isolatedPreviewDatabase(process.env)??process.env.TIVDOC_WEB_POSTGRES_URL;
+ if(!connection)throw Error('REAL_SERVICE_WEB_DATABASE_REQUIRED');
+ const target=new URL(connection);
+ if(!['postgres:','postgresql:'].includes(target.protocol)||!/^tivdoc_web_runtime(?:\.[a-z0-9]+)?$/u.test(decodeURIComponent(target.username)))throw Error('REAL_SERVICE_WEB_DATABASE_ROLE');
+ target.searchParams.delete('sslmode');
+ const current=await postgresPool(target.toString(),{ca:SUPABASE_ROOT_2021_CA,rejectUnauthorized:true}),client=await current.connect();
+ try{
+  await client.query('begin');
+  await client.query("set local lock_timeout='5s'");
+  const value=await operation(postgresCaseAccessDb(client));
+  await client.query('commit');return value;
+ }catch(error){await client.query('rollback').catch(()=>{});throw error;}
+ finally{client.release();}
 }
 
 let override: CaseAccessDb | null = null;
@@ -85,6 +150,15 @@ export function installCaseAccessDbForTests(db: CaseAccessDb | null): void {
  */
 export async function resolveCaseAccessDb(): Promise<CaseAccessDb | null> {
   if (override) return override;
+  const previewUrl = isolatedPreviewDatabase(process.env);
+  if (previewUrl) {
+    const target = new URL(previewUrl);
+    // pg's URL sslmode parsing overrides its ssl object. The selector has
+    // already required verify-full; pass the trusted CA/hostname verification
+    // explicitly after removing that sole accepted query parameter.
+    target.search = '';
+    return postgresCaseAccessDb(await postgresPool(target.toString(), {ca:SUPABASE_ROOT_2021_CA,rejectUnauthorized:true}));
+  }
   // The durable local runtime uses a separate replay database on DEV. Its
   // Storage API credentials must not silently switch SQL to PostgREST's default database.
   if (process.env.TIVDOC_RUNTIME_TARGET === "local_only" && process.env.TIVDOC_PRODUCT_PERSISTENCE_MODE === "isolated_postgres" && process.env.TIVDOC_WEB_POSTGRES_URL) {
@@ -97,4 +171,17 @@ export async function resolveCaseAccessDb(): Promise<CaseAccessDb | null> {
   const url = process.env.TIVDOC_WEB_POSTGRES_URL;
   if (url) return postgresCaseAccessDb(await postgresPool(url));
   return null;
+}
+
+/** Separate server credential for authenticated operations; never fall back to
+ * the customer web role in an isolated database. */
+let operationsPool:PgPoolLike|null=null;
+export async function resolveReportOperationsDb():Promise<CaseAccessDb|null>{
+ if(override)return override;
+ const url=process.env.TIVDOC_OPERATIONS_POSTGRES_URL;
+ if(url){if(!operationsPool){
+  const created=new pg.Pool({connectionString:url,max:2,min:0,idleTimeoutMillis:5000,connectionTimeoutMillis:20000,application_name:'tivdoc_report_operations'});
+  created.on('error',()=>console.error('REPORT_OPERATIONS_POOL_IDLE_ERROR'));attachDatabasePool(created);operationsPool=created;
+ }return postgresCaseAccessDb(operationsPool);}
+ return null;
 }

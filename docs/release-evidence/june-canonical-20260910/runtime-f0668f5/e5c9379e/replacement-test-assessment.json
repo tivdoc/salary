@@ -1,0 +1,92 @@
+{
+  "schema_version": "june2026-isolated-test-assessment-v1",
+  "authority": "isolated_dev_test_assumptions",
+  "human_approval": false,
+  "assessment_id": "92441c82-dd78-4c5d-b89d-8d0e38bca19b",
+  "case_id": "e5c9379e-836d-4520-8cfc-d7de754dcfc3",
+  "order_id": "02d559af-7303-4024-8515-95ed6fa05744",
+  "input_revision": 94,
+  "input_sha256": "6113ab5af1e555ae85fe25b18c514f97113d0587a444e79e1dfeae53972daa15",
+  "document_version_id": "78dc4348-de33-403c-9b95-6d9abf2308e5",
+  "document_sha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+  "policy_sha256": "7c37868d57537a143fd9bcb39071b2c707443bae85d610986f90c50f6bbda948",
+  "rule_sha256": "39449b097518628c10fd8d2498575fccc64fd7edc63a06bad3964f4d25c56580",
+  "golden_cases_sha256": "824d3cefce6f2b636d5e2c44192ca502c43631aa4e942f8e84485e39c81f692d",
+  "issued_at": "2026-09-10T15:16:51.522Z",
+  "expires_at": "2026-09-10T17:16:51.522Z",
+  "source": "Synthetic uploaded fixture 721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d; independent oracle 49c9a377a4e4a44c00b0a7afe44adddbffdcdf4361658729dd300aa0070324eb; engineering test assumptions, no professional authority",
+  "decisions": [
+    {
+      "field": "applicability.age_18_entire_month",
+      "decision_kind": "applicability_assessment",
+      "target_sha256": "6c75aed9428d5bca6fcbf2c4680194cebed865e1fba74af49f30236699168d59",
+      "declaration_sha256": "2d1717bab2ca706e6bf223dc738713cb3090d889954cbbd438c60d011cf83a25",
+      "value": true,
+      "source": "Synthetic fixture facts and explicit isolated test assumptions",
+      "rationale": "This test assumes the stated general adult hourly scenario and one eligible base component; no human attestation or customer law determination is supplied."
+    },
+    {
+      "field": "applicability.sector",
+      "decision_kind": "applicability_assessment",
+      "target_sha256": "47b8773d1a3a9a471c1b8819df689820918a3e221fecff3ee39190176f85d4e0",
+      "declaration_sha256": "221b26d5c00144ef79252f37429f14c748da87e25a6c1e1100520d81badd8163",
+      "value": "general_private",
+      "source": "Synthetic fixture facts and explicit isolated test assumptions",
+      "rationale": "This test assumes the stated general adult hourly scenario and one eligible base component; no human attestation or customer law determination is supplied."
+    },
+    {
+      "field": "applicability.hours_rest_law_applies",
+      "decision_kind": "applicability_assessment",
+      "target_sha256": "c7a6a8a53397111ed952793142b2af2645cfc7fd1b049a6c626b9f4a01d216eb",
+      "declaration_sha256": "b618c438899fd1d4292854da1d4c76ea6f8f3fed2c579d0bbfd8039a0e106a2e",
+      "value": true,
+      "source": "Synthetic fixture facts and explicit isolated test assumptions",
+      "rationale": "This test assumes the stated general adult hourly scenario and one eligible base component; no human attestation or customer law determination is supplied."
+    },
+    {
+      "field": "applicability.no_better_minimum_wage_arrangement",
+      "decision_kind": "applicability_assessment",
+      "target_sha256": "715efe61144e74ce5a70b66e5fa7002b52a68ded8ea11944e00ca8a8d78f6e63",
+      "declaration_sha256": "f78dbdb47466fda3d8201c06f0669c446a34379d72504b1aa19dc16e259691c7",
+      "value": true,
+      "source": "Synthetic fixture facts and explicit isolated test assumptions",
+      "rationale": "This test assumes the stated general adult hourly scenario and one eligible base component; no human attestation or customer law determination is supplied."
+    },
+    {
+      "field": "applicability.no_adapted_minimum_wage",
+      "decision_kind": "applicability_assessment",
+      "target_sha256": "d8574e498f96324977a4c8a7a1122e02bf9dd67460769611b8ead0dad9135651",
+      "declaration_sha256": "b23d217c1c0e64af0c858a4a2887f436648f652fcf484b5214d2827beddab952",
+      "value": true,
+      "source": "Synthetic fixture facts and explicit isolated test assumptions",
+      "rationale": "This test assumes the stated general adult hourly scenario and one eligible base component; no human attestation or customer law determination is supplied."
+    },
+    {
+      "field": "applicability.regular_hours_exclude_absence_overtime_rest",
+      "decision_kind": "applicability_assessment",
+      "target_sha256": "752e93567f7d4a6b93a592870c13cb97245aac69eed0fd2f05a683275cc99369",
+      "declaration_sha256": "d518c6baf6310749d7467ebd8958c5b0ebfc2c5ae4021eccacbf5e68689e1df8",
+      "value": true,
+      "source": "Synthetic fixture facts and explicit isolated test assumptions",
+      "rationale": "This test assumes the stated general adult hourly scenario and one eligible base component; no human attestation or customer law determination is supplied."
+    },
+    {
+      "field": "wage_components_complete",
+      "decision_kind": "inventory_assessment",
+      "target_sha256": "0b4d17e7330fab724c0daf6f29cd20cdf27a447d0615716aedd338bd38cb8f44",
+      "declaration_sha256": "cc64d4099ffb3aa939e9b050f1345969a102be55289eee4a92eaaebe892f56c6",
+      "value": true,
+      "source": "Synthetic fixture facts and explicit isolated test assumptions",
+      "rationale": "This test assumes the stated general adult hourly scenario and one eligible base component; no human attestation or customer law determination is supplied."
+    },
+    {
+      "field": "components.legal_classification",
+      "decision_kind": "component_classification",
+      "target_sha256": "a430a540d3bf253b131f8176f30b7f19b7ba70640ab502f5dcac4eae387b1195",
+      "declaration_sha256": "828dba65ce5b207d2b31e43d906dc76caabd6d85544b80a31cb841ef60c3a39e",
+      "value": "base_salary",
+      "source": "Synthetic fixture facts and explicit isolated test assumptions",
+      "rationale": "This test assumes the stated general adult hourly scenario and one eligible base component; no human attestation or customer law determination is supplied."
+    }
+  ]
+}

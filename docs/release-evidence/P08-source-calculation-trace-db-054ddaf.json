@@ -1,0 +1,25 @@
+{
+  "verdict": "PASS",
+  "gitSha": "054ddaf11f727b73fa3ffffd105331ce61aaee38",
+  "proof": {
+    "checks": [
+      "an aborted write rolls back the trace while the original persisted canonical stages remain available",
+      "actual worker role stores one immutable row across retry and independently replays operands from returned PostgreSQL JSON",
+      "the actual canonical customer-confirmed source and separate versioned parameter survive database roundtrip",
+      "another tenant cannot resolve the source stages or create a linked trace through the verified worker connection",
+      "the database refuses UPDATE and preserves the original trace bytes and hash",
+      "existing canonical findings remain absent; the arithmetic probe creates no report, amount, legal activation or price"
+    ],
+    "traceSha256": "993b107de55b2f326219c0e88e5bebfda4443b6bc33a5d961d9f8f3ef6c92723",
+    "storedTraceSha256": "9a172385b91ca09e500c47882e2f658437f255d421734b9570d7869ff69e26d5",
+    "scope": "Actual isolated DEV worker connection and saved canonical stages, synthetic +1 XTS arithmetic only. Trace/run are rolled back by the enclosing proof; no concurrent-process, OCR, monetary entitlement or publication proof."
+  },
+  "failure": null,
+  "cleanupFailure": null,
+  "syntheticCasesRemoved": 2,
+  "syntheticIdentitiesRemoved": 2,
+  "machineSessionRevoked": true,
+  "traceAndAnalysisRolledBack": true,
+  "browserProof": false,
+  "productionChanged": false
+}

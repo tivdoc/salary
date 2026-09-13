@@ -1,0 +1,43 @@
+{
+  "origin": "https://salary-1vlhcfu08-tivdoccom-5042s-projects.vercel.app",
+  "deployedSha": "ee4a8be9f90ba8ae93dbfe4a52ff003099919dcc",
+  "checks": [
+    {
+      "name": "order proof uses isolated DEV with external payment disabled",
+      "passed": true
+    },
+    {
+      "name": "saved cumulative correction is pending on the full order; original price and initial order remain visible",
+      "passed": true
+    },
+    {
+      "name": "reload preserves one cumulative request and does not invoke checkout or a refund provider",
+      "passed": true
+    },
+    {
+      "name": "another customer cannot open the order or see its adjustment in their own case",
+      "passed": true
+    },
+    {
+      "name": "pending refund and protected header fit 360px",
+      "passed": true
+    },
+    {
+      "name": "pending refund and protected header fit 390px",
+      "passed": true
+    },
+    {
+      "name": "pending refund and protected header fit 768px",
+      "passed": true
+    },
+    {
+      "name": "pending refund and protected header fit 1440px",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "paymentWrites": 0,
+  "scope": "Owned synthetic paid order and cumulative correction ledger; seeded customer sessions and actual hosted page/DB. No provider charge/refund, canonical financial correctness or production.",
+  "productionChanged": false,
+  "secretsIncluded": false
+}

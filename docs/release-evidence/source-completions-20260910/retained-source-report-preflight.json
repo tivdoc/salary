@@ -1,0 +1,24 @@
+{
+  "at": "2026-09-10T04:50:55.761Z",
+  "gitSha": "d85c2f7d83a1b8da3d849648271771846de68d3e",
+  "dirty": false,
+  "caseId": "87eb4418-7d9f-4b68-aa86-82be059295ac",
+  "schema": 135,
+  "rollbackOnly": true,
+  "providerCalls": 0,
+  "seededAnswers": false,
+  "inputRevision": 27,
+  "runId": "714111c2-26c2-4913-86ac-8b4d7789a863",
+  "calculation": {
+    "state": "missing_input",
+    "fields": [
+      "work.regular_hours"
+    ]
+  },
+  "requestId": "b4f046d4-8238-462a-9ada-6127a55e57d0",
+  "save": {
+    "run_id": "714111c2-26c2-4913-86ac-8b4d7789a863",
+    "replayed": false
+  },
+  "verdict": "PASS"
+}

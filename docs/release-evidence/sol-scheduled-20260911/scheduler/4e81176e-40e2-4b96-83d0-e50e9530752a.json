@@ -1,0 +1,66 @@
+{
+  "schema_version": "managed-dev-supervisor-receipt-v1",
+  "control_id": "abf1d07f-ea93-421b-8be0-4fec78bb13cc",
+  "run_id": "4e81176e-40e2-4b96-83d0-e50e9530752a",
+  "pid": 872,
+  "child_pid": 2400,
+  "started_at": "2026-09-11T01:39:56.142Z",
+  "finished_at": "2026-09-11T01:40:32.569Z",
+  "build_sha": "506548866dc6543a4406135e146af7ff61cb8971",
+  "bundle_sha256": "7eb7d2d215a7485262789c4711aa1d413ec116733494d420ebfdbe84ee5555bb",
+  "tick": 14,
+  "state": "worker_failed",
+  "stop_reason": null,
+  "exit_code": 1,
+  "stdout_sha256": "eeaa69c4272849ae2737f945a53dc646429ee5214e61e25ac83c3c40f07a92f6",
+  "stdout_bytes": 1614,
+  "stderr_bytes": 319,
+  "summary": {
+    "state": "finished",
+    "code": null,
+    "buildSha": "506548866dc6543a4406135e146af7ff61cb8971",
+    "items": [
+      {
+        "caseId": "33f41e2f-56b5-420c-8ee2-310201813d35",
+        "state": "retry_wait",
+        "lastError": "processing_failed",
+        "jobId": "saved_4f508ff1a034271e41d5e87e1acbef949cdb1e7360db80f949c5eb4ec2f55efa"
+      }
+    ],
+    "budget": {
+      "contentRequests": 6,
+      "generations": 3,
+      "countRequests": 3,
+      "reservedUpperBoundUsd": 2.136,
+      "unknownOutcomes": 0
+    },
+    "notifications": {
+      "state": "finished",
+      "code": null,
+      "queued": 0,
+      "deliveryConfirmed": false,
+      "attempts": []
+    },
+    "health": {
+      "state": "available",
+      "code": null,
+      "data": {
+        "checked_at": "2026-09-11T01:40:33.150Z",
+        "last_activity_at": "2026-09-11T01:40:32.083Z",
+        "capability_expires_at": "2026-09-11T04:10:00.000Z",
+        "daily_claims": 1,
+        "total_claims": 1,
+        "daily_limit": 20,
+        "total_limit": 20,
+        "cases": [
+          {
+            "case_id": "33f41e2f-56b5-420c-8ee2-310201813d35",
+            "pending_requests": 0,
+            "authority_state": "missing",
+            "authority_expires_at": null
+          }
+        ]
+      }
+    }
+  }
+}

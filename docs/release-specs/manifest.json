@@ -1,0 +1,14 @@
+[
+  {
+    "name": "tivdoc-full-development-execution-plan-v1.0-he.md",
+    "original_sha256": "06a757e7b8ec8badfe8c4f466694b0e3d3af8d081c96bf0a34c07fcde9bcaad2",
+    "public_copy_sha256": "be5a6c144c884afd968e805615e97d940649e4d7501015659ce3a89cf538a1b6",
+    "redactions": "Existing customer case references, if present"
+  },
+  {
+    "name": "tivdoc-uiux-execution-plan-v1.2-he.md",
+    "original_sha256": "f04a1077b0e5f4ab4de8fb1bbc485c18ea91c718e1e7f831fae1c3c6f60baa89",
+    "public_copy_sha256": "6dbde7d154903e39eb9e5d16ec17ecd5d221e4b98272b3b4306cf1f0494c50ec",
+    "redactions": "Existing customer case references, if present"
+  }
+]

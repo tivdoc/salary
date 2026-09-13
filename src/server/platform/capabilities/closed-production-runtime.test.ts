@@ -50,10 +50,10 @@ describe("the closed production projection", () => {
       expect(decision.reason_codes.length, entry.entrypoint_id).toBeGreaterThan(0);
       expect(runtime.servesAsMain(entry.entrypoint_id), entry.entrypoint_id).toBe(false);
     }
-    // The registrar and the six branch routes: seven engine dispatchers; twenty product ones from main plus the six
-    // customer-access routes UX Run 1 added on the product half, nothing unassigned.
-    expect(engineAssignments()).toHaveLength(7);
-    expect(allowed).toHaveLength(33);
+    // Existing engine dispatchers plus both new DEV operations roots remain
+    // closed; the product half gains no additional served-as-main routes.
+    expect(engineAssignments()).toHaveLength(9);
+    expect(allowed).toHaveLength(39);
     // A capability is still enabled nowhere: the product half is served by declaration, not by an enabled capability.
     expect(runtime.projection.enabled_capabilities).toEqual([]);
   });
@@ -64,6 +64,17 @@ describe("the closed production projection", () => {
     await expect(guardStableHttpEntrypoint("CEP-024", oversized)).resolves.toMatchObject({ outcome: "ALLOW", external_reason_codes: ["SERVED_AS_MAIN"] });
     expect(oversized.bodyUsed).toBe(false);
     await expect(guardStableHttpEntrypoint("CEP-020", new Request("http://127.0.0.1/api/operations/shadow/summary"))).rejects.toThrow("CAPABILITY_ENTRYPOINT_BLOCKED:CEP-020");
+  });
+
+  it("blocks the dedicated DEV operations page and both API methods in the closed deployment runtime", async () => {
+    const runtime = installClosedProductionRuntime();
+    expect(runtime.servesAsMain("CEP-115")).toBe(false);
+    expect(runtime.servesAsMain("CEP-116")).toBe(false);
+    expect(() => runtime.assert("CEP-115")).toThrow("CAPABILITY_ENTRYPOINT_BLOCKED:CEP-115");
+    for (const method of ["GET", "POST"]) {
+      await expect(guardStableHttpEntrypoint("CEP-116", new Request("https://tivdoc-synthetic.vercel.app/api/operations/dev-worker", {method})))
+        .rejects.toThrow("CAPABILITY_ENTRYPOINT_BLOCKED:CEP-116");
+    }
   });
 
   it("installs once through the verified path, and a blocked API dispatcher answers the product 404", async () => {

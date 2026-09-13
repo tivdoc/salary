@@ -1,0 +1,13 @@
+{
+  "verdict": "FAIL",
+  "checks": [],
+  "failure": "PRICE_QUOTE_SOURCE_MISSING",
+  "cleanupFailure": null,
+  "database": "tivdoc_release_replay_20260907",
+  "migration": "20260908145315_order_quote_ledger.sql",
+  "migration_sha256": "159e1aeb98df89187583ca46c0662025ed142f51c85dc23f195a493fb51a4a8a",
+  "syntheticCasesRemoved": 2,
+  "machineSessionRevoked": true,
+  "scope": "Actual worker/peer/web roles; injected synthetic monetary basis and synthetic verified payment row. No canonical monetary proof, provider payment, customer checkout or production change.",
+  "productionChanged": false
+}

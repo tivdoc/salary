@@ -1,0 +1,2877 @@
+{
+  "schemaVersion": "sol-live-single-base-extraction-audit-v1",
+  "auditGeneratedAt": "2026-09-10T17:24:12.832167+00:00",
+  "auditMethod": "Offline comparison of immutable actual SDK raw, mapped, saved checkpoint and analysis artifacts against original independent synthetic source oracle; no SDK/DB/test-suite invocation.",
+  "auditCreatedProviderCalls": 0,
+  "syntheticSourcesOnly": true,
+  "schema143": "Parent-reported applied isolated DEV schema; this offline audit does not query a migration ledger or DB.",
+  "originalOracle": {
+    "path": "docs/release-evidence/sol-comparison-20260910/single-base-source-oracles.json",
+    "sha256": "6c66625a1ea54b6b98be244f8caa9bcf6e03e8897c8a419900f8513ccb539c41",
+    "bytes": 4731
+  },
+  "integrationCommit": "b189b4d33f1427791d02abafae15410392caba64",
+  "scopeLimits": [
+    "Three simple one-page Hebrew synthetic PDFs; no scan in this narrow corpus.",
+    "Model scores0.94 still require identified reading; correct values are not automatic confirmed facts.",
+    "Successful amount-bearing artifacts use mode synthetic_test and namespace isolated_test, not real legal authority. Initial REAL runs blocked.",
+    "Conflicting input kept a global conflicting_values warning but omitted both100/120 candidates: safe non-publication PASS, exact observation recall FAIL."
+  ],
+  "ledgerSnapshot": {
+    "artifact": {
+      "path": "output/release-completion/live-provider-sol-comparison/package-budget-ledger.json",
+      "sha256": "095282654b4a9825b39244e45cfbcaac411e81b33d1ce2bb32c1a3d246b2fbb7",
+      "bytes": 16361
+    },
+    "requests": 12,
+    "generations": 6,
+    "reservedUpperBoundUsd": 4.272,
+    "unknownOutcomes": 1,
+    "actualProviderCharge": null,
+    "oldLedgerOrRowsModified": false
+  },
+  "records": [
+    {
+      "label": "clear-r4",
+      "kind": "clear",
+      "caseId": "6d31d6ee-902b-4f22-8416-196b56fb6c21",
+      "source": {
+        "path": "output/release-completion/june-regular/clear-6d31d6ee/input.pdf",
+        "sha256": "ba5286b3f907249b251e9b7caca193f1b1d303d77255c20eb83c55f1431f7197",
+        "bytes": 770601
+      },
+      "sourceMatchesOriginalOracle": true,
+      "documentVersionId": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+      "oracle": {
+        "synthetic": true,
+        "humanReview": false,
+        "legalGoldenApproval": false,
+        "period": {
+          "year": 2026,
+          "month": 6,
+          "start_date": "2026-06-01",
+          "end_date": "2026-06-30"
+        },
+        "salaryType": "hourly",
+        "employmentStartDate": "2025-01-15",
+        "regularHours": [
+          "100"
+        ],
+        "hourlyRateMinor": 3300,
+        "baseMinor": 330000,
+        "grossMinor": 330000,
+        "deductionsMinor": 0,
+        "netMinor": 330000,
+        "paidComponentCount": 1,
+        "outcome": "readable",
+        "canonicalExpectedMinor": 354058,
+        "canonicalGapMinor": 24058,
+        "publishedHourlyExpectedMinor": 354000,
+        "publishedHourlyGapMinor": 24000,
+        "financialFormulaDisclosure": "Canonical candidate uses full-precision monthly/182 with final half-up agorot rounding; published-hourly engineering comparator uses35.40."
+      },
+      "provider": {
+        "model": "gpt-5.6-sol",
+        "reasoningEffort": "medium",
+        "promptVersion": "payslip-extraction-openai-v2-first-r4",
+        "extractorVersion": "2.1",
+        "createdAt": "2026-09-10T16:53:14.428Z",
+        "durationMs": 29079,
+        "inputTokens": 4124,
+        "outputTokens": 1706,
+        "totalTokens": 5830,
+        "estimatedGenerationUsd": 0.050616,
+        "estimateBasis": "input*4/1M + output*20/1M; count requests excluded; actual charged amount unavailable",
+        "actualChargedAmountUsd": null,
+        "responseId": "resp_017555988e7a5b5e016aa2e05de57887d2b45ad19630a160b4",
+        "requestId": "req_d06139b3c51e42a8b2a2733182b238c9",
+        "receiptSha256": "d331cc55f732be3d0cd7e71ad5f520c1afdef4197740f18983e8d74c49808b70"
+      },
+      "raw": {
+        "checks": {
+          "salaryType": true,
+          "monthPresent": true,
+          "employmentStartDate": true,
+          "regularHoursObservationRecall": true,
+          "hourlyRate": true,
+          "oneActualPayRow": false,
+          "baseRowAmount": true,
+          "gross": true,
+          "deductions": true,
+          "net": true,
+          "pensionAbsencePreserved": true
+        },
+        "allAuditedChecksPassed": false,
+        "regularHoursObserved": [
+          "100",
+          "100"
+        ],
+        "hourlyRatesObserved": [
+          "33.00",
+          "33.00"
+        ],
+        "salaryPeriodObservationCount": 2,
+        "payrollRows": [
+          {
+            "source_label": "שעות רגילות",
+            "semantic_kind": "hourly_base",
+            "quantity_raw": "100",
+            "rate_raw": null,
+            "percentage_raw": null,
+            "amount_raw": null,
+            "confidence": "high",
+            "evidence": {
+              "page": 1,
+              "region": "earnings",
+              "source_label": "שעות רגילות"
+            },
+            "warnings": []
+          },
+          {
+            "source_label": "תעריף רגיל לשעה בשקלים",
+            "semantic_kind": "hourly_base",
+            "quantity_raw": null,
+            "rate_raw": "33.00",
+            "percentage_raw": null,
+            "amount_raw": null,
+            "confidence": "high",
+            "evidence": {
+              "page": 1,
+              "region": "earnings",
+              "source_label": "תעריף רגיל לשעה בשקלים"
+            },
+            "warnings": []
+          },
+          {
+            "source_label": "שכר יסוד שעתי",
+            "semantic_kind": "hourly_base",
+            "quantity_raw": "100",
+            "rate_raw": "33.00",
+            "percentage_raw": null,
+            "amount_raw": "3300.00",
+            "confidence": "high",
+            "evidence": {
+              "page": 1,
+              "region": "earnings",
+              "source_label": "שכר יסוד שעתי"
+            },
+            "warnings": []
+          }
+        ],
+        "warnings": [],
+        "artifact": {
+          "path": "output/release-completion/june-regular/clear-6d31d6ee/provider/ff7ccbd7-cb44-4cfe-95ad-4bf07c083aca/structured.json",
+          "sha256": "b3987f41034baf6fb802b43ff672c23576cfefd979004c44266ac623208a967b",
+          "bytes": 5165
+        }
+      },
+      "mapping": {
+        "artifact": {
+          "path": "output/release-completion/june-regular/clear-6d31d6ee/provider/ff7ccbd7-cb44-4cfe-95ad-4bf07c083aca/mapped.json",
+          "sha256": "98d22edf05c170a2315238c45f46c06137216871aaf60abb0cf6c2ad2db53f13",
+          "bytes": 10658
+        },
+        "normalizedComparison": [
+          {
+            "field": "document_type",
+            "expectedDistinctValues": [
+              "payslip"
+            ],
+            "actualObservedValues": [
+              "payslip"
+            ],
+            "passed": true
+          },
+          {
+            "field": "salary_period",
+            "expectedDistinctValues": [
+              {
+                "year": 2026,
+                "month": 6,
+                "start_date": "2026-06-01",
+                "end_date": "2026-06-30"
+              }
+            ],
+            "actualObservedValues": [
+              {
+                "year": 2026,
+                "month": 6,
+                "end_date": "2026-06-30",
+                "start_date": "2026-06-01"
+              },
+              {
+                "year": 2026,
+                "month": 6,
+                "end_date": "2026-06-30",
+                "start_date": "2026-06-01"
+              }
+            ],
+            "passed": true
+          },
+          {
+            "field": "employment_start_date",
+            "expectedDistinctValues": [
+              "2025-01-15"
+            ],
+            "actualObservedValues": [
+              "2025-01-15"
+            ],
+            "passed": true
+          },
+          {
+            "field": "salary_type",
+            "expectedDistinctValues": [
+              "hourly"
+            ],
+            "actualObservedValues": [
+              "hourly"
+            ],
+            "passed": true
+          },
+          {
+            "field": "base_monthly_salary",
+            "expectedDistinctValues": [
+              {
+                "currency": "ILS",
+                "minor_units": 330000
+              }
+            ],
+            "actualObservedValues": [
+              {
+                "currency": "ILS",
+                "minor_units": 330000
+              }
+            ],
+            "passed": true
+          },
+          {
+            "field": "gross_salary",
+            "expectedDistinctValues": [
+              {
+                "currency": "ILS",
+                "minor_units": 330000
+              }
+            ],
+            "actualObservedValues": [
+              {
+                "currency": "ILS",
+                "minor_units": 330000
+              }
+            ],
+            "passed": true
+          },
+          {
+            "field": "total_deductions",
+            "expectedDistinctValues": [
+              {
+                "currency": "ILS",
+                "minor_units": 0
+              }
+            ],
+            "actualObservedValues": [
+              {
+                "currency": "ILS",
+                "minor_units": 0
+              }
+            ],
+            "passed": true
+          },
+          {
+            "field": "net_salary",
+            "expectedDistinctValues": [
+              {
+                "currency": "ILS",
+                "minor_units": 330000
+              }
+            ],
+            "actualObservedValues": [
+              {
+                "currency": "ILS",
+                "minor_units": 330000
+              }
+            ],
+            "passed": true
+          },
+          {
+            "field": "regular_hours",
+            "expectedDistinctValues": [
+              {
+                "amount": "100",
+                "unit": "hours_per_month"
+              }
+            ],
+            "actualObservedValues": [
+              {
+                "unit": "hours_per_month",
+                "amount": "100"
+              },
+              {
+                "unit": "hours_per_month",
+                "amount": "100"
+              }
+            ],
+            "passed": true
+          },
+          {
+            "field": "hourly_rate",
+            "expectedDistinctValues": [
+              {
+                "currency": "ILS",
+                "minor_units": 3300
+              }
+            ],
+            "actualObservedValues": [
+              {
+                "currency": "ILS",
+                "minor_units": 3300
+              },
+              {
+                "currency": "ILS",
+                "minor_units": 3300
+              }
+            ],
+            "passed": true
+          }
+        ],
+        "criticalObservedValueChecksPassed": true,
+        "allAuditedNormalizedValueChecksPassed": true,
+        "allPayslipAccuracyProven": false,
+        "scope": "Fixed synthetic oracle fields only. No unseen layout, real payroll, pensions or whole-document completeness claim.",
+        "components": [
+          {
+            "component_id": "8516f362-e411-496b-930b-9ec4a375a5c5",
+            "source_label": "שעות רגילות",
+            "semantic_kind": "hourly_base",
+            "quantity": "100",
+            "rate": null,
+            "amount": null,
+            "source": {
+              "page": 1,
+              "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+              "text_fragment": "שעות רגילות"
+            }
+          },
+          {
+            "component_id": "cae37540-b584-41f4-92d5-2ed06ae6e1fe",
+            "source_label": "תעריף רגיל לשעה בשקלים",
+            "semantic_kind": "hourly_base",
+            "quantity": null,
+            "rate": {
+              "currency": "ILS",
+              "minor_units": 3300
+            },
+            "amount": null,
+            "source": {
+              "page": 1,
+              "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+              "text_fragment": "תעריף רגיל לשעה בשקלים"
+            }
+          },
+          {
+            "component_id": "39e0b300-6ff4-4470-89f1-4a271af87c0f",
+            "source_label": "שכר יסוד שעתי",
+            "semantic_kind": "hourly_base",
+            "quantity": "100",
+            "rate": {
+              "currency": "ILS",
+              "minor_units": 3300
+            },
+            "amount": {
+              "currency": "ILS",
+              "minor_units": 330000
+            },
+            "source": {
+              "page": 1,
+              "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b",
+              "text_fragment": "שכר יסוד שעתי"
+            }
+          }
+        ],
+        "fieldConfidences": [
+          {
+            "field": "document_type",
+            "candidateId": "021d42bb-6b43-4d66-a99e-1e5cffff76f8",
+            "confidence": 0.96
+          },
+          {
+            "field": "salary_period",
+            "candidateId": "a1fba617-c7c9-467f-b341-df0bc53218d0",
+            "confidence": 0.94
+          },
+          {
+            "field": "salary_period",
+            "candidateId": "5d616ddb-f5ff-4270-8164-219a37c8e55e",
+            "confidence": 0.94
+          },
+          {
+            "field": "employment_start_date",
+            "candidateId": "d22af206-809d-4c9f-8cd7-f78f3c4e7c6f",
+            "confidence": 0.94
+          },
+          {
+            "field": "salary_type",
+            "candidateId": "e49a037c-4833-4932-9ae1-79291d25a269",
+            "confidence": 0.94
+          },
+          {
+            "field": "regular_hours",
+            "candidateId": "0f7b127a-587c-4ef9-a903-ae723d3bdabf",
+            "confidence": 0.94
+          },
+          {
+            "field": "hourly_rate",
+            "candidateId": "ddf04c30-53b7-4621-9dd2-e558fc6794f4",
+            "confidence": 0.94
+          },
+          {
+            "field": "regular_hours",
+            "candidateId": "5c01c318-5fe1-4fe8-b083-afde17318f32",
+            "confidence": 0.94
+          },
+          {
+            "field": "hourly_rate",
+            "candidateId": "8d537160-fdcf-4d9a-9e84-b65c054f0e23",
+            "confidence": 0.94
+          },
+          {
+            "field": "base_monthly_salary",
+            "candidateId": "9d5abfbb-949d-4b78-b8d3-fb01a28bc5c7",
+            "confidence": 0.94
+          },
+          {
+            "field": "gross_salary",
+            "candidateId": "b866b244-fbd3-440f-a6e7-7010033aa455",
+            "confidence": 0.94
+          },
+          {
+            "field": "total_deductions",
+            "candidateId": "5609dcf0-325a-47fd-a95f-942f265bb892",
+            "confidence": 0.94
+          },
+          {
+            "field": "net_salary",
+            "candidateId": "eb2e605c-ff3b-45a1-be23-bf9e11643b10",
+            "confidence": 0.94
+          }
+        ],
+        "validationIssues": [
+          {
+            "code": "duplicate_candidate",
+            "severity": "warning",
+            "field_keys": [
+              "salary_period"
+            ],
+            "field_candidate_ids": [
+              "a1fba617-c7c9-467f-b341-df0bc53218d0",
+              "5d616ddb-f5ff-4270-8164-219a37c8e55e"
+            ]
+          },
+          {
+            "code": "duplicate_candidate",
+            "severity": "warning",
+            "field_keys": [
+              "regular_hours"
+            ],
+            "field_candidate_ids": [
+              "0f7b127a-587c-4ef9-a903-ae723d3bdabf",
+              "5c01c318-5fe1-4fe8-b083-afde17318f32"
+            ]
+          },
+          {
+            "code": "duplicate_candidate",
+            "severity": "warning",
+            "field_keys": [
+              "hourly_rate"
+            ],
+            "field_candidate_ids": [
+              "ddf04c30-53b7-4621-9dd2-e558fc6794f4",
+              "8d537160-fdcf-4d9a-9e84-b65c054f0e23"
+            ]
+          },
+          {
+            "code": "duplicate_mapped_component",
+            "severity": "warning",
+            "field_keys": [],
+            "field_candidate_ids": [
+              "8516f362-e411-496b-930b-9ec4a375a5c5",
+              "cae37540-b584-41f4-92d5-2ed06ae6e1fe",
+              "39e0b300-6ff4-4470-89f1-4a271af87c0f"
+            ]
+          }
+        ],
+        "warnings": [],
+        "checkpoint": {
+          "path": "output/release-completion/june-regular/clear-6d31d6ee/checkpoint.json",
+          "sha256": "40f28562f7d81542ebf54cb4208613d26cead2c0b8334f16cdf2e6a46a0d53fe",
+          "bytes": 88396
+        },
+        "resultSha256": "6d3ad6380cc989f398a884773a23d2bb396f918d021feaf18974715434bb36bf",
+        "sourceCheckpointUnchangedByAudit": true,
+        "recovery": {
+          "regions": [],
+          "skipped": true,
+          "requested": false,
+          "reason_codes": [
+            "recovery_skipped_no_material_gain"
+          ],
+          "fields_requested": [],
+          "expected_information_gain": "none"
+        }
+      },
+      "facts": {
+        "readingAnswers": [],
+        "caseDeclarationCount": 0,
+        "identifiedAnswersWereAutomatedFixtureActions": true,
+        "notActualHumanReview": true,
+        "parentContext": null,
+        "publication": null,
+        "extractionSnapshotBeforeAnyCustomerAnswers": [
+          {
+            "path": "documents.period",
+            "status": "candidate",
+            "value": {
+              "period": {
+                "end_date": "2026-06-30",
+                "start_date": "2026-06-01"
+              },
+              "document_id": "7732b2af-629f-47e0-9b6c-6c58f31eb70b"
+            },
+            "sourceTypes": [
+              "documented",
+              "documented"
+            ],
+            "customerConfirmationCount": 0
+          },
+          {
+            "path": "employment.start_date",
+            "status": "candidate",
+            "value": "2025-01-15",
+            "sourceTypes": [
+              "documented"
+            ],
+            "customerConfirmationCount": 0
+          },
+          {
+            "path": "compensation.salary_type",
+            "status": "candidate",
+            "value": "hourly",
+            "sourceTypes": [
+              "documented"
+            ],
+            "customerConfirmationCount": 0
+          },
+          {
+            "path": "compensation.base_monthly_salary",
+            "status": "candidate",
+            "value": {
+              "currency": "ILS",
+              "minor_units": 330000
+            },
+            "sourceTypes": [
+              "documented"
+            ],
+            "customerConfirmationCount": 0
+          },
+          {
+            "path": "compensation.hourly_rate",
+            "status": "candidate",
+            "value": {
+              "currency": "ILS",
+              "minor_units": 3300
+            },
+            "sourceTypes": [
+              "documented",
+              "documented"
+            ],
+            "customerConfirmationCount": 0
+          },
+          {
+            "path": "compensation.gross_salary",
+            "status": "candidate",
+            "value": {
+              "currency": "ILS",
+              "minor_units": 330000
+            },
+            "sourceTypes": [
+              "documented"
+            ],
+            "customerConfirmationCount": 0
+          },
+          {
+            "path": "compensation.net_salary",
+            "status": "candidate",
+            "value": {
+              "currency": "ILS",
+              "minor_units": 330000
+            },
+            "sourceTypes": [
+              "documented"
+            ],
+            "customerConfirmationCount": 0
+          },
+          {
+            "path": "work.regular_hours",
+            "status": "candidate",
+            "value": {
+              "unit": "hours_per_month",
+              "amount": "100"
+            },
+            "sourceTypes": [
+              "documented",
+              "documented"
+            ],
+            "customerConfirmationCount": 0
+          }
+        ]
+      },
+      "harness": {
+        "latestState": "FAIL",
+        "latestGitSha": "e5b3948c11dbbf29eabfc10837ccd35bcf6589a6",
+        "checks": [
+          "owned_job_lease_released_with_fence"
+        ],
+        "history": [
+          {
+            "artifact": {
+              "path": "output/release-completion/june-regular/clear-6d31d6ee/proof-e5b3948-1789059202981.json",
+              "sha256": "52f25f02c370e2585dcc24afc48a42bae0fe55dd7c18a8b441fdb92a6ec8e90e",
+              "bytes": 1724
+            },
+            "gitSha": "e5b3948c11dbbf29eabfc10837ccd35bcf6589a6",
+            "state": "FAIL",
+            "phase": "actual-live-extraction",
+            "error": "JUNE_COLLECTION_PERIOD_UNSUPPORTED",
+            "providerGenerationsThisRun": 1
+          }
+        ]
+      }
+    },
+    {
+      "label": "clear-r5",
+      "kind": "clear",
+      "caseId": "9544dc6f-1aed-4924-921f-bc9a1cac5232",
+      "source": {
+        "path": "output/release-completion/june-regular/clear-r5-9544dc6f/input.pdf",
+        "sha256": "ba5286b3f907249b251e9b7caca193f1b1d303d77255c20eb83c55f1431f7197",
+        "bytes": 770601
+      },
+      "sourceMatchesOriginalOracle": true,
+      "documentVersionId": "656dcad4-791a-4483-8acf-c26f8ee1d617",
+      "oracle": {
+        "synthetic": true,
+        "humanReview": false,
+        "legalGoldenApproval": false,
+        "period": {
+          "year": 2026,
+          "month": 6,
+          "start_date": "2026-06-01",
+          "end_date": "2026-06-30"
+        },
+        "salaryType": "hourly",
+        "employmentStartDate": "2025-01-15",
+        "regularHours": [
+          "100"
+        ],
+        "hourlyRateMinor": 3300,
+        "baseMinor": 330000,
+        "grossMinor": 330000,
+        "deductionsMinor": 0,
+        "netMinor": 330000,
+        "paidComponentCount": 1,
+        "outcome": "readable",
+        "canonicalExpectedMinor": 354058,
+        "canonicalGapMinor": 24058,
+        "publishedHourlyExpectedMinor": 354000,
+        "publishedHourlyGapMinor": 24000,
+        "financialFormulaDisclosure": "Canonical candidate uses full-precision monthly/182 with final half-up agorot rounding; published-hourly engineering comparator uses35.40."
+      },
+      "provider": {
+        "model": "gpt-5.6-sol",
+        "reasoningEffort": "medium",
+        "promptVersion": "payslip-extraction-openai-v2-first-r5",
+        "extractorVersion": "2.1",
+        "createdAt": "2026-09-10T17:09:33.465Z",
+        "durationMs": 19010,
+        "inputTokens": 4206,
+        "outputTokens": 1172,
+        "totalTokens": 5378,
+        "estimatedGenerationUsd": 0.040264,
+        "estimateBasis": "input*4/1M + output*20/1M; count requests excluded; actual charged amount unavailable",
+        "actualChargedAmountUsd": null,
+        "responseId": "resp_0fa0347eb2b76d29016aa2e43b026c87d2adaa357f9c412a8a",
+        "requestId": "req_3de7870188e84ca5a4b909f5d3638a59",
+        "receiptSha256": "cf4d43f0bf7d754be57b8ad6e5f0d984fec876fb0452810f4b275ffed78d9df8"
+      },
+      "raw": {
+        "checks": {
+          "salaryType": true,
+          "monthPresent": true,
+          "employmentStartDate": true,
+          "regularHoursObservationRecall": true,
+          "hourlyRate": true,
+          "oneActualPayRow": true,
+          "baseRowAmount": true,
+          "gross": true,
+          "deductions": true,
+          "net": true,
+          "pensionAbsencePreserved": true
+        },
+        "allAuditedChecksPassed": true,
+        "regularHoursObserved": [
+          "100"
+        ],
+        "hourlyRatesObserved": [
+          "33.00"
+        ],
+        "salaryPeriodObservationCount": 1,
+        "payrollRows": [
+          {
+            "source_label": "שכר יסוד שעתי",
+            "semantic_kind": "hourly_base",
+            "quantity_raw": "100",
+            "rate_raw": "33.00",
+            "percentage_raw": null,
+            "amount_raw": "3300.00",
+            "confidence": "high",
+            "evidence": {
+              "page": 1,
+              "region": "earnings",
+              "source_label": "שכר יסוד שעתי"
+            },
+            "warnings": []
+          }
+        ],
+        "warnings": [],
+        "artifact": {
+          "path": "output/release-completion/june-regular/clear-r5-9544dc6f/provider/c21c8cc4-2e29-41f0-96f2-08ca2b5b42b9/structured.json",
+          "sha256": "1226ece0fa3219dd95268942322ef012be46c9d74e791bfea1a847be3e7a86c7",
+          "bytes": 3970
+        }
+      },
+      "mapping": {
+        "artifact": {
+          "path": "output/release-completion/june-regular/clear-r5-9544dc6f/provider/c21c8cc4-2e29-41f0-96f2-08ca2b5b42b9/mapped.json",
+          "sha256": "1459ab34e3125a1e87eb2d2869bc0c2a765e154735ef2537bc60e71638b0b3e3",
+          "bytes": 8083
+        },
+        "normalizedComparison": [
+          {
+            "field": "document_type",
+            "expectedDistinctValues": [
+              "payslip"
+            ],
+            "actualObservedValues": [
+              "payslip"
+            ],
+            "passed": true
+          },
+          {
+            "field": "salary_period",
+            "expectedDistinctValues": [
+              {
+                "year": 2026,
+                "month": 6,
+                "start_date": "2026-06-01",
+                "end_date": "2026-06-30"
+              }
+            ],
+            "actualObservedValues": [
+              {
+                "year": 2026,
+                "month": 6,
+                "end_date": "2026-06-30",
+                "start_date": "2026-06-01"
+              }
+            ],
+            "passed": true
+          },
+          {
+            "field": "employment_start_date",
+            "expectedDistinctValues": [
+              "2025-01-15"
+            ],
+            "actualObservedValues": [
+              "2025-01-15"
+            ],
+            "passed": true
+          },
+          {
+            "field": "salary_type",
+            "expectedDistinctValues": [
+              "hourly"
+            ],
+            "actualObservedValues": [
+              "hourly"
+            ],
+            "passed": true
+          },
+          {
+            "field": "base_monthly_salary",
+            "expectedDistinctValues": [
+              {
+                "currency": "ILS",
+                "minor_units": 330000
+              }
+            ],
+            "actualObservedValues": [
+              {
+                "currency": "ILS",
+                "minor_units": 330000
+              }
+            ],
+            "passed": true
+          },
+          {
+            "field": "gross_salary",
+            "expectedDistinctValues": [
+              {
+                "currency": "ILS",
+                "minor_units": 330000
+              }
+            ],
+            "actualObservedValues": [
+              {
+                "currency": "ILS",
+                "minor_units": 330000
+              }
+            ],
+            "passed": true
+          },
+          {
+            "field": "total_deductions",
+            "expectedDistinctValues": [
+              {
+                "currency": "ILS",
+                "minor_units": 0
+              }
+            ],
+            "actualObservedValues": [
+              {
+                "currency": "ILS",
+                "minor_units": 0
+              }
+            ],
+            "passed": true
+          },
+          {
+            "field": "net_salary",
+            "expectedDistinctValues": [
+              {
+                "currency": "ILS",
+                "minor_units": 330000
+              }
+            ],
+            "actualObservedValues": [
+              {
+                "currency": "ILS",
+                "minor_units": 330000
+              }
+            ],
+            "passed": true
+          },
+          {
+            "field": "regular_hours",
+            "expectedDistinctValues": [
+              {
+                "amount": "100",
+                "unit": "hours_per_month"
+              }
+            ],
+            "actualObservedValues": [
+              {
+                "unit": "hours_per_month",
+                "amount": "100"
+              }
+            ],
+            "passed": true
+          },
+          {
+            "field": "hourly_rate",
+            "expectedDistinctValues": [
+              {
+                "currency": "ILS",
+                "minor_units": 3300
+              }
+            ],
+            "actualObservedValues": [
+              {
+                "currency": "ILS",
+                "minor_units": 3300
+              }
+            ],
+            "passed": true
+          }
+        ],
+        "criticalObservedValueChecksPassed": true,
+        "allAuditedNormalizedValueChecksPassed": true,
+        "allPayslipAccuracyProven": false,
+        "scope": "Fixed synthetic oracle fields only. No unseen layout, real payroll, pensions or whole-document completeness claim.",
+        "components": [
+          {
+            "component_id": "2ea6dedf-2aa2-4a46-8282-5a6bdd7b8f28",
+            "source_label": "שכר יסוד שעתי",
+            "semantic_kind": "hourly_base",
+            "quantity": "100",
+            "rate": {
+              "currency": "ILS",
+              "minor_units": 3300
+            },
+            "amount": {
+              "currency": "ILS",
+              "minor_units": 330000
+            },
+            "source": {
+              "page": 1,
+              "document_id": "656dcad4-791a-4483-8acf-c26f8ee1d617",
+              "text_fragment": "שכר יסוד שעתי"
+            }
+          }
+        ],
+        "fieldConfidences": [
+          {
+            "field": "document_type",
+            "candidateId": "59011021-0fd4-4722-a74a-1e3d264eec2f",
+            "confidence": 0.96
+          },
+          {
+            "field": "salary_period",
+            "candidateId": "d46542db-3c60-4954-b8fe-f0a55d738223",
+            "confidence": 0.94
+          },
+          {
+            "field": "employment_start_date",
+            "candidateId": "98e507dd-85bc-49e3-87dc-e570671b2de2",
+            "confidence": 0.94
+          },
+          {
+            "field": "salary_type",
+            "candidateId": "acb26648-c821-40c9-af74-7e0b88aa68cb",
+            "confidence": 0.94
+          },
+          {
+            "field": "regular_hours",
+            "candidateId": "14d2b386-408c-4491-9250-0a37495bc97f",
+            "confidence": 0.94
+          },
+          {
+            "field": "hourly_rate",
+            "candidateId": "1ceda3bc-155a-4d6f-b00d-e83cb6e8be51",
+            "confidence": 0.94
+          },
+          {
+            "field": "base_monthly_salary",
+            "candidateId": "9d37f903-fde2-4bd8-b886-2e340d3236d5",
+            "confidence": 0.94
+          },
+          {
+            "field": "gross_salary",
+            "candidateId": "910656ad-8ff1-473c-b30f-5710d9e323b9",
+            "confidence": 0.94
+          },
+          {
+            "field": "total_deductions",
+            "candidateId": "ab911ee7-7e38-4f51-97f1-db1a02b54b04",
+            "confidence": 0.94
+          },
+          {
+            "field": "net_salary",
+            "candidateId": "8746d124-7fa7-4396-a1d1-92833df9c722",
+            "confidence": 0.94
+          }
+        ],
+        "validationIssues": [],
+        "warnings": [],
+        "checkpoint": {
+          "path": "output/release-completion/june-regular/clear-r5-9544dc6f/checkpoint.json",
+          "sha256": "dfa3c01647fdf9cd74d9444009e7b8dad090ed1f9d1f7ef9a854d738c83c56bc",
+          "bytes": 65229
+        },
+        "resultSha256": "bc82e3ebb262529dcf41405689341958652023aee7005cd6cf34339e23595277",
+        "sourceCheckpointUnchangedByAudit": true,
+        "recovery": {
+          "regions": [],
+          "skipped": true,
+          "requested": false,
+          "reason_codes": [
+            "recovery_skipped_no_material_gain"
+          ],
+          "fields_requested": [],
+          "expected_information_gain": "none"
+        }
+      },
+      "facts": {
+        "readingAnswers": [
+          {
+            "kind": "document_reading",
+            "requestId": "b226fdbf-da93-4a35-8de7-4588afc2fa9b",
+            "field": "base_monthly_salary",
+            "value": {
+              "currency": "ILS",
+              "minor_units": 330000
+            }
+          },
+          {
+            "kind": "document_reading",
+            "requestId": "61d93599-4454-4c0d-9770-207b303c2b0d",
+            "field": "hourly_rate",
+            "value": {
+              "currency": "ILS",
+              "minor_units": 3300
+            }
+          },
+          {
+            "kind": "document_reading",
+            "requestId": "82b46e62-59aa-48f2-85f6-896e4391e5de",
+            "field": "salary_type",
+            "value": "hourly"
+          },
+          {
+            "kind": "document_reading",
+            "requestId": "c6c20c89-010e-4d03-8afc-3f056e562d7d",
+            "field": "regular_hours",
+            "value": {
+              "amount": "100",
+              "unit": "hours_per_month"
+            }
+          },
+          {
+            "kind": "document_reading",
+            "requestId": "638fb40d-de5c-4923-a5f7-e48fe8b81605",
+            "field": "salary_period",
+            "value": {
+              "year": 2026,
+              "month": 6,
+              "start_date": "2026-06-01",
+              "end_date": "2026-06-30"
+            }
+          },
+          {
+            "kind": "document_reading",
+            "requestId": "b2ef1438-9558-427c-b3cc-bb485cf71582",
+            "field": "gross_salary",
+            "value": {
+              "currency": "ILS",
+              "minor_units": 330000
+            }
+          },
+          {
+            "kind": "document_reading",
+            "requestId": "b7dca9fe-e997-4765-ad5b-398ee51833dd",
+            "field": "net_salary",
+            "value": {
+              "currency": "ILS",
+              "minor_units": 330000
+            }
+          }
+        ],
+        "caseDeclarationCount": 8,
+        "identifiedAnswersWereAutomatedFixtureActions": true,
+        "notActualHumanReview": true,
+        "parentContext": [
+          {
+            "path": "compensation.base_monthly_salary",
+            "status": "confirmed",
+            "value": {
+              "currency": "ILS",
+              "minor_units": 330000
+            },
+            "sourceTypes": [
+              "documented"
+            ],
+            "customerConfirmationCount": 1
+          },
+          {
+            "path": "compensation.gross_salary",
+            "status": "confirmed",
+            "value": {
+              "currency": "ILS",
+              "minor_units": 330000
+            },
+            "sourceTypes": [
+              "documented"
+            ],
+            "customerConfirmationCount": 1
+          },
+          {
+            "path": "compensation.hourly_rate",
+            "status": "confirmed",
+            "value": {
+              "currency": "ILS",
+              "minor_units": 3300
+            },
+            "sourceTypes": [
+              "documented"
+            ],
+            "customerConfirmationCount": 1
+          },
+          {
+            "path": "compensation.net_salary",
+            "status": "confirmed",
+            "value": {
+              "currency": "ILS",
+              "minor_units": 330000
+            },
+            "sourceTypes": [
+              "documented"
+            ],
+            "customerConfirmationCount": 1
+          },
+          {
+            "path": "compensation.salary_type",
+            "status": "confirmed",
+            "value": "hourly",
+            "sourceTypes": [
+              "documented"
+            ],
+            "customerConfirmationCount": 1
+          },
+          {
+            "path": "documents.period",
+            "status": "confirmed",
+            "value": {
+              "document_id": "656dcad4-791a-4483-8acf-c26f8ee1d617",
+              "period": {
+                "start_date": "2026-06-01",
+                "end_date": "2026-06-30"
+              }
+            },
+            "sourceTypes": [
+              "documented"
+            ],
+            "customerConfirmationCount": 1
+          },
+          {
+            "path": "employment.start_date",
+            "status": "needs_confirmation",
+            "value": "2025-01-15",
+            "sourceTypes": [
+              "documented"
+            ],
+            "customerConfirmationCount": 0
+          },
+          {
+            "path": "work.regular_hours",
+            "status": "confirmed",
+            "value": {
+              "amount": "100",
+              "unit": "hours_per_month"
+            },
+            "sourceTypes": [
+              "documented"
+            ],
+            "customerConfirmationCount": 1
+          }
+        ],
+        "publication": {
+          "analysisRunId": "033347b8-1b83-4f27-8e69-f711c16fee03",
+          "reportId": "44020ee5-3416-426d-a873-359369e702cf",
+          "namespace": "isolated_test",
+          "executionMode": "synthetic_test",
+          "realLegalAuthority": false,
+          "humanReportApproval": false,
+          "inputRevision": 33,
+          "hoursOrigin": "documented",
+          "comparison": {
+            "expected": {
+              "currency": "ILS",
+              "minor_units": 354058
+            },
+            "recorded": {
+              "currency": "ILS",
+              "minor_units": 330000
+            },
+            "signed_difference": {
+              "currency": "ILS",
+              "minor_units": 24058
+            }
+          },
+          "parentFacts": [
+            {
+              "path": "compensation.base_monthly_salary",
+              "status": "confirmed",
+              "value": {
+                "currency": "ILS",
+                "minor_units": 330000
+              },
+              "sourceTypes": [
+                "documented"
+              ],
+              "customerConfirmationCount": 1
+            },
+            {
+              "path": "compensation.gross_salary",
+              "status": "confirmed",
+              "value": {
+                "currency": "ILS",
+                "minor_units": 330000
+              },
+              "sourceTypes": [
+                "documented"
+              ],
+              "customerConfirmationCount": 1
+            },
+            {
+              "path": "compensation.hourly_rate",
+              "status": "confirmed",
+              "value": {
+                "currency": "ILS",
+                "minor_units": 3300
+              },
+              "sourceTypes": [
+                "documented"
+              ],
+              "customerConfirmationCount": 1
+            },
+            {
+              "path": "compensation.net_salary",
+              "status": "confirmed",
+              "value": {
+                "currency": "ILS",
+                "minor_units": 330000
+              },
+              "sourceTypes": [
+                "documented"
+              ],
+              "customerConfirmationCount": 1
+            },
+            {
+              "path": "compensation.salary_type",
+              "status": "confirmed",
+              "value": "hourly",
+              "sourceTypes": [
+                "documented"
+              ],
+              "customerConfirmationCount": 1
+            },
+            {
+              "path": "documents.period",
+              "status": "confirmed",
+              "value": {
+                "document_id": "656dcad4-791a-4483-8acf-c26f8ee1d617",
+                "period": {
+                  "end_date": "2026-06-30",
+                  "start_date": "2026-06-01"
+                }
+              },
+              "sourceTypes": [
+                "documented"
+              ],
+              "customerConfirmationCount": 1
+            },
+            {
+              "path": "employment.start_date",
+              "status": "needs_confirmation",
+              "value": "2025-01-15",
+              "sourceTypes": [
+                "documented"
+              ],
+              "customerConfirmationCount": 0
+            },
+            {
+              "path": "work.regular_hours",
+              "status": "confirmed",
+              "value": {
+                "amount": "100",
+                "unit": "hours_per_month"
+              },
+              "sourceTypes": [
+                "documented"
+              ],
+              "customerConfirmationCount": 1
+            }
+          ],
+          "effectiveFacts": [
+            {
+              "path": "compensation.base_monthly_salary",
+              "status": "confirmed",
+              "value": {
+                "currency": "ILS",
+                "minor_units": 330000
+              },
+              "sourceTypes": [
+                "documented"
+              ],
+              "customerConfirmationCount": 1
+            },
+            {
+              "path": "compensation.gross_salary",
+              "status": "confirmed",
+              "value": {
+                "currency": "ILS",
+                "minor_units": 330000
+              },
+              "sourceTypes": [
+                "documented"
+              ],
+              "customerConfirmationCount": 1
+            },
+            {
+              "path": "compensation.hourly_rate",
+              "status": "confirmed",
+              "value": {
+                "currency": "ILS",
+                "minor_units": 3300
+              },
+              "sourceTypes": [
+                "documented"
+              ],
+              "customerConfirmationCount": 1
+            },
+            {
+              "path": "compensation.net_salary",
+              "status": "confirmed",
+              "value": {
+                "currency": "ILS",
+                "minor_units": 330000
+              },
+              "sourceTypes": [
+                "documented"
+              ],
+              "customerConfirmationCount": 1
+            },
+            {
+              "path": "compensation.salary_type",
+              "status": "confirmed",
+              "value": "hourly",
+              "sourceTypes": [
+                "documented"
+              ],
+              "customerConfirmationCount": 1
+            },
+            {
+              "path": "documents.period",
+              "status": "confirmed",
+              "value": {
+                "document_id": "656dcad4-791a-4483-8acf-c26f8ee1d617",
+                "period": {
+                  "end_date": "2026-06-30",
+                  "start_date": "2026-06-01"
+                }
+              },
+              "sourceTypes": [
+                "documented"
+              ],
+              "customerConfirmationCount": 1
+            },
+            {
+              "path": "employment.start_date",
+              "status": "needs_confirmation",
+              "value": "2025-01-15",
+              "sourceTypes": [
+                "documented"
+              ],
+              "customerConfirmationCount": 0
+            },
+            {
+              "path": "work.regular_hours",
+              "status": "confirmed",
+              "value": {
+                "amount": "100",
+                "unit": "hours_per_month"
+              },
+              "sourceTypes": [
+                "documented"
+              ],
+              "customerConfirmationCount": 1
+            }
+          ],
+          "artifacts": [
+            {
+              "path": "output/release-completion/june-regular/clear-r5-9544dc6f/report.json",
+              "sha256": "6bbf74f9c21561600fe2f41501786c37669a2776a99eb2d341b87934bcba78e7",
+              "bytes": 212029
+            },
+            {
+              "path": "output/release-completion/june-regular/clear-r5-9544dc6f/report.html",
+              "sha256": "c9aed6a92b368bfbef4a4c077890cfcd58fe20e00630cb19cc2ed872c1cf13fc",
+              "bytes": 2390
+            },
+            {
+              "path": "output/release-completion/june-regular/clear-r5-9544dc6f/report.pdf",
+              "sha256": "ab1c0827917eb93af1d2a68d35f0aabae77798a345e91edcaf4384bcb39de8e5",
+              "bytes": 774177
+            },
+            {
+              "path": "output/release-completion/june-regular/clear-r5-9544dc6f/report.manifest",
+              "sha256": "6a32ac54319b1b5e2c37fce916fc03a6397c51fc4d8f5ce714e6e09920bf32f5",
+              "bytes": 407
+            }
+          ]
+        },
+        "extractionSnapshotBeforeAnyCustomerAnswers": [
+          {
+            "path": "documents.period",
+            "status": "candidate",
+            "value": {
+              "period": {
+                "end_date": "2026-06-30",
+                "start_date": "2026-06-01"
+              },
+              "document_id": "656dcad4-791a-4483-8acf-c26f8ee1d617"
+            },
+            "sourceTypes": [
+              "documented"
+            ],
+            "customerConfirmationCount": 0
+          },
+          {
+            "path": "employment.start_date",
+            "status": "candidate",
+            "value": "2025-01-15",
+            "sourceTypes": [
+              "documented"
+            ],
+            "customerConfirmationCount": 0
+          },
+          {
+            "path": "compensation.salary_type",
+            "status": "candidate",
+            "value": "hourly",
+            "sourceTypes": [
+              "documented"
+            ],
+            "customerConfirmationCount": 0
+          },
+          {
+            "path": "compensation.base_monthly_salary",
+            "status": "candidate",
+            "value": {
+              "currency": "ILS",
+              "minor_units": 330000
+            },
+            "sourceTypes": [
+              "documented"
+            ],
+            "customerConfirmationCount": 0
+          },
+          {
+            "path": "compensation.hourly_rate",
+            "status": "candidate",
+            "value": {
+              "currency": "ILS",
+              "minor_units": 3300
+            },
+            "sourceTypes": [
+              "documented"
+            ],
+            "customerConfirmationCount": 0
+          },
+          {
+            "path": "compensation.gross_salary",
+            "status": "candidate",
+            "value": {
+              "currency": "ILS",
+              "minor_units": 330000
+            },
+            "sourceTypes": [
+              "documented"
+            ],
+            "customerConfirmationCount": 0
+          },
+          {
+            "path": "compensation.net_salary",
+            "status": "candidate",
+            "value": {
+              "currency": "ILS",
+              "minor_units": 330000
+            },
+            "sourceTypes": [
+              "documented"
+            ],
+            "customerConfirmationCount": 0
+          },
+          {
+            "path": "work.regular_hours",
+            "status": "candidate",
+            "value": {
+              "unit": "hours_per_month",
+              "amount": "100"
+            },
+            "sourceTypes": [
+              "documented"
+            ],
+            "customerConfirmationCount": 0
+          }
+        ]
+      },
+      "harness": {
+        "latestState": "PASS",
+        "latestGitSha": "b189b4d33f1427791d02abafae15410392caba64",
+        "checks": [
+          "ordinary_published_source_bound_and_foreign_source_denied",
+          "resumed_existing_live_checkpoint_without_provider_call",
+          "live_provider_to_canonical_finding_and_published_report",
+          "parallel_retry_same_report_no_duplicates",
+          "owned_job_lease_released_with_fence"
+        ],
+        "history": [
+          {
+            "artifact": {
+              "path": "output/release-completion/june-regular/clear-r5-9544dc6f/proof-b1783ba-1789059911474.json",
+              "sha256": "be87d8ba7dc831663901ef151f34f74e610a6ca4abc6a25466033edef9146d32",
+              "bytes": 1716
+            },
+            "gitSha": "b1783ba78487c6633318b8f6713b16efe80818d0",
+            "state": "FAIL",
+            "phase": "actual-live-extraction",
+            "error": "SOL_REPLAY_REQUIRES_REVIEW",
+            "providerGenerationsThisRun": 0
+          },
+          {
+            "artifact": {
+              "path": "output/release-completion/june-regular/clear-r5-9544dc6f/proof-b189b4d-1789060665573.json",
+              "sha256": "e82fbad57d2b30cc58cb4eefe0c74f2e3debf415b86b00400e924ce8c4656703",
+              "bytes": 2506
+            },
+            "gitSha": "b189b4d33f1427791d02abafae15410392caba64",
+            "state": "PASS",
+            "phase": "resume-signed-canonical-execution",
+            "error": null,
+            "providerGenerationsThisRun": 0
+          },
+          {
+            "artifact": {
+              "path": "output/release-completion/june-regular/clear-r5-9544dc6f/proof-e70dca3-1789060200915.json",
+              "sha256": "59a2b85732c80efb07a1c129100e1cb094139ead8d6aad7b0b3e73b5a1651443",
+              "bytes": 5837
+            },
+            "gitSha": "e70dca3ad208f22600b8718fc963b2a9065f5d13",
+            "state": "FAIL",
+            "phase": "canonical-execution-and-publication",
+            "error": "JUNE_REGULAR_REPORT_LOCATOR",
+            "providerGenerationsThisRun": 1
+          }
+        ]
+      }
+    },
+    {
+      "label": "absent-hours",
+      "kind": "absent-hours",
+      "caseId": "e6cc9d3f-4c27-4163-a2ea-b2f0b8a5df23",
+      "source": {
+        "path": "output/release-completion/june-regular/absent-hours-e6cc9d3f/input.pdf",
+        "sha256": "76f6f01e3b1f10792afcf31966bb7362970f4f652af8540525de3a2c65335e1b",
+        "bytes": 770176
+      },
+      "sourceMatchesOriginalOracle": true,
+      "documentVersionId": "1eb83389-8aea-4f1c-95e8-f9f23d04ce0e",
+      "oracle": {
+        "synthetic": true,
+        "humanReview": false,
+        "legalGoldenApproval": false,
+        "period": {
+          "year": 2026,
+          "month": 6,
+          "start_date": "2026-06-01",
+          "end_date": "2026-06-30"
+        },
+        "salaryType": "hourly",
+        "employmentStartDate": "2025-01-15",
+        "regularHours": [],
+        "hourlyRateMinor": null,
+        "baseMinor": 330000,
+        "grossMinor": 330000,
+        "deductionsMinor": 0,
+        "netMinor": 330000,
+        "paidComponentCount": 1,
+        "outcome": "essential_input_missing",
+        "canonicalExpectedMinor": null,
+        "canonicalGapMinor": null,
+        "publishedHourlyExpectedMinor": null,
+        "publishedHourlyGapMinor": null,
+        "financialFormulaDisclosure": "Canonical candidate uses full-precision monthly/182 with final half-up agorot rounding; published-hourly engineering comparator uses35.40."
+      },
+      "provider": {
+        "model": "gpt-5.6-sol",
+        "reasoningEffort": "medium",
+        "promptVersion": "payslip-extraction-openai-v2-first-r5",
+        "extractorVersion": "2.1",
+        "createdAt": "2026-09-10T17:18:39.565Z",
+        "durationMs": 18312,
+        "inputTokens": 4215,
+        "outputTokens": 1069,
+        "totalTokens": 5284,
+        "estimatedGenerationUsd": 0.03824,
+        "estimateBasis": "input*4/1M + output*20/1M; count requests excluded; actual charged amount unavailable",
+        "actualChargedAmountUsd": null,
+        "responseId": "resp_0804355a6c4d1105016aa2e65dc78087d28ec46adca9f24283",
+        "requestId": "req_d5caf68612cf467ca80eda5619da66ed",
+        "receiptSha256": "96a6cfa4cc30160a5e8232364bf7b4c850ec9455178e2ffa07cd3952ae57554a"
+      },
+      "raw": {
+        "checks": {
+          "salaryType": true,
+          "monthPresent": true,
+          "employmentStartDate": true,
+          "regularHoursObservationRecall": true,
+          "hourlyRate": true,
+          "oneActualPayRow": true,
+          "baseRowAmount": true,
+          "gross": true,
+          "deductions": true,
+          "net": true,
+          "pensionAbsencePreserved": true
+        },
+        "allAuditedChecksPassed": true,
+        "regularHoursObserved": [],
+        "hourlyRatesObserved": [],
+        "salaryPeriodObservationCount": 1,
+        "payrollRows": [
+          {
+            "source_label": "שכר יסוד שעתי",
+            "semantic_kind": "hourly_base",
+            "quantity_raw": null,
+            "rate_raw": null,
+            "percentage_raw": null,
+            "amount_raw": "3300.00",
+            "confidence": "high",
+            "evidence": {
+              "page": 1,
+              "region": "earnings",
+              "source_label": "שכר יסוד שעתי"
+            },
+            "warnings": []
+          }
+        ],
+        "warnings": [],
+        "artifact": {
+          "path": "output/release-completion/june-regular/absent-hours-e6cc9d3f/provider/5af6a738-7c3b-49cc-a082-6ea52dc4806d/structured.json",
+          "sha256": "5d1ff63728b4507619dd7f2eb3adc41a8cf3310254b3d7d4261746c56f802fe0",
+          "bytes": 3915
+        }
+      },
+      "mapping": {
+        "artifact": {
+          "path": "output/release-completion/june-regular/absent-hours-e6cc9d3f/provider/5af6a738-7c3b-49cc-a082-6ea52dc4806d/mapped.json",
+          "sha256": "c869c85d39dd58c108c9e766ed807717075f9cada013e5874c062e115db250b3",
+          "bytes": 7192
+        },
+        "normalizedComparison": [
+          {
+            "field": "document_type",
+            "expectedDistinctValues": [
+              "payslip"
+            ],
+            "actualObservedValues": [
+              "payslip"
+            ],
+            "passed": true
+          },
+          {
+            "field": "salary_period",
+            "expectedDistinctValues": [
+              {
+                "year": 2026,
+                "month": 6,
+                "start_date": "2026-06-01",
+                "end_date": "2026-06-30"
+              }
+            ],
+            "actualObservedValues": [
+              {
+                "year": 2026,
+                "month": 6,
+                "end_date": "2026-06-30",
+                "start_date": "2026-06-01"
+              }
+            ],
+            "passed": true
+          },
+          {
+            "field": "employment_start_date",
+            "expectedDistinctValues": [
+              "2025-01-15"
+            ],
+            "actualObservedValues": [
+              "2025-01-15"
+            ],
+            "passed": true
+          },
+          {
+            "field": "salary_type",
+            "expectedDistinctValues": [
+              "hourly"
+            ],
+            "actualObservedValues": [
+              "hourly"
+            ],
+            "passed": true
+          },
+          {
+            "field": "base_monthly_salary",
+            "expectedDistinctValues": [
+              {
+                "currency": "ILS",
+                "minor_units": 330000
+              }
+            ],
+            "actualObservedValues": [
+              {
+                "currency": "ILS",
+                "minor_units": 330000
+              }
+            ],
+            "passed": true
+          },
+          {
+            "field": "gross_salary",
+            "expectedDistinctValues": [
+              {
+                "currency": "ILS",
+                "minor_units": 330000
+              }
+            ],
+            "actualObservedValues": [
+              {
+                "currency": "ILS",
+                "minor_units": 330000
+              }
+            ],
+            "passed": true
+          },
+          {
+            "field": "total_deductions",
+            "expectedDistinctValues": [
+              {
+                "currency": "ILS",
+                "minor_units": 0
+              }
+            ],
+            "actualObservedValues": [
+              {
+                "currency": "ILS",
+                "minor_units": 0
+              }
+            ],
+            "passed": true
+          },
+          {
+            "field": "net_salary",
+            "expectedDistinctValues": [
+              {
+                "currency": "ILS",
+                "minor_units": 330000
+              }
+            ],
+            "actualObservedValues": [
+              {
+                "currency": "ILS",
+                "minor_units": 330000
+              }
+            ],
+            "passed": true
+          },
+          {
+            "field": "regular_hours",
+            "expectedDistinctValues": [],
+            "actualObservedValues": [],
+            "passed": true
+          },
+          {
+            "field": "hourly_rate",
+            "expectedDistinctValues": [],
+            "actualObservedValues": [],
+            "passed": true
+          }
+        ],
+        "criticalObservedValueChecksPassed": true,
+        "allAuditedNormalizedValueChecksPassed": true,
+        "allPayslipAccuracyProven": false,
+        "scope": "Fixed synthetic oracle fields only. No unseen layout, real payroll, pensions or whole-document completeness claim.",
+        "components": [
+          {
+            "component_id": "7fd77e14-a62c-4138-bd64-29eb8982ebb1",
+            "source_label": "שכר יסוד שעתי",
+            "semantic_kind": "hourly_base",
+            "quantity": null,
+            "rate": null,
+            "amount": {
+              "currency": "ILS",
+              "minor_units": 330000
+            },
+            "source": {
+              "page": 1,
+              "document_id": "1eb83389-8aea-4f1c-95e8-f9f23d04ce0e",
+              "text_fragment": "שכר יסוד שעתי"
+            }
+          }
+        ],
+        "fieldConfidences": [
+          {
+            "field": "document_type",
+            "candidateId": "b8ff2da5-f5b2-43d9-bf13-ba32592a227a",
+            "confidence": 0.96
+          },
+          {
+            "field": "salary_period",
+            "candidateId": "8f4e7b81-3f41-4b2a-8326-31e83cc3306b",
+            "confidence": 0.94
+          },
+          {
+            "field": "employment_start_date",
+            "candidateId": "e521a4fb-d6df-48e3-923a-546cc7addab2",
+            "confidence": 0.94
+          },
+          {
+            "field": "salary_type",
+            "candidateId": "ee6924f5-4508-407b-b62f-bc5ed4b346ff",
+            "confidence": 0.94
+          },
+          {
+            "field": "base_monthly_salary",
+            "candidateId": "fa39a96f-5abb-4a54-918c-4a5c3a29322a",
+            "confidence": 0.94
+          },
+          {
+            "field": "gross_salary",
+            "candidateId": "785fd719-970b-4d8d-9f6a-d4123cbcbd5a",
+            "confidence": 0.94
+          },
+          {
+            "field": "total_deductions",
+            "candidateId": "16df6b49-0b28-44d2-b8c4-3d95df4995c2",
+            "confidence": 0.94
+          },
+          {
+            "field": "net_salary",
+            "candidateId": "5b92c52b-16c4-489c-afab-3ebd28c78007",
+            "confidence": 0.94
+          }
+        ],
+        "validationIssues": [
+          {
+            "code": "critical_field_missing",
+            "severity": "confirmation",
+            "field_keys": [
+              "hourly_rate"
+            ],
+            "field_candidate_ids": []
+          },
+          {
+            "code": "critical_field_missing",
+            "severity": "confirmation",
+            "field_keys": [
+              "regular_hours"
+            ],
+            "field_candidate_ids": []
+          }
+        ],
+        "warnings": [],
+        "checkpoint": {
+          "path": "output/release-completion/june-regular/absent-hours-e6cc9d3f/checkpoint.json",
+          "sha256": "9dfb2628bc4a054913c23080e844f9b37869e5102d4b6998ddc7d95e017ef47b",
+          "bytes": 61958
+        },
+        "resultSha256": "e85ed71234185e2c18421456354d6d146c52e1467f6888d2d771d52e75c6cd9e",
+        "sourceCheckpointUnchangedByAudit": true,
+        "recovery": {
+          "regions": [
+            "earnings"
+          ],
+          "skipped": true,
+          "requested": false,
+          "reason_codes": [
+            "critical_field_missing",
+            "recovery_skipped_package_budget"
+          ],
+          "fields_requested": [
+            "hourly_rate",
+            "regular_hours"
+          ],
+          "expected_information_gain": "missing_critical_field"
+        }
+      },
+      "facts": {
+        "readingAnswers": [
+          {
+            "kind": "document_reading",
+            "requestId": "513a0574-2e1e-47fb-b562-b4117a8dfad7",
+            "field": "salary_type",
+            "value": "hourly"
+          },
+          {
+            "kind": "document_reading",
+            "requestId": "29d49113-dbab-42bc-8a39-7edccbcd6b5b",
+            "field": "net_salary",
+            "value": {
+              "currency": "ILS",
+              "minor_units": 330000
+            }
+          },
+          {
+            "kind": "document_reading",
+            "requestId": "7e32824c-e5d4-4f4a-9bb3-09ca52095f53",
+            "field": "base_monthly_salary",
+            "value": {
+              "currency": "ILS",
+              "minor_units": 330000
+            }
+          },
+          {
+            "kind": "document_reading",
+            "requestId": "447a2adb-1aac-498b-ad43-4973dfec3175",
+            "field": "gross_salary",
+            "value": {
+              "currency": "ILS",
+              "minor_units": 330000
+            }
+          },
+          {
+            "kind": "document_reading",
+            "requestId": "71d74dc3-9f96-4045-9886-3ea51926b01a",
+            "field": "salary_period",
+            "value": {
+              "year": 2026,
+              "month": 6,
+              "start_date": "2026-06-01",
+              "end_date": "2026-06-30"
+            }
+          },
+          {
+            "kind": "identified_declared_hours",
+            "requestId": "fe8a7bea-8570-443a-896b-bb229ab26b4e",
+            "answer": "100",
+            "source": "synthetic independent work records, absent from PDF"
+          }
+        ],
+        "caseDeclarationCount": 8,
+        "identifiedAnswersWereAutomatedFixtureActions": true,
+        "notActualHumanReview": true,
+        "parentContext": [
+          {
+            "path": "compensation.base_monthly_salary",
+            "status": "confirmed",
+            "value": {
+              "currency": "ILS",
+              "minor_units": 330000
+            },
+            "sourceTypes": [
+              "documented"
+            ],
+            "customerConfirmationCount": 1
+          },
+          {
+            "path": "compensation.gross_salary",
+            "status": "confirmed",
+            "value": {
+              "currency": "ILS",
+              "minor_units": 330000
+            },
+            "sourceTypes": [
+              "documented"
+            ],
+            "customerConfirmationCount": 1
+          },
+          {
+            "path": "compensation.hourly_rate",
+            "status": "missing",
+            "value": null,
+            "sourceTypes": [
+              "documented"
+            ],
+            "customerConfirmationCount": 0
+          },
+          {
+            "path": "compensation.net_salary",
+            "status": "confirmed",
+            "value": {
+              "currency": "ILS",
+              "minor_units": 330000
+            },
+            "sourceTypes": [
+              "documented"
+            ],
+            "customerConfirmationCount": 1
+          },
+          {
+            "path": "compensation.salary_type",
+            "status": "confirmed",
+            "value": "hourly",
+            "sourceTypes": [
+              "documented"
+            ],
+            "customerConfirmationCount": 1
+          },
+          {
+            "path": "documents.period",
+            "status": "confirmed",
+            "value": {
+              "document_id": "1eb83389-8aea-4f1c-95e8-f9f23d04ce0e",
+              "period": {
+                "start_date": "2026-06-01",
+                "end_date": "2026-06-30"
+              }
+            },
+            "sourceTypes": [
+              "documented"
+            ],
+            "customerConfirmationCount": 1
+          },
+          {
+            "path": "employment.start_date",
+            "status": "needs_confirmation",
+            "value": "2025-01-15",
+            "sourceTypes": [
+              "documented"
+            ],
+            "customerConfirmationCount": 0
+          },
+          {
+            "path": "work.regular_hours",
+            "status": "needs_confirmation",
+            "value": {
+              "amount": "100",
+              "unit": "hours_per_month"
+            },
+            "sourceTypes": [
+              "declared"
+            ],
+            "customerConfirmationCount": 0
+          }
+        ],
+        "publication": {
+          "analysisRunId": "5f9fccf3-0ff1-43b9-8961-a25d96aa61d6",
+          "reportId": "cf3b3c90-35b8-4768-abc3-2e14cf746bdb",
+          "namespace": "isolated_test",
+          "executionMode": "synthetic_test",
+          "realLegalAuthority": false,
+          "humanReportApproval": false,
+          "inputRevision": 30,
+          "hoursOrigin": "identified_declared",
+          "comparison": {
+            "expected": {
+              "currency": "ILS",
+              "minor_units": 354058
+            },
+            "recorded": {
+              "currency": "ILS",
+              "minor_units": 330000
+            },
+            "signed_difference": {
+              "currency": "ILS",
+              "minor_units": 24058
+            }
+          },
+          "parentFacts": [
+            {
+              "path": "compensation.base_monthly_salary",
+              "status": "confirmed",
+              "value": {
+                "currency": "ILS",
+                "minor_units": 330000
+              },
+              "sourceTypes": [
+                "documented"
+              ],
+              "customerConfirmationCount": 1
+            },
+            {
+              "path": "compensation.gross_salary",
+              "status": "confirmed",
+              "value": {
+                "currency": "ILS",
+                "minor_units": 330000
+              },
+              "sourceTypes": [
+                "documented"
+              ],
+              "customerConfirmationCount": 1
+            },
+            {
+              "path": "compensation.hourly_rate",
+              "status": "missing",
+              "value": null,
+              "sourceTypes": [
+                "documented"
+              ],
+              "customerConfirmationCount": 0
+            },
+            {
+              "path": "compensation.net_salary",
+              "status": "confirmed",
+              "value": {
+                "currency": "ILS",
+                "minor_units": 330000
+              },
+              "sourceTypes": [
+                "documented"
+              ],
+              "customerConfirmationCount": 1
+            },
+            {
+              "path": "compensation.salary_type",
+              "status": "confirmed",
+              "value": "hourly",
+              "sourceTypes": [
+                "documented"
+              ],
+              "customerConfirmationCount": 1
+            },
+            {
+              "path": "documents.period",
+              "status": "confirmed",
+              "value": {
+                "document_id": "1eb83389-8aea-4f1c-95e8-f9f23d04ce0e",
+                "period": {
+                  "end_date": "2026-06-30",
+                  "start_date": "2026-06-01"
+                }
+              },
+              "sourceTypes": [
+                "documented"
+              ],
+              "customerConfirmationCount": 1
+            },
+            {
+              "path": "employment.start_date",
+              "status": "needs_confirmation",
+              "value": "2025-01-15",
+              "sourceTypes": [
+                "documented"
+              ],
+              "customerConfirmationCount": 0
+            },
+            {
+              "path": "work.regular_hours",
+              "status": "needs_confirmation",
+              "value": {
+                "amount": "100",
+                "unit": "hours_per_month"
+              },
+              "sourceTypes": [
+                "declared"
+              ],
+              "customerConfirmationCount": 0
+            }
+          ],
+          "effectiveFacts": [
+            {
+              "path": "compensation.base_monthly_salary",
+              "status": "confirmed",
+              "value": {
+                "currency": "ILS",
+                "minor_units": 330000
+              },
+              "sourceTypes": [
+                "documented"
+              ],
+              "customerConfirmationCount": 1
+            },
+            {
+              "path": "compensation.gross_salary",
+              "status": "confirmed",
+              "value": {
+                "currency": "ILS",
+                "minor_units": 330000
+              },
+              "sourceTypes": [
+                "documented"
+              ],
+              "customerConfirmationCount": 1
+            },
+            {
+              "path": "compensation.hourly_rate",
+              "status": "missing",
+              "value": null,
+              "sourceTypes": [
+                "documented"
+              ],
+              "customerConfirmationCount": 0
+            },
+            {
+              "path": "compensation.net_salary",
+              "status": "confirmed",
+              "value": {
+                "currency": "ILS",
+                "minor_units": 330000
+              },
+              "sourceTypes": [
+                "documented"
+              ],
+              "customerConfirmationCount": 1
+            },
+            {
+              "path": "compensation.salary_type",
+              "status": "confirmed",
+              "value": "hourly",
+              "sourceTypes": [
+                "documented"
+              ],
+              "customerConfirmationCount": 1
+            },
+            {
+              "path": "documents.period",
+              "status": "confirmed",
+              "value": {
+                "document_id": "1eb83389-8aea-4f1c-95e8-f9f23d04ce0e",
+                "period": {
+                  "end_date": "2026-06-30",
+                  "start_date": "2026-06-01"
+                }
+              },
+              "sourceTypes": [
+                "documented"
+              ],
+              "customerConfirmationCount": 1
+            },
+            {
+              "path": "employment.start_date",
+              "status": "needs_confirmation",
+              "value": "2025-01-15",
+              "sourceTypes": [
+                "documented"
+              ],
+              "customerConfirmationCount": 0
+            },
+            {
+              "path": "work.regular_hours",
+              "status": "confirmed",
+              "value": {
+                "amount": "100",
+                "unit": "hours_per_month"
+              },
+              "sourceTypes": [
+                "declared"
+              ],
+              "customerConfirmationCount": 0
+            }
+          ],
+          "artifacts": [
+            {
+              "path": "output/release-completion/june-regular/absent-hours-e6cc9d3f/report.json",
+              "sha256": "008a9b7fa5058fd5231ee64525c6e4965f8ea944c7e6028a99a491af1a597a20",
+              "bytes": 209125
+            },
+            {
+              "path": "output/release-completion/june-regular/absent-hours-e6cc9d3f/report.html",
+              "sha256": "57fa3a721202edddb2a3632d40a3ecbad142dd02c194e6cd3d3fff80b759c9e9",
+              "bytes": 2413
+            },
+            {
+              "path": "output/release-completion/june-regular/absent-hours-e6cc9d3f/report.pdf",
+              "sha256": "4e1756d59185f020425b5228f351efb1ce6ec34c21809f6c53a6a350a33b44d0",
+              "bytes": 774275
+            },
+            {
+              "path": "output/release-completion/june-regular/absent-hours-e6cc9d3f/report.manifest",
+              "sha256": "da5b3ef233e2bd5364a260ff5aa228bbeda88687b585fc769f9604fa6cfd0d1a",
+              "bytes": 407
+            }
+          ]
+        },
+        "extractionSnapshotBeforeAnyCustomerAnswers": [
+          {
+            "path": "documents.period",
+            "status": "candidate",
+            "value": {
+              "period": {
+                "end_date": "2026-06-30",
+                "start_date": "2026-06-01"
+              },
+              "document_id": "1eb83389-8aea-4f1c-95e8-f9f23d04ce0e"
+            },
+            "sourceTypes": [
+              "documented"
+            ],
+            "customerConfirmationCount": 0
+          },
+          {
+            "path": "employment.start_date",
+            "status": "candidate",
+            "value": "2025-01-15",
+            "sourceTypes": [
+              "documented"
+            ],
+            "customerConfirmationCount": 0
+          },
+          {
+            "path": "compensation.salary_type",
+            "status": "candidate",
+            "value": "hourly",
+            "sourceTypes": [
+              "documented"
+            ],
+            "customerConfirmationCount": 0
+          },
+          {
+            "path": "compensation.base_monthly_salary",
+            "status": "candidate",
+            "value": {
+              "currency": "ILS",
+              "minor_units": 330000
+            },
+            "sourceTypes": [
+              "documented"
+            ],
+            "customerConfirmationCount": 0
+          },
+          {
+            "path": "compensation.hourly_rate",
+            "status": "missing",
+            "value": null,
+            "sourceTypes": [
+              "documented"
+            ],
+            "customerConfirmationCount": 0
+          },
+          {
+            "path": "compensation.gross_salary",
+            "status": "candidate",
+            "value": {
+              "currency": "ILS",
+              "minor_units": 330000
+            },
+            "sourceTypes": [
+              "documented"
+            ],
+            "customerConfirmationCount": 0
+          },
+          {
+            "path": "compensation.net_salary",
+            "status": "candidate",
+            "value": {
+              "currency": "ILS",
+              "minor_units": 330000
+            },
+            "sourceTypes": [
+              "documented"
+            ],
+            "customerConfirmationCount": 0
+          },
+          {
+            "path": "work.regular_hours",
+            "status": "missing",
+            "value": null,
+            "sourceTypes": [
+              "documented"
+            ],
+            "customerConfirmationCount": 0
+          }
+        ]
+      },
+      "harness": {
+        "latestState": "PASS",
+        "latestGitSha": "b189b4d33f1427791d02abafae15410392caba64",
+        "checks": [
+          "REAL_without_authority_blocked",
+          "ordinary_published_source_bound_and_foreign_source_denied",
+          "live_provider_to_canonical_finding_and_published_report",
+          "absent_cell_identified_answer_new_run",
+          "parallel_retry_same_report_no_duplicates",
+          "owned_job_lease_released_with_fence"
+        ],
+        "history": [
+          {
+            "artifact": {
+              "path": "output/release-completion/june-regular/absent-hours-e6cc9d3f/proof-b189b4d-1789060753960.json",
+              "sha256": "1a1341e51f7d633345bd0796bdbad0e91c0ab06a180fbcc91c6be30be6b12c41",
+              "bytes": 6299
+            },
+            "gitSha": "b189b4d33f1427791d02abafae15410392caba64",
+            "state": "PASS",
+            "phase": "parallel-retry",
+            "error": null,
+            "providerGenerationsThisRun": 1
+          }
+        ]
+      }
+    },
+    {
+      "label": "conflicting-hours",
+      "kind": "conflicting-hours",
+      "caseId": "58933f19-d702-498f-b390-40dfdcd69e07",
+      "source": {
+        "path": "output/release-completion/june-regular/conflicting-hours-58933f19/input.pdf",
+        "sha256": "9685e7123013cbfa83cb777b1bf9217c236ef9114faa8ee316a925878633ad00",
+        "bytes": 771501
+      },
+      "sourceMatchesOriginalOracle": true,
+      "documentVersionId": "0c35699f-3d4d-43f0-ac57-8fc96f157914",
+      "oracle": {
+        "synthetic": true,
+        "humanReview": false,
+        "legalGoldenApproval": false,
+        "period": {
+          "year": 2026,
+          "month": 6,
+          "start_date": "2026-06-01",
+          "end_date": "2026-06-30"
+        },
+        "salaryType": "hourly",
+        "employmentStartDate": "2025-01-15",
+        "regularHours": [
+          "100",
+          "120"
+        ],
+        "hourlyRateMinor": null,
+        "baseMinor": 330000,
+        "grossMinor": 330000,
+        "deductionsMinor": 0,
+        "netMinor": 330000,
+        "paidComponentCount": 1,
+        "outcome": "conflicting_observations",
+        "canonicalExpectedMinor": null,
+        "canonicalGapMinor": null,
+        "publishedHourlyExpectedMinor": null,
+        "publishedHourlyGapMinor": null,
+        "financialFormulaDisclosure": "Canonical candidate uses full-precision monthly/182 with final half-up agorot rounding; published-hourly engineering comparator uses35.40."
+      },
+      "provider": {
+        "model": "gpt-5.6-sol",
+        "reasoningEffort": "medium",
+        "promptVersion": "payslip-extraction-openai-v2-first-r5",
+        "extractorVersion": "2.1",
+        "createdAt": "2026-09-10T17:20:22.240Z",
+        "durationMs": 24475,
+        "inputTokens": 4259,
+        "outputTokens": 1037,
+        "totalTokens": 5296,
+        "estimatedGenerationUsd": 0.037776,
+        "estimateBasis": "input*4/1M + output*20/1M; count requests excluded; actual charged amount unavailable",
+        "actualChargedAmountUsd": null,
+        "responseId": "resp_074f6ed503c9ed88016aa2e6becb0c87d29c2a71358fc8a259",
+        "requestId": "req_e62333b7fb8543769c04d626d8b2804d",
+        "receiptSha256": "28218f8dac8af494e7d49017113afffa0bc3fd9e4fe5b276851dca7ca1a9ff36"
+      },
+      "raw": {
+        "checks": {
+          "salaryType": true,
+          "monthPresent": true,
+          "employmentStartDate": true,
+          "regularHoursObservationRecall": false,
+          "hourlyRate": true,
+          "oneActualPayRow": true,
+          "baseRowAmount": true,
+          "gross": true,
+          "deductions": true,
+          "net": true,
+          "pensionAbsencePreserved": true
+        },
+        "allAuditedChecksPassed": false,
+        "regularHoursObserved": [],
+        "hourlyRatesObserved": [],
+        "salaryPeriodObservationCount": 2,
+        "payrollRows": [
+          {
+            "source_label": "שכר יסוד שעתי",
+            "semantic_kind": "hourly_base",
+            "quantity_raw": null,
+            "rate_raw": null,
+            "percentage_raw": null,
+            "amount_raw": "3300.00",
+            "confidence": "high",
+            "evidence": {
+              "page": 1,
+              "region": "earnings",
+              "source_label": "שכר יסוד שעתי"
+            },
+            "warnings": []
+          }
+        ],
+        "warnings": [
+          "conflicting_values"
+        ],
+        "artifact": {
+          "path": "output/release-completion/june-regular/conflicting-hours-58933f19/provider/210b4896-dae0-49c8-97dc-106755b87886/structured.json",
+          "sha256": "6488dab0a17b65448ae81c35e5d07348a7a2a8ad544c076f32320f2cd95e098a",
+          "bytes": 4279
+        }
+      },
+      "mapping": {
+        "artifact": {
+          "path": "output/release-completion/june-regular/conflicting-hours-58933f19/provider/210b4896-dae0-49c8-97dc-106755b87886/mapped.json",
+          "sha256": "ac1bb8e4140008e4ec66db5091aa32cc76c6c8b732a6302886c7c7dfceaa543d",
+          "bytes": 7718
+        },
+        "normalizedComparison": [
+          {
+            "field": "document_type",
+            "expectedDistinctValues": [
+              "payslip"
+            ],
+            "actualObservedValues": [
+              "payslip"
+            ],
+            "passed": true
+          },
+          {
+            "field": "salary_period",
+            "expectedDistinctValues": [
+              {
+                "year": 2026,
+                "month": 6,
+                "start_date": "2026-06-01",
+                "end_date": "2026-06-30"
+              }
+            ],
+            "actualObservedValues": [
+              {
+                "year": 2026,
+                "month": 6,
+                "end_date": "2026-06-30",
+                "start_date": "2026-06-01"
+              },
+              {
+                "year": 2026,
+                "month": 6,
+                "end_date": "2026-06-30",
+                "start_date": "2026-06-01"
+              }
+            ],
+            "passed": true
+          },
+          {
+            "field": "employment_start_date",
+            "expectedDistinctValues": [
+              "2025-01-15"
+            ],
+            "actualObservedValues": [
+              "2025-01-15"
+            ],
+            "passed": true
+          },
+          {
+            "field": "salary_type",
+            "expectedDistinctValues": [
+              "hourly"
+            ],
+            "actualObservedValues": [
+              "hourly"
+            ],
+            "passed": true
+          },
+          {
+            "field": "base_monthly_salary",
+            "expectedDistinctValues": [
+              {
+                "currency": "ILS",
+                "minor_units": 330000
+              }
+            ],
+            "actualObservedValues": [
+              {
+                "currency": "ILS",
+                "minor_units": 330000
+              }
+            ],
+            "passed": true
+          },
+          {
+            "field": "gross_salary",
+            "expectedDistinctValues": [
+              {
+                "currency": "ILS",
+                "minor_units": 330000
+              }
+            ],
+            "actualObservedValues": [
+              {
+                "currency": "ILS",
+                "minor_units": 330000
+              }
+            ],
+            "passed": true
+          },
+          {
+            "field": "total_deductions",
+            "expectedDistinctValues": [
+              {
+                "currency": "ILS",
+                "minor_units": 0
+              }
+            ],
+            "actualObservedValues": [
+              {
+                "currency": "ILS",
+                "minor_units": 0
+              }
+            ],
+            "passed": true
+          },
+          {
+            "field": "net_salary",
+            "expectedDistinctValues": [
+              {
+                "currency": "ILS",
+                "minor_units": 330000
+              }
+            ],
+            "actualObservedValues": [
+              {
+                "currency": "ILS",
+                "minor_units": 330000
+              }
+            ],
+            "passed": true
+          },
+          {
+            "field": "regular_hours",
+            "expectedDistinctValues": [
+              {
+                "amount": "100",
+                "unit": "hours_per_month"
+              },
+              {
+                "amount": "120",
+                "unit": "hours_per_month"
+              }
+            ],
+            "actualObservedValues": [],
+            "passed": false
+          },
+          {
+            "field": "hourly_rate",
+            "expectedDistinctValues": [],
+            "actualObservedValues": [],
+            "passed": true
+          }
+        ],
+        "criticalObservedValueChecksPassed": false,
+        "allAuditedNormalizedValueChecksPassed": false,
+        "allPayslipAccuracyProven": false,
+        "scope": "Fixed synthetic oracle fields only. No unseen layout, real payroll, pensions or whole-document completeness claim.",
+        "components": [
+          {
+            "component_id": "807c4445-de05-41c0-a4b1-61da60905751",
+            "source_label": "שכר יסוד שעתי",
+            "semantic_kind": "hourly_base",
+            "quantity": null,
+            "rate": null,
+            "amount": {
+              "currency": "ILS",
+              "minor_units": 330000
+            },
+            "source": {
+              "page": 1,
+              "document_id": "0c35699f-3d4d-43f0-ac57-8fc96f157914",
+              "text_fragment": "שכר יסוד שעתי"
+            }
+          }
+        ],
+        "fieldConfidences": [
+          {
+            "field": "document_type",
+            "candidateId": "187fcddc-c371-4350-8f4b-614974098491",
+            "confidence": 0.96
+          },
+          {
+            "field": "salary_period",
+            "candidateId": "20cdb984-4ce5-49ca-b495-8f4108dc090f",
+            "confidence": 0.94
+          },
+          {
+            "field": "salary_period",
+            "candidateId": "ef71db30-a781-457b-9d25-85a0542936db",
+            "confidence": 0.94
+          },
+          {
+            "field": "employment_start_date",
+            "candidateId": "b353c21a-e7cb-42eb-83a0-c71769d6d0d7",
+            "confidence": 0.94
+          },
+          {
+            "field": "salary_type",
+            "candidateId": "8b3fb877-4811-409f-97ed-65301cd84e8d",
+            "confidence": 0.94
+          },
+          {
+            "field": "base_monthly_salary",
+            "candidateId": "550e3808-58c2-4782-9c7a-edf7bff9f01f",
+            "confidence": 0.94
+          },
+          {
+            "field": "gross_salary",
+            "candidateId": "3a1f269e-56f9-4a96-8378-86ae7ce3821d",
+            "confidence": 0.94
+          },
+          {
+            "field": "total_deductions",
+            "candidateId": "28ff3801-81fc-4523-a797-91b0621ed683",
+            "confidence": 0.94
+          },
+          {
+            "field": "net_salary",
+            "candidateId": "c20552c0-0130-459e-ae96-bce4636febe0",
+            "confidence": 0.94
+          }
+        ],
+        "validationIssues": [
+          {
+            "code": "duplicate_candidate",
+            "severity": "warning",
+            "field_keys": [
+              "salary_period"
+            ],
+            "field_candidate_ids": [
+              "20cdb984-4ce5-49ca-b495-8f4108dc090f",
+              "ef71db30-a781-457b-9d25-85a0542936db"
+            ]
+          },
+          {
+            "code": "critical_field_missing",
+            "severity": "confirmation",
+            "field_keys": [
+              "hourly_rate"
+            ],
+            "field_candidate_ids": []
+          },
+          {
+            "code": "critical_field_missing",
+            "severity": "confirmation",
+            "field_keys": [
+              "regular_hours"
+            ],
+            "field_candidate_ids": []
+          }
+        ],
+        "warnings": [
+          "conflicting_values"
+        ],
+        "checkpoint": {
+          "path": "output/release-completion/june-regular/conflicting-hours-58933f19/checkpoint.json",
+          "sha256": "449c2c441803858c976cf2e03260bbf4884387a3af7a6c00e2a397a2a52097c6",
+          "bytes": 67760
+        },
+        "resultSha256": "133ae3516870efcc1c7475f6066b1161da77828952e4cb61e82fe62c50cc31e6",
+        "sourceCheckpointUnchangedByAudit": true,
+        "recovery": {
+          "regions": [
+            "earnings"
+          ],
+          "skipped": true,
+          "requested": false,
+          "reason_codes": [
+            "critical_field_missing",
+            "recovery_skipped_package_budget"
+          ],
+          "fields_requested": [
+            "hourly_rate",
+            "regular_hours"
+          ],
+          "expected_information_gain": "missing_critical_field"
+        }
+      },
+      "facts": {
+        "readingAnswers": [],
+        "caseDeclarationCount": 0,
+        "identifiedAnswersWereAutomatedFixtureActions": true,
+        "notActualHumanReview": true,
+        "parentContext": null,
+        "publication": null,
+        "extractionSnapshotBeforeAnyCustomerAnswers": [
+          {
+            "path": "documents.period",
+            "status": "candidate",
+            "value": {
+              "period": {
+                "end_date": "2026-06-30",
+                "start_date": "2026-06-01"
+              },
+              "document_id": "0c35699f-3d4d-43f0-ac57-8fc96f157914"
+            },
+            "sourceTypes": [
+              "documented",
+              "documented"
+            ],
+            "customerConfirmationCount": 0
+          },
+          {
+            "path": "employment.start_date",
+            "status": "candidate",
+            "value": "2025-01-15",
+            "sourceTypes": [
+              "documented"
+            ],
+            "customerConfirmationCount": 0
+          },
+          {
+            "path": "compensation.salary_type",
+            "status": "candidate",
+            "value": "hourly",
+            "sourceTypes": [
+              "documented"
+            ],
+            "customerConfirmationCount": 0
+          },
+          {
+            "path": "compensation.base_monthly_salary",
+            "status": "candidate",
+            "value": {
+              "currency": "ILS",
+              "minor_units": 330000
+            },
+            "sourceTypes": [
+              "documented"
+            ],
+            "customerConfirmationCount": 0
+          },
+          {
+            "path": "compensation.hourly_rate",
+            "status": "missing",
+            "value": null,
+            "sourceTypes": [
+              "documented"
+            ],
+            "customerConfirmationCount": 0
+          },
+          {
+            "path": "compensation.gross_salary",
+            "status": "candidate",
+            "value": {
+              "currency": "ILS",
+              "minor_units": 330000
+            },
+            "sourceTypes": [
+              "documented"
+            ],
+            "customerConfirmationCount": 0
+          },
+          {
+            "path": "compensation.net_salary",
+            "status": "candidate",
+            "value": {
+              "currency": "ILS",
+              "minor_units": 330000
+            },
+            "sourceTypes": [
+              "documented"
+            ],
+            "customerConfirmationCount": 0
+          },
+          {
+            "path": "work.regular_hours",
+            "status": "missing",
+            "value": null,
+            "sourceTypes": [
+              "documented"
+            ],
+            "customerConfirmationCount": 0
+          }
+        ]
+      },
+      "harness": {
+        "latestState": "PASS",
+        "latestGitSha": "b189b4d33f1427791d02abafae15410392caba64",
+        "checks": [
+          "REAL_without_authority_blocked",
+          "conflicting_hours_not_verified",
+          "owned_job_lease_released_with_fence"
+        ],
+        "history": [
+          {
+            "artifact": {
+              "path": "output/release-completion/june-regular/conflicting-hours-58933f19/proof-b189b4d-1789060832939.json",
+              "sha256": "692ccf96454fb30c31fe4c71e655def49142ee2f95b73a4305c32154866ec9f0",
+              "bytes": 1781
+            },
+            "gitSha": "b189b4d33f1427791d02abafae15410392caba64",
+            "state": "PASS",
+            "phase": "actual-live-extraction",
+            "error": null,
+            "providerGenerationsThisRun": 1
+          }
+        ]
+      }
+    }
+  ]
+}

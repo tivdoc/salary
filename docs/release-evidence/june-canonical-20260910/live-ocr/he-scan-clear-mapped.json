@@ -1,0 +1,407 @@
+{
+  "extraction": {
+    "extraction_id": "9fa763ee-c145-49f8-8739-667a58945802",
+    "document_id": "fd6a0779-4321-476d-8f85-9b2099b8f3cc",
+    "status": "completed",
+    "detected_document_type": "payslip",
+    "document_quality_confidence": 0.96,
+    "quality_metrics": {
+      "page_count": 1,
+      "text_coverage": null,
+      "rotation_degrees": 0,
+      "source_resolution_dpi": 300
+    },
+    "fields": [
+      {
+        "candidate_id": "3e69bade-de91-484c-b27d-91de34007af7",
+        "field": "document_type",
+        "raw_value": "payslip",
+        "confidence": 0.96,
+        "source": {
+          "document_id": "fd6a0779-4321-476d-8f85-9b2099b8f3cc",
+          "page": 1,
+          "text_fragment": "document type"
+        },
+        "extraction_method": "ai_vision",
+        "warning_flags": []
+      },
+      {
+        "candidate_id": "79dd8f01-db7f-47bb-8b56-49c1c9587ec9",
+        "field": "salary_period",
+        "raw_value": "01/06/2026 - 30/06/2026",
+        "confidence": 0.94,
+        "source": {
+          "document_id": "fd6a0779-4321-476d-8f85-9b2099b8f3cc",
+          "page": 1,
+          "text_fragment": "תאריך עבודה: 01/06/2026 - 30/06/2026"
+        },
+        "extraction_method": "ai_vision",
+        "warning_flags": []
+      },
+      {
+        "candidate_id": "9fec5feb-2989-45f0-852e-9a79800212cd",
+        "field": "salary_type",
+        "raw_value": "סוג שכר: שעתי",
+        "confidence": 0.94,
+        "source": {
+          "document_id": "fd6a0779-4321-476d-8f85-9b2099b8f3cc",
+          "page": 1,
+          "text_fragment": "סוג שכר: שעתי: סוג שכר: שעתי"
+        },
+        "extraction_method": "ai_vision",
+        "warning_flags": []
+      },
+      {
+        "candidate_id": "b6dd1b1f-bde5-43b7-a228-5c4ac2baad0e",
+        "field": "base_monthly_salary",
+        "raw_value": "3,540.00",
+        "confidence": 0.94,
+        "source": {
+          "document_id": "fd6a0779-4321-476d-8f85-9b2099b8f3cc",
+          "page": 1,
+          "text_fragment": "שכר יסוד שעתי: 3,540.00"
+        },
+        "extraction_method": "ai_vision",
+        "warning_flags": []
+      },
+      {
+        "candidate_id": "d16fb23a-2236-46a9-af06-5159752e6362",
+        "field": "gross_salary",
+        "raw_value": "4,608.70",
+        "confidence": 0.94,
+        "source": {
+          "document_id": "fd6a0779-4321-476d-8f85-9b2099b8f3cc",
+          "page": 1,
+          "text_fragment": "gross total: 4,608.70"
+        },
+        "extraction_method": "ai_vision",
+        "warning_flags": []
+      },
+      {
+        "candidate_id": "9ed64e0b-eb5b-4326-942e-aeaf1940d77b",
+        "field": "total_deductions",
+        "raw_value": "412.40",
+        "confidence": 0.94,
+        "source": {
+          "document_id": "fd6a0779-4321-476d-8f85-9b2099b8f3cc",
+          "page": 1,
+          "text_fragment": "deductions total: 412.40"
+        },
+        "extraction_method": "ai_vision",
+        "warning_flags": []
+      },
+      {
+        "candidate_id": "c622a66f-ddf5-49a6-bd86-d4511df4298b",
+        "field": "net_salary",
+        "raw_value": "4,196.30",
+        "confidence": 0.94,
+        "source": {
+          "document_id": "fd6a0779-4321-476d-8f85-9b2099b8f3cc",
+          "page": 1,
+          "text_fragment": "net total: 4,196.30"
+        },
+        "extraction_method": "ai_vision",
+        "warning_flags": []
+      },
+      {
+        "candidate_id": "69deb901-36e4-4bae-bc2f-59c084728769",
+        "field": "pension_base",
+        "raw_value": "3,540.00",
+        "confidence": 0.94,
+        "source": {
+          "document_id": "fd6a0779-4321-476d-8f85-9b2099b8f3cc",
+          "page": 1,
+          "text_fragment": "פנסיה עובד: 3,540.00"
+        },
+        "extraction_method": "ai_vision",
+        "warning_flags": []
+      },
+      {
+        "candidate_id": "eb6c6199-83ef-4043-9999-b3d035e5d1a7",
+        "field": "pension_employee_rate",
+        "raw_value": "212.40",
+        "confidence": 0.94,
+        "source": {
+          "document_id": "fd6a0779-4321-476d-8f85-9b2099b8f3cc",
+          "page": 1,
+          "text_fragment": "פנסיה עובד: 212.40"
+        },
+        "extraction_method": "ai_vision",
+        "warning_flags": []
+      },
+      {
+        "candidate_id": "6ef384db-6d43-4852-b0cf-b466d132b442",
+        "field": "pension_employee_rate",
+        "raw_value": "80.00",
+        "confidence": 0.94,
+        "source": {
+          "document_id": "fd6a0779-4321-476d-8f85-9b2099b8f3cc",
+          "page": 1,
+          "text_fragment": "ביטוח לאומי: 80.00"
+        },
+        "extraction_method": "ai_vision",
+        "warning_flags": []
+      },
+      {
+        "candidate_id": "1de52ae0-b458-48b9-97e0-89d437149fd2",
+        "field": "pension_employee_rate",
+        "raw_value": "120.00",
+        "confidence": 0.94,
+        "source": {
+          "document_id": "fd6a0779-4321-476d-8f85-9b2099b8f3cc",
+          "page": 1,
+          "text_fragment": "ביטוח בריאות: 120.00"
+        },
+        "extraction_method": "ai_vision",
+        "warning_flags": []
+      },
+      {
+        "candidate_id": "cfd79abc-3b0a-498d-ab9e-ce3d1028c9d9",
+        "field": "pension_employee_contribution",
+        "raw_value": "230.10",
+        "confidence": 0.94,
+        "source": {
+          "document_id": "fd6a0779-4321-476d-8f85-9b2099b8f3cc",
+          "page": 1,
+          "text_fragment": "ביטוח בריאות: 230.10"
+        },
+        "extraction_method": "ai_vision",
+        "warning_flags": []
+      },
+      {
+        "candidate_id": "ded0c2b2-4558-4b2f-8da9-f19683274a0b",
+        "field": "pension_employer_rate",
+        "raw_value": "212.40",
+        "confidence": 0.94,
+        "source": {
+          "document_id": "fd6a0779-4321-476d-8f85-9b2099b8f3cc",
+          "page": 1,
+          "text_fragment": "פנסיה עובד: 212.40"
+        },
+        "extraction_method": "ai_vision",
+        "warning_flags": []
+      },
+      {
+        "candidate_id": "7a5dcfee-e993-4e3d-9ce1-750c135f50ce",
+        "field": "pension_employer_rate",
+        "raw_value": "230.10",
+        "confidence": 0.94,
+        "source": {
+          "document_id": "fd6a0779-4321-476d-8f85-9b2099b8f3cc",
+          "page": 1,
+          "text_fragment": "ביטוח בריאות: 230.10"
+        },
+        "extraction_method": "ai_vision",
+        "warning_flags": []
+      },
+      {
+        "candidate_id": "e742f9e6-b97c-4c0d-b214-a1de5a15a705",
+        "field": "pension_employer_contribution",
+        "raw_value": "230.10",
+        "confidence": 0.94,
+        "source": {
+          "document_id": "fd6a0779-4321-476d-8f85-9b2099b8f3cc",
+          "page": 1,
+          "text_fragment": "ביטוח בריאות: 230.10"
+        },
+        "extraction_method": "ai_vision",
+        "warning_flags": []
+      }
+    ],
+    "additional_components": [
+      {
+        "component_id": "874a2464-d326-4a7a-bdd4-21dcf273671d",
+        "source_label": "001",
+        "normalized_label": "base_salary",
+        "semantic_kind": "base_salary",
+        "quantity_raw": "100",
+        "rate_raw": "35.40",
+        "percentage_raw": null,
+        "amount_raw": "3,540.00",
+        "confidence": 0.94,
+        "source": {
+          "document_id": "fd6a0779-4321-476d-8f85-9b2099b8f3cc",
+          "page": 1,
+          "text_fragment": "001"
+        },
+        "extraction_method": "ai_vision",
+        "warning_flags": []
+      },
+      {
+        "component_id": "01b7e1c6-fa16-427a-a8ea-de0231a26867",
+        "source_label": "125",
+        "normalized_label": null,
+        "semantic_kind": "unknown",
+        "quantity_raw": "10",
+        "rate_raw": "44.25",
+        "percentage_raw": "125%",
+        "amount_raw": "442.50",
+        "confidence": 0.94,
+        "source": {
+          "document_id": "fd6a0779-4321-476d-8f85-9b2099b8f3cc",
+          "page": 1,
+          "text_fragment": "125"
+        },
+        "extraction_method": "ai_vision",
+        "warning_flags": []
+      },
+      {
+        "component_id": "f28a67c3-50f6-4ab0-a3f7-2c27c7479c8d",
+        "source_label": "150",
+        "normalized_label": null,
+        "semantic_kind": "unknown",
+        "quantity_raw": "2",
+        "rate_raw": "53.10",
+        "percentage_raw": "150%",
+        "amount_raw": "106.20",
+        "confidence": 0.94,
+        "source": {
+          "document_id": "fd6a0779-4321-476d-8f85-9b2099b8f3cc",
+          "page": 1,
+          "text_fragment": "150"
+        },
+        "extraction_method": "ai_vision",
+        "warning_flags": []
+      },
+      {
+        "component_id": "b0a2693f-8901-4d88-aad2-e4be32a67b14",
+        "source_label": "20",
+        "normalized_label": null,
+        "semantic_kind": "unknown",
+        "quantity_raw": "20",
+        "rate_raw": "11.00",
+        "percentage_raw": null,
+        "amount_raw": "220.00",
+        "confidence": 0.94,
+        "source": {
+          "document_id": "fd6a0779-4321-476d-8f85-9b2099b8f3cc",
+          "page": 1,
+          "text_fragment": "20"
+        },
+        "extraction_method": "ai_vision",
+        "warning_flags": []
+      },
+      {
+        "component_id": "81367bf3-6807-4921-bcee-5ff9f48f8624",
+        "source_label": "400",
+        "normalized_label": null,
+        "semantic_kind": "unknown",
+        "quantity_raw": null,
+        "rate_raw": null,
+        "percentage_raw": null,
+        "amount_raw": "300.00",
+        "confidence": 0.94,
+        "source": {
+          "document_id": "fd6a0779-4321-476d-8f85-9b2099b8f3cc",
+          "page": 1,
+          "text_fragment": "400"
+        },
+        "extraction_method": "ai_vision",
+        "warning_flags": []
+      },
+      {
+        "component_id": "31afc4c9-5646-4dde-9383-9fed32063c4c",
+        "source_label": "unknown",
+        "normalized_label": null,
+        "semantic_kind": "unknown",
+        "quantity_raw": null,
+        "rate_raw": null,
+        "percentage_raw": null,
+        "amount_raw": "4,608.70",
+        "confidence": 0.94,
+        "source": {
+          "document_id": "fd6a0779-4321-476d-8f85-9b2099b8f3cc",
+          "page": 1,
+          "text_fragment": "unknown"
+        },
+        "extraction_method": "ai_vision",
+        "warning_flags": []
+      }
+    ],
+    "sensitive_metadata": [],
+    "earnings_components_complete": true,
+    "warnings": [],
+    "provider": {
+      "provider_id": "openai",
+      "extractor_version": "2.1",
+      "model_version": "gpt-4o-mini-2024-07-18"
+    },
+    "operation": {
+      "duration_ms": 13305,
+      "provider_response_id": "resp_08f3e9c5c57a3dbc016aa2c496d92c87d293d3e618f7e85870",
+      "token_usage": {
+        "input_tokens": 40547,
+        "output_tokens": 1025,
+        "total_tokens": 41572
+      }
+    },
+    "extracted_at": "2026-09-10T14:54:27.678Z",
+    "error_code": null
+  },
+  "salary_type_assessment": {
+    "documented": {
+      "value": "hourly",
+      "raw_value": "סוג שכר: שעתי",
+      "confidence": 0.94,
+      "candidate_id": "9fec5feb-2989-45f0-852e-9a79800212cd"
+    },
+    "inferred": {
+      "value": "mixed",
+      "confidence": 0.72,
+      "basis": [
+        "hourly_rate",
+        "regular_hours"
+      ],
+      "warning_flags": [
+        "inferred_not_documented"
+      ]
+    }
+  },
+  "critical_context": {
+    "required_fields": [
+      "salary_period"
+    ],
+    "hourly_analysis_implied": true,
+    "pension_section_visible": true,
+    "totals_section_visible": true
+  },
+  "pension_section_visible": true,
+  "totals_section_visible": true,
+  "provider_receipt": {
+    "schema_version": "tivdoc-openai-provider-receipt-v1",
+    "origin": "openai_live",
+    "case_id": "2b8c8054-5191-441a-8105-0e6999cf62f4",
+    "analysis_run_id": "c7337905-4910-4e8c-856d-fe95e1dff297",
+    "document_id": "fd6a0779-4321-476d-8f85-9b2099b8f3cc",
+    "extraction_id": "9fa763ee-c145-49f8-8739-667a58945802",
+    "source_sha256": "6a7225348270f9b8351b053c8b274b9686e5d17ffdf547d3d456059911a9b526",
+    "source_size_bytes": 70428,
+    "source_mime_type": "image/png",
+    "source_page_count": 1,
+    "request_sha256": "fe6fef39a7125f33ccf41030b2057f92a97453a84e6d0fcdfd2b9e205e432946",
+    "raw_extraction_sha256": "aab4a5ddaa1c387738dc291286abfe00f881c195c85806e8648e765097b8e044",
+    "pass_kind": "first_pass",
+    "requested_model": "gpt-4o-mini-2024-07-18",
+    "actual_model": "gpt-4o-mini-2024-07-18",
+    "extractor_version": "2.1",
+    "prompt_version": "payslip-extraction-openai-v2-first-r4",
+    "provider_response_id": "resp_08f3e9c5c57a3dbc016aa2c496d92c87d293d3e618f7e85870",
+    "provider_request_id": "req_8502ffd9e5c743c3ba51554310281a0f",
+    "provider_attempted": true,
+    "status": "completed",
+    "error_code": null,
+    "http_status": null,
+    "duration_ms": 13305,
+    "token_usage": {
+      "input_tokens": 40547,
+      "output_tokens": 1025,
+      "total_tokens": 41572
+    },
+    "cost": {
+      "status": "not_returned_by_provider",
+      "amount_usd": null
+    },
+    "created_at": "2026-09-10T14:54:27.678Z",
+    "receipt_sha256": "f85685e0ef6e24a6af7b0648fe6abc846fc10cbec47dc43247251c26b02dd302"
+  }
+}

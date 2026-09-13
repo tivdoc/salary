@@ -1,0 +1,26 @@
+{
+  "verdict": "PASS",
+  "checks": [
+    "actual foreign case/identity and web-role publication are refused",
+    "wrong offer hash, historical initial order and forged source byte hash cannot publish",
+    "actual SQL retains basis and ceiling gates, refuses a forged human actor and keeps legacy full reports behind human review",
+    "changed saved candidate is refused at the serialized completion boundary",
+    "pre-commit failure rolls back publication, audit, delivery intentions and order clock completion",
+    "concurrent publication and lost-response retry preserve one QA decision and one audit receipt",
+    "actual customer-role snapshot returns v3 with automation actor; foreign identity cannot read it",
+    "published evidence is immutable and exact receipt replay survives later input changes",
+    "no projection write permission or real legal-source activation is introduced"
+  ],
+  "failure": null,
+  "cleanupFailure": null,
+  "migration": "20260908162320_ai_report_publication.sql",
+  "migration_sha256": "ec331ed662e7b2e2ee7ad2d2c433bf64b49b7ba2f7c1b6d27567872068b77075",
+  "syntheticCasesRemoved": 2,
+  "machineSessionRevoked": true,
+  "browserProof": true,
+  "storageUploaded": true,
+  "storageRemoved": true,
+  "sourceSha256": "bf4fbe2bd49787d1fb36abb00126ba0510f9e48866b7becf3583f07064ee7dc2",
+  "scope": "Actual worker/peer/web SQL publication, synthetic paid report and seeded customer sessions; hosted browser/API/PDF and owned Storage bytes. No canonical monetary computation, legal activation, real payment/provider, runtime projection INSERT grant or production.",
+  "productionChanged": false
+}

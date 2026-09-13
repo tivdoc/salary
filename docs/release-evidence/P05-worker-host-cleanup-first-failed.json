@@ -1,0 +1,14 @@
+{
+  "verdict": "FAIL",
+  "failure": "The proof revoked its second machine session, then its cleanup incorrectly tried to reuse that revoked session. The cleanup failed before its normal receipt was written.",
+  "recovery": "Stopped proof; verified ownership and both Storage SHA values; cancelled only owned nonterminal synthetic jobs via the fixture owner; revoked both owned machine sessions; removed product rows before their Storage objects and verified exact prefix absence.",
+  "syntheticCasesRemoved": 2,
+  "requestIdentitiesRemoved": 1,
+  "storageObjectsRemoved": 2,
+  "canonicalAuditHistoryRetainedFor": [
+    "8f645909-3ec5-49ab-8668-588de972f1f2",
+    "11e8362d-35ec-48a9-ae6a-5bb9d78af4c2"
+  ],
+  "productionChanged": false,
+  "secretsIncluded": false
+}

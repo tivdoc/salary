@@ -1,0 +1,99 @@
+{
+  "schemaVersion": "tivdoc-sol-comparison-artifacts-v1",
+  "capturedAt": "2026-09-10T16:28:28.6459935Z",
+  "syntheticSourcesOnly": true,
+  "credentialsIncluded": false,
+  "rawBytesUnchanged": true,
+  "files": [
+    {
+      "file": "model-availability.json",
+      "sha256": "bf00e9c2f48239e09d24d27bcba9b19c3f3254d768cce41820f9eb399452530b",
+      "bytes": 687,
+      "copiedFrom": "../release-work/sol-model-availability.json"
+    },
+    {
+      "file": "4o-mini-original-QUALITY_FAIL.json",
+      "sha256": "637dd5a9be953a17a14dc9631cf1b964daf8f3ceb36a6012465dd465bfacd4b1",
+      "bytes": 21142,
+      "copiedFrom": "output/release-completion/live-provider-june2026/hebrew-scan-probe-047fa41-caeb6644-d78f-478b-bd84-a575e69e1b6e/proof.json"
+    },
+    {
+      "file": "4o-mini-clear-structured.json",
+      "sha256": "818c35353a5ecc74a3176192931e376b9c4b8f797f2ddfd0bc6918271a38424b",
+      "bytes": 5814,
+      "copiedFrom": "output/release-completion/live-provider-june2026/hebrew-scan-probe-047fa41-caeb6644-d78f-478b-bd84-a575e69e1b6e/he-clear-structured.json"
+    },
+    {
+      "file": "4o-mini-scan-structured.json",
+      "sha256": "d2f03e393ccc7a0e2545beabff06e7e5ed9b2748e884d93ff7821fd33ccc013e",
+      "bytes": 7743,
+      "copiedFrom": "output/release-completion/live-provider-june2026/hebrew-scan-probe-047fa41-caeb6644-d78f-478b-bd84-a575e69e1b6e/he-scan-clear-structured.json"
+    },
+    {
+      "file": "sol-clear-original-harness-FAIL.json",
+      "sha256": "394f105785bb23bba4401030cd55dd3b3e43cd2d407a23656890a4e63ac2e44c",
+      "bytes": 4788,
+      "copiedFrom": "output/release-completion/live-provider-sol-comparison/complex-c5051f3-4ec7efe8-8962-4308-aad9-abddf1cb22f6/proof.json"
+    },
+    {
+      "file": "sol-clear-structured.json",
+      "sha256": "f5a9c589f2954e227385e7ad881281053204e56160a0f9517906adaf22fb5937",
+      "bytes": 9701,
+      "copiedFrom": "output/release-completion/live-provider-sol-comparison/complex-c5051f3-4ec7efe8-8962-4308-aad9-abddf1cb22f6/he-clear-structured.json"
+    },
+    {
+      "file": "sol-clear-offline-replay.json",
+      "sha256": "c6d440dfec1edb20b1dfb08816ff825a49e1d8293ddda0bdb9820d9044e9dcef",
+      "bytes": 11107,
+      "copiedFrom": "output/release-completion/live-provider-sol-comparison/offline-clear-c5051f3/proof.json"
+    },
+    {
+      "file": "sol-clear-offline-result.json",
+      "sha256": "1a294e718c07c1b1c1d606e3a4fd4533678e339401d7613d9d0fd0a3089e747b",
+      "bytes": 97039,
+      "copiedFrom": "output/release-completion/live-provider-sol-comparison/offline-clear-c5051f3/he-clear-result.json"
+    },
+    {
+      "file": "sol-scan-actual-PASS.json",
+      "sha256": "01f6eb20be837d91e09abe9d733f3800ba9d95f5256761311113f1a23df0ac23",
+      "bytes": 15544,
+      "copiedFrom": "output/release-completion/live-provider-sol-comparison/complex-6983156-22d822b2-c0a6-431e-a9f0-675fd7436b36/proof.json"
+    },
+    {
+      "file": "sol-scan-structured.json",
+      "sha256": "a958e16d9fb4bf3c64b1b4dbe5b9ab05cd104142e0c2acf59dd6a7b64e3b5a3f",
+      "bytes": 9218,
+      "copiedFrom": "output/release-completion/live-provider-sol-comparison/complex-6983156-22d822b2-c0a6-431e-a9f0-675fd7436b36/he-scan-clear-structured.json"
+    },
+    {
+      "file": "sol-scan-mapped.json",
+      "sha256": "87314470e7a25b4f595d61a14e60105ac25be47ed6df3851593953f97d69c418",
+      "bytes": 17082,
+      "copiedFrom": "output/release-completion/live-provider-sol-comparison/complex-6983156-22d822b2-c0a6-431e-a9f0-675fd7436b36/he-scan-clear-mapped.json"
+    },
+    {
+      "file": "sol-scan-result.json",
+      "sha256": "d71078f6e3bd4aded7d6960b2ddbe7a23d7c94d2857c138018335e8f312970de",
+      "bytes": 200070,
+      "copiedFrom": "output/release-completion/live-provider-sol-comparison/complex-6983156-22d822b2-c0a6-431e-a9f0-675fd7436b36/he-scan-clear-new-result.json"
+    },
+    {
+      "file": "complex-source-oracles.json",
+      "sha256": "936bf1cbe08b7f6a03567ee397e1bfb229cd5af3c850e8c216fbdac19ef078f3",
+      "bytes": 13709,
+      "copiedFrom": "docs/release-evidence/live-provider-june2026/independent-input-oracles.json"
+    },
+    {
+      "file": "single-base-source-oracles.json",
+      "sha256": "6c66625a1ea54b6b98be244f8caa9bcf6e03e8897c8a419900f8513ccb539c41",
+      "bytes": 4731,
+      "copiedFrom": "output/release-completion/live-provider-sol-comparison/single-base-inputs/independent-input-oracles.json"
+    },
+    {
+      "file": "package-ledger-after-comparison.json",
+      "sha256": "e5aaec6bba8b576eb07a7565e59bdf84a996c488039192b5cc46872dd0b134af",
+      "bytes": 4261,
+      "copiedFrom": "output/release-completion/live-provider-sol-comparison/package-budget-ledger.json"
+    }
+  ]
+}

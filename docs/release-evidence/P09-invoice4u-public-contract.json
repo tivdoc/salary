@@ -1,0 +1,44 @@
+{
+  "retrievedAt": "2026-09-08T18:04:41.872Z",
+  "provenance": "Linked by supplier commerce page: https://www.invoice4u.co.il/features/e-commerce/",
+  "documents": [
+    {
+      "url": "https://invoice4u.gitbook.io/invoice4u-docs/llms.txt",
+      "status": 200,
+      "bytes": 3674,
+      "sha256": "64d62b6d6fe34de8a8db265cee3df597eb7e3064d89cd692a814b892eb3f6e5c"
+    },
+    {
+      "url": "https://invoice4u.gitbook.io/invoice4u-docs/clearing-payments/overview.md",
+      "status": 200,
+      "bytes": 5485,
+      "sha256": "72597e1b9dbd581339d3382f47428afb4acaebb00b7c90d516a5046a1ffc2b0b"
+    },
+    {
+      "url": "https://invoice4u.gitbook.io/invoice4u-docs/clearing-payments/process-api-request-v2.md",
+      "status": 200,
+      "bytes": 37636,
+      "sha256": "a0d709bb5c3974e0a62c7618d4630c8faf09597b037308f3b87b3d38db1251e6"
+    },
+    {
+      "url": "https://invoice4u.gitbook.io/invoice4u-docs/clearing-payments/clearing-logs.md",
+      "status": 200,
+      "bytes": 15941,
+      "sha256": "265e58267c88c586ffb700008cc5dca7c8981372495c1475b18dbd23c32424f0"
+    },
+    {
+      "url": "https://invoice4u.gitbook.io/invoice4u-docs/documents/credit-invoices.md",
+      "status": 200,
+      "bytes": 20219,
+      "sha256": "869b86cdc3fff6c22fc07073537606645f76158dba6643d63a620f9e60e8801a"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/invoice4udev-hue/i4u-docs/main/openapi/invoice4u-openapi.json",
+      "status": 200,
+      "bytes": 88867,
+      "sha256": "a95055ad0ff6aa65f59a1636834f9a2597a5a55f507cb79a4422ac55151832b8"
+    }
+  ],
+  "scope": "Public unauthenticated documentation GET requests only. No account/provider transaction, messages, credentials, payment/refund, or production mutation.",
+  "productionChanged": false
+}

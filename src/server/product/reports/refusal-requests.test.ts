@@ -87,9 +87,21 @@ describe("S3.3: the clock (D-7.2) and the deadlines (D-9)", () => {
   it("pauses the SLA only while a blocking request is unanswered", () => {
     expect(slaPaused([])).toBe(false);
     expect(slaPaused([nonBlocking])).toBe(false);
-    expect(slaPaused([blocking])).toBe(true);
+    expect(slaPaused([blocking], NOW)).toBe(true);
     const answered: ThreadRequest = { ...blocking, answered_at: NOW.toISOString() };
-    expect(slaPaused([answered])).toBe(false);
+    expect(slaPaused([answered], NOW)).toBe(false);
     expect(slaPaused([answered, nonBlocking])).toBe(false);
   });
+});
+
+
+describe("P06 field-specific requests",()=>{
+ it("preserves each source field and never borrows another field's question",()=>{
+  for(const family of ['fact.missing','fact.conflicted','low_confidence']){
+   const code=`${family}:pension.base_salary`;const r=requestFor(code,{caseId:CASE,now:NOW})!;
+   expect(r.code).toBe(code);expect(r.field_crop).toBe('pension.base_salary');expect(r.question).toContain('פנסיה');expect(r.question).not.toContain('שעות');
+  }
+ });
+ it("preserves unknown fields without selecting the hours template",()=>{const r=mappingFor('low_confidence:new_field')!;expect(r.code).toBe('low_confidence:new_field');expect(r.field_crop).toBe('new_field');expect(r.answer_kind).toBe('text');});
+ it("expired blocking requests no longer pause the clock",()=>{expect(slaPaused([requestFor('schedule_unknown',{caseId:CASE,now:NOW})!],new Date('2026-09-17'))).toBe(false);});
 });

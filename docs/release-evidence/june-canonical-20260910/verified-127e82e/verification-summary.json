@@ -1,0 +1,90 @@
+{
+  "schemaVersion": "june-canonical-bounded-delivery-v1",
+  "recordedAt": "2026-09-10T15:39:08.424Z",
+  "applicationSha": "127e82e0acdd1407e18c7306e73f9e2431bc3faa",
+  "schema": {
+    "orderedChain": 138,
+    "tail": "20260910145013_june2026_customer_canonical_case_binding.sql",
+    "sha256": "ff584ca511a7f525650d437e113b8c2cf232ac9c57a937c5cd128a8b22472c76",
+    "actualDefinitions": [
+      {
+        "name": "private.june2026_test_assessment",
+        "signature": "uuid,uuid,integer,text",
+        "securityDefiner": true,
+        "emptySearchPath": true,
+        "bodyNormalizedSha256": "778f5e87a8eeeaebe7f92d1abe278762fcaaa213eaa17b5782ce34c0b9e20563"
+      },
+      {
+        "name": "private.june2026_canonical_test_save",
+        "signature": "uuid,uuid,integer,text,text,jsonb,jsonb",
+        "securityDefiner": true,
+        "emptySearchPath": true,
+        "bodyNormalizedSha256": "3b6bfd1f80bf755075b07c2e8ce0e74240a005e7ebd20557273bc6e76f61a518"
+      },
+      {
+        "name": "public.case_report_june_canonical_test",
+        "signature": "uuid,uuid,uuid",
+        "securityDefiner": false,
+        "emptySearchPath": true,
+        "bodyNormalizedSha256": "b65ca9b435aae2bb7a535ec09f5ad2314c24456fac991f6adc424ac83d5fd5bb"
+      },
+      {
+        "name": "private.june2026_canonical_test_customer",
+        "signature": "uuid,uuid,uuid",
+        "securityDefiner": true,
+        "emptySearchPath": true,
+        "bodyNormalizedSha256": "78154c54bb8f44dcc4486b7ad4c126cf6563d18c83397555be05cbb179cfbf88"
+      }
+    ],
+    "migrationLedgerAvailable": false
+  },
+  "ci": [
+    {
+      "id": 34495502862,
+      "sha": "127e82e0acdd1407e18c7306e73f9e2431bc3faa",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/tivdoc/salary/actions/runs/34495502862"
+    },
+    {
+      "id": 34495497550,
+      "sha": "127e82e0acdd1407e18c7306e73f9e2431bc3faa",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/tivdoc/salary/actions/runs/34495497550"
+    }
+  ],
+  "dbProof": "7bf268a0/proof.json",
+  "restartProof": "7bf268a0/restart-proof-127e82e0acdd.json",
+  "caseId": "7bf268a0-48fd-4db9-8c8c-41786dd1ba0c",
+  "publicId": "TV-F92174B2",
+  "run": {
+    "label": "replacement-current-calculated",
+    "runId": "ecf9e6e4-05a3-4004-8540-bdc479f1ca23",
+    "caseRevision": 1,
+    "resultSha256": "5d9fa03cd361ecaf166df9690fbf41ecb47918622dd18a9fcfa08a42f4ef9454",
+    "reportSha256": "ef290c989218e24ccf704b17979ac2b9ea487befebcf3278f27ca6ac1dd1cd80",
+    "htmlSha256": "cfabc809e2296f53fb016c7fcfe5fe8e7f0b6a518aa9cd8c3c6e33a0ad91d342",
+    "pdfSha256": "dd65db04f587c192cea0882c0d915f6a87323d261b5f9af07eca6e57d2960ead",
+    "sourceVersion": "a1af1461-b7b4-4170-8538-f3a189283cfd",
+    "sourceSha256": "721c022d4903dde69bc0be6236653db38670acfb50c85a4cd6dccc008bf89f6d",
+    "comparisonSha256": "1c7b1629d96ffbd283087d493d0c892ad4b93c21cc689214432c3dba930836be",
+    "currentAtExport": true
+  },
+  "productionChanged": false,
+  "paymentProof": "synthetic_paid_order_only",
+  "canonicalProviderProof": "injected_transport_with_identified_fixture_readings",
+  "ordinaryCustomerFindingPublished": false,
+  "realLegalActivation": false,
+  "independentLiveOcr": {
+    "sha": "047fa41fd2521cb5759a31f62ae0a0c328990a91",
+    "calls": 2,
+    "result": "QUALITY_FAIL_both",
+    "ledgerBefore": 19,
+    "ledgerAfter": 21,
+    "maxPasses": 22,
+    "checkpointRewritten": false
+  },
+  "savedWorkerDispatch": "explicit_DEV_test_driver",
+  "managedAutomaticWorkerProvedInThisPackage": false
+}

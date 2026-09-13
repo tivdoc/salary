@@ -1,18 +1,19 @@
 "use client";
+import {EXTERNAL_MEASUREMENT_ENABLED} from "@/lib/measurement-policy";
 
 import Script from "next/script";
 
 export function AnalyticsProvider() {
   const measurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
-  if (!measurementId) return null;
+  if (!EXTERNAL_MEASUREMENT_ENABLED || !measurementId) return null;
 
   return (
     <>
       <Script
         src={`https://www.googletagmanager.com/gtag/js?id=${measurementId}`}
-        strategy="afterInteractive"
+        strategy="lazyOnload"
       />
-      <Script id="tivdoc-ga4" strategy="afterInteractive">
+      <Script id="tivdoc-ga4" strategy="lazyOnload">
         {`
           window.dataLayer = window.dataLayer || [];
           function gtag(){dataLayer.push(arguments);}
