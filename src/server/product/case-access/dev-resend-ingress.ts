@@ -4,6 +4,18 @@ type Env=Readonly<Record<string,string|undefined>>;
 const response=(status:number,code:string)=>Response.json({code},{status,headers:{'cache-control':'no-store'}});
 const INGRESS_APPLICATION_ENV=new Set(['RESEND_WEBHOOK_SECRET','TIVDOC_DEV_INGRESS_ENABLED',
  'TIVDOC_DEV_PREVIEW_SHARE_SECRET','TIVDOC_DEV_PREVIEW_ORIGIN','TIVDOC_DEV_PREVIEW_SHARE_EXPIRES']);
+/** Safe failure telemetry for comparing deployed exchange with operator probe.
+ * Never serialize a destination, cookie, request, environment or provider body. */
+function recordRefusedPreviewExchange(exchange:Response,origin:string):void{
+ const location=exchange.headers.get('location');let destination:URL|null=null;
+ try{destination=location?new URL(location,origin):null;}catch{ /* Only the parse result is observable. */ }
+ const cookie=exchange.headers.getSetCookie().map(value=>value.split(';',1)[0]).find(value=>value.startsWith('_vercel_jwt='));
+ console.warn(JSON.stringify({schema_version:'dev-ingress-exchange-diagnostic-v1',event:'preview_access_refused',
+  exchange_status:exchange.status,location_present:location!==null,destination_parseable:destination!==null,
+  destination_same_origin:destination?.origin===origin,destination_health_path:destination?.pathname==='/api/health',
+  destination_query_empty:destination!==null&&destination.search==='',scoped_cookie_present:Boolean(cookie),
+  scoped_cookie_within_limit:Boolean(cookie&&cookie.length<=16384)}));
+}
 /** A reused project must blank its application variables for this deployment.
  * This checks the actual runtime values, not a build-time claim. Platform-owned
  * Vercel/AWS credentials are outside the application's credential namespace. */
@@ -61,10 +73,12 @@ async function forwardSignedDevEvent(request:Request,env:Env,transport:typeof fe
   const exchange=await transport(access,{method:'GET',redirect:'manual',signal:AbortSignal.timeout(5000)});
   const location=exchange.headers.get('location');
   const destination=location?new URL(location,origin):null;
-  if(exchange.status!==307||destination?.origin!==origin||destination.pathname!=='/api/health'||destination.search)return response(502,'preview_access_refused');
+  if(exchange.status!==307||destination?.origin!==origin||destination.pathname!=='/api/health'||destination.search){
+   recordRefusedPreviewExchange(exchange,origin);return response(502,'preview_access_refused');
+  }
   const cookies=exchange.headers.getSetCookie();
   const cookie=cookies.map(value=>value.split(';',1)[0]).find(value=>value.startsWith('_vercel_jwt='));
-  if(!cookie||cookie.length>16384)return response(502,'preview_access_refused');
+  if(!cookie||cookie.length>16384){recordRefusedPreviewExchange(exchange,origin);return response(502,'preview_access_refused');}
   const headers=new Headers({'content-type':'application/json','cookie':cookie});
   for(const name of ['svix-id','svix-timestamp','svix-signature'])headers.set(name,request.headers.get(name)!);
   const delivered=await transport(new URL('/api/notifications/resend',origin),{

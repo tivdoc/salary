@@ -1,4 +1,4 @@
-import {describe,it,expect,vi} from 'vitest';
+import {afterEach,beforeEach,describe,it,expect,vi} from 'vitest';
 import {Webhook} from 'svix';
 import {devIngressCredentialScopeValid,handleDevResendIngress} from './dev-resend-ingress.ts';
 const secret=`whsec_${Buffer.alloc(32,7).toString('base64')}`;
@@ -16,6 +16,8 @@ function request(){
 }
 function exchange(){return new Response(null,{status:307,headers:{location:`${origin}/api/health`,'set-cookie':'_vercel_jwt=synthetic-cookie; Path=/; Secure; HttpOnly'}});}
 describe('DEV webhook ingress transport unit contract, not provider delivery proof',()=>{
+ beforeEach(()=>{vi.spyOn(console,'warn').mockImplementation(()=>undefined);});
+ afterEach(()=>{vi.restoreAllMocks();});
  it.each(['SUPABASE_SERVICE_ROLE_KEY','OPENAI_API_KEY','RESEND_API_KEY','CASE_TOKEN_SECRET',
   'TIVDOC_NOTIFICATION_WEBHOOK_POSTGRES_URL','TIVDOC_MANAGED_DEV_WORKER_CAPABILITY','TIVDOC_FUTURE_APPLICATION_FLAG',
   'PAYMENT_RECONCILIATION_SECRET','DELIVERY_RECIPIENT_ALLOWLIST','GA4_API_SECRET','INVOICE4U_API_KEY',
@@ -29,6 +31,7 @@ describe('DEV webhook ingress transport unit contract, not provider delivery pro
   expect(devIngressCredentialScopeValid(isolated)).toBe(true);
   const fetcher=vi.fn();expect((await handleDevResendIngress(new Request('https://ingress.invalid/api/resend'),isolated,fetcher)).status).toBe(405);
   expect(fetcher).not.toHaveBeenCalled();
+  expect(console.warn).not.toHaveBeenCalled();
  });
  it.each(['production','development',''])('never forwards outside Preview: %s',async target=>{
   const fetcher=vi.fn();expect((await handleDevResendIngress(request(),{...env,VERCEL_ENV:target},fetcher)).status).toBe(503);expect(fetcher).not.toHaveBeenCalled();
@@ -59,6 +62,7 @@ describe('DEV webhook ingress transport unit contract, not provider delivery pro
   const [target,second]=fetcher.mock.calls[1];expect(String(target)).toBe(`${origin}/api/notifications/resend`);expect(second?.body).toBe(raw);
   const headers=new Headers(second?.headers);expect(headers.get('cookie')).toBe('_vercel_jwt=synthetic-cookie');expect(headers.get('svix-signature')).toBe(req.headers.get('svix-signature'));
   expect(headers.get('authorization')).toBeNull();expect(headers.get('x-vercel-protection-bypass')).toBeNull();
+  expect(console.warn).not.toHaveBeenCalled();
  });
  it('rejects malformed wire bytes that lossy UTF-8 decoding would turn into a different signed payload',async()=>{
   const canonical=JSON.stringify({type:'email.delivered',created_at:new Date().toISOString(),data:{email_id:'11111111-1111-4111-8111-111111111111',subject:'\uFFFD'}});
@@ -79,6 +83,24 @@ describe('DEV webhook ingress transport unit contract, not provider delivery pro
   const response=new Response(null,{status:mutation==='unexpected_status'?200:307,headers:{location:mutation==='foreign_redirect'?'https://other.example/api/health':`${origin}/api/health`,...(mutation==='missing_cookie'?{}:{'set-cookie':'_vercel_jwt=synthetic-cookie'})}});
   const fetcher=vi.fn<typeof fetch>().mockResolvedValue(response);
   expect((await handleDevResendIngress(request(),env,fetcher)).status).toBe(502);expect(fetcher).toHaveBeenCalledTimes(1);
+ });
+ it.each(['status','origin','path','query','location','cookie','cookie_size']as const)('records only bounded safe flags for refused exchange: %s',async mutation=>{
+  const cookie=mutation==='cookie_size'?`_vercel_jwt=${'s'.repeat(16384)}`:'_vercel_jwt=synthetic-private-cookie';
+  const location=mutation==='origin'?'https://other.example/api/health':mutation==='path'?`${origin}/private-path`
+   :mutation==='query'?`${origin}/api/health?_vercel_share=${env.TIVDOC_DEV_PREVIEW_SHARE_SECRET}`:`${origin}/api/health`;
+  const exchange=new Response('synthetic-private-response-body',{status:mutation==='status'?302:307,headers:{
+   ...(mutation==='location'?{}:{location}),...(mutation==='cookie'?{}:{'set-cookie':cookie})}});
+  const fetcher=vi.fn<typeof fetch>().mockResolvedValue(exchange),req=request();
+  const result=await handleDevResendIngress(req,env,fetcher);
+  expect(result.status).toBe(502);expect(await result.json()).toEqual({code:'preview_access_refused'});
+  expect(fetcher).toHaveBeenCalledTimes(1);expect(console.warn).toHaveBeenCalledTimes(1);
+  const logged=vi.mocked(console.warn).mock.calls[0];expect(logged).toHaveLength(1);
+  expect(JSON.parse(logged[0])).toEqual({schema_version:'dev-ingress-exchange-diagnostic-v1',event:'preview_access_refused',
+   exchange_status:mutation==='status'?302:307,location_present:mutation!=='location',destination_parseable:mutation!=='location',
+   destination_same_origin:!['origin','location'].includes(mutation),destination_health_path:!['path','location'].includes(mutation),
+   destination_query_empty:!['query','location'].includes(mutation),scoped_cookie_present:mutation!=='cookie',
+   scoped_cookie_within_limit:!['cookie','cookie_size'].includes(mutation)});
+  for(const value of [secret,origin,env.TIVDOC_DEV_PREVIEW_SHARE_SECRET,cookie,'synthetic-private-response-body',req.headers.get('svix-signature')!])expect(logged[0]).not.toContain(value);
  });
  it.each([401,503,307])('does not acknowledge a receipt not persisted by the Preview: %i',async status=>{
   const fetcher=vi.fn<typeof fetch>().mockResolvedValueOnce(exchange()).mockResolvedValueOnce(new Response(null,{status}));

@@ -43,11 +43,18 @@ function setup(){
   if(s.name==='saved_runner_read'||s.name==='saved_runner_lock')return {rows:[row],row_count:1};
   if(s.name==='saved_runner_journal')return {rows:[{input:source,actual_sha256:state.journalHash}],row_count:1};
   if(s.name==='source_contract_physical_lease'){
-   expect(s.text).toContain('private.runtime_verified_actor()::text=$4');
+   expect(s.text).toContain('job_id=$1 and canonical_case_id=$2 and payload=$3::jsonb');
+   expect(s.text).toContain("state='running' and lease_owner=$4 and fencing_token=$5 and lease_expires_at>clock_timestamp() and not cancellation_requested");
    expect(s.values).toEqual(['job',row.canonical_case_id,JSON.stringify(row.payload),'worker',2]);
    return {rows:[{job_id:'job'}],row_count:1};
   }
-  if(s.name==='source_contract_physical_pending')return {rows:[{value:[]}],row_count:1};
+  if(s.name==='source_contract_physical_pending'){
+   // Actor validation belongs to this scoped RPC, alongside current source
+   // and lease checks. Keep the concrete worker and all source pins exact.
+   expect(s.text).toBe('select private.contract_transcription_physical_pages_pending($1::uuid,$2,$3,$4,$5,$6) value');
+   expect(s.values).toEqual([row.canonical_case_id,row.payload.revision,row.payload.input_sha256,'job','worker',2]);
+   return {rows:[{value:[]}],row_count:1};
+  }
   if(s.name==='saved_runner_heartbeat'){
    state.heartbeats++;expect(s.text).toContain('clock_timestamp()');expect(s.text).toContain('not cancellation_requested');
    return {rows:state.heartbeatFails?[]:[{job_id:'job'}],row_count:state.heartbeatFails?0:1};
@@ -73,6 +80,7 @@ describe('saved draft job consumer',()=>{
   s.row.payload_sha256=canonicalSha256(s.row.payload);
   const result=await runSavedDraftJob(s.input);
   expect(s.calls.filter(name=>name==='saved_runner_journal')).toHaveLength(2);
+  expect(s.calls.filter(name=>name.startsWith('source_contract_physical_'))).toEqual(['source_contract_physical_lease','source_contract_physical_pending']);
   expect(result).toMatchObject({extractedVersions:2,analyzedMonths:3});
  });
  it('extracts each purchased file once across overlapping orders and completes all order-months',async()=>{

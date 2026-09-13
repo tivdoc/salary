@@ -93,7 +93,9 @@ const MIGRATION_ROOT = path.resolve(process.cwd(), "supabase", "migrations");
 //invoker-only. DEV rollback verified70 function ACLs and28 table/RLS boundaries.
 //209/211 add two narrow worker discovery RPCs.210 changes only capability regex
 //in four existing definitions while asserting unchanged ACLs; no new definer.
-const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 456;
+//215 redefines only contract physical discovery to reuse authenticated legacy
+//period evidence. Actual DEV before/after checks retain its worker-only ACL.
+const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 457;
 
 // Case-insensitive on purpose. pg_get_functiondef emits CREATE OR REPLACE
 // FUNCTION and SET search_path TO '' in upper case, and a migration written
@@ -502,6 +504,12 @@ describe("security definer search_path contract", () => {
   it("counts the definer surface so a new one cannot arrive unnoticed", async () => {
     const definitions = await securityDefinerDefinitions();
     expect(definitions).toHaveLength(EXPECTED_SECURITY_DEFINER_DEFINITIONS);
+  });
+
+  it("limits effective legacy period discovery to the existing contract RPC", async () => {
+    const definitions=await securityDefinerDefinitions();
+    expect(definitions.filter(d=>d.file==='20260914021000_contract_physical_effective_legacy_period.sql').map(d=>d.name))
+      .toEqual(['private.contract_transcription_physical_pages_pending']);
   });
 
   it("retains the request opener boundary in the month-reading migration",async()=>{

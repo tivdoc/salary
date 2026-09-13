@@ -29,17 +29,23 @@ function fixture(qualified=true){
  const orders=[{id:orderId,kind:'initial',from:'2026-06-01',to:'2026-06-01',topics:['minimum_wage'],offer_sha256:'c'.repeat(64)}];
  ports.orders.mockResolvedValue(orders);
  ports.reviewScope.mockResolvedValue({orderId,reviewSha256:'d'.repeat(64),sourceVersionIds:[versionId]});
- const events:string[]=[];
+ const events:string[]=[],physicalQueries:string[]=[];
  const context:PostgresTransactionContext={transaction_id:'planning-test',client:{async query(statement){
   if(statement.name==='saved_runner_read'||statement.name==='saved_runner_lock')return {rows:[row],row_count:1};
   if(statement.name==='saved_runner_journal')return {rows:[{input:source,actual_sha256:job.input_sha256}],row_count:1};
   if(statement.name==='saved_runner_heartbeat')return {rows:[{job_id:'test-job'}],row_count:1};
   if(statement.name==='source_contract_physical_lease'){
-   expect(statement.text).toContain('private.runtime_verified_actor()::text=$4');
+   expect(statement.text).toContain('job_id=$1 and canonical_case_id=$2 and payload=$3::jsonb');
+   expect(statement.text).toContain("state='running' and lease_owner=$4 and fencing_token=$5 and lease_expires_at>clock_timestamp() and not cancellation_requested");
+   physicalQueries.push('lease');
    expect(statement.values).toEqual(['test-job',caseId,JSON.stringify(job),'worker',1]);
    return {rows:[{job_id:'test-job'}],row_count:1};
   }
   if(statement.name==='source_contract_physical_pending'){
+   // The scoped definer RPC owns actor verification; worker LOGIN cannot call
+   // the underlying private actor helper directly. Pin all six arguments.
+   expect(statement.text).toBe('select private.contract_transcription_physical_pages_pending($1::uuid,$2,$3,$4,$5,$6) value');
+   physicalQueries.push('scoped-actor-source-fence');
    expect(statement.values).toEqual([caseId,job.revision,job.input_sha256,'test-job','worker',1]);
    return {rows:[{value:[]}],row_count:1};
   }
@@ -50,12 +56,13 @@ function fixture(qualified=true){
  ports.month.mockImplementation(async()=>{events.push('ordinary-month');return {};});
  ports.complete.mockResolvedValue({manifest:{publication:'draft'}});
  const input={transactions,storage:{download:vi.fn()},providerEnabled:false,receiptOnly:true,jobId:'test-job',workerId:'worker',fencingToken:1};
- return {input,job,row,source,versionId,events,orderId};
+ return {input,job,row,source,versionId,events,physicalQueries,orderId};
 }
 
 describe('qualified saved-job extraction planning',()=>{
  it('sends a curated-covered payslip through ordinary receipt reuse before the enrolled monthly analysis',async()=>{
   const f=fixture();const result=await runSavedDraftJob(f.input);
+  expect(f.physicalQueries).toEqual(['lease','scoped-actor-source-fence']);
   expect(ports.reviewScope).not.toHaveBeenCalled();
   expect(ports.testAuthority).not.toHaveBeenCalled();expect(ports.regularAuthority).not.toHaveBeenCalled();
   expect(ports.extract).toHaveBeenCalledOnce();
