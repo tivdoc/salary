@@ -15,7 +15,7 @@ export async function validateSavedReadingAnswer(input:{store:CaseAccessDb;caseI
  if(target.case_id!==z.uuid().parse(input.caseId)||input.code!==`document_field:${target.target_sha256}`)throw Error('REQUEST_FIELD_FORBIDDEN');
  if('period_witness' in target)await loadRequestSourcePeriodContext({store:input.store,caseId:input.caseId,identityId:input.identityId,requestId:input.requestId,target});
  if(target.schema_version==='document-source-period-intake-v1')await loadRequestSourceIntakeContext({store:input.store,caseId:input.caseId,identityId:input.identityId,requestId:input.requestId,target});
- if(target.schema_version==='document-travel-tariff-transcription-v1'||target.schema_version==='document-source-period-intake-v1'){
+ if(target.schema_version==='obligation-payment-choice-v1'||target.schema_version==='document-travel-tariff-transcription-v1'||target.schema_version==='document-source-period-intake-v1'){
   // A well-formed purpose hash is not proof that the purpose is admitted.
   // The protected SQL lookup checks its current persisted receipt; the writer
   // repeats the same check under the case lock to close the answer race.

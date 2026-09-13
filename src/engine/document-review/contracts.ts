@@ -1,6 +1,7 @@
 import {entitlementDeclarationsSchema} from '../entitlement-review/declarations.ts';
 import {savedNonPayslipEvidenceSchema} from '../extraction/document-evidence/snapshot.ts';
 import {z} from 'zod';
+import {obligationPaymentLinkReadingSchema} from '../entitlement-review/obligations/payment-link';
 import type {generateReviewCompletions} from './completions.ts';
 import type {calculateDocumentReview} from './calculations.ts';
 import {reviewCompletionSchema,reviewCompletionAnswerReceiptSchema,reviewSourcePinSchema} from './completions.ts';
@@ -62,6 +63,9 @@ export const documentReviewInputSchema=z.object({
  entitlement_evidence:entitlementEvidenceSchema.optional(),
  entitlement_declarations:entitlementDeclarationsSchema.optional(),
  non_payslip_evidence:z.array(savedNonPayslipEvidenceSchema).max(32).optional(),
+ // A link reading binds two exact source observations. It never approves the
+ // obligation's classification, legal applicability or payment allocation.
+ obligation_payment_link_readings:z.array(obligationPaymentLinkReadingSchema).max(128).optional(),
  entitlement_composition:entitlementCompositionSchema.optional(),
  period_projection:reviewPeriodProjectionSchema.optional(),
  source_observation_inventory:z.array(reviewSourceObservationInventorySchema).max(64).optional(),

@@ -2,6 +2,7 @@ import {z} from 'zod';
 import {productOfferSchema} from '@/lib/product-offer';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import {PROJECTION_TOPICS} from '../reports/case-report-projection';
+import {PURCHASE_TOPICS_VERSION,releasePurchaseTopicsSchema} from './purchase-topics';
 
 const minor=z.number().int().nonnegative().safe();
 const hash=z.string().regex(/^[a-f0-9]{64}$/u);
@@ -11,7 +12,7 @@ const topics=z.array(z.enum(PROJECTION_TOPICS)).min(1).max(7).refine(v=>new Set(
  * must never silently recalculate an old purchase with today's price policy.
  * This is an integrity contract, not evidence that its monetary basis is true;
  * the issuer must load that basis and paid credit from their trusted stores. */
-export const priceQuoteSchema=z.object({
+const historicalPriceQuoteSchema=z.object({
  schema_version:z.literal('tivdoc-price-quote-v1'),state:z.literal('eligible'),
  pricing_version:z.string().min(1),pricing_policy:productOfferSchema.shape.full_report.shape.pricing,
  initial_credit_cap_minor:minor,
@@ -20,7 +21,10 @@ export const priceQuoteSchema=z.object({
  purchased_period:z.object({from:month,to:month}).strict(),purchased_topics:topics,
  basis_minor:minor,total_minor:minor,credit_order_id:z.uuid().nullable(),credit_minor:minor,balance_minor:minor,
  created_at:z.iso.datetime(),expires_at:z.iso.datetime(),sha256:hash,
-}).strict().superRefine((quote,ctx)=>{
+}).strict();
+const releasePriceQuoteSchema=historicalPriceQuoteSchema.extend({schema_version:z.literal('tivdoc-price-quote-v2'),
+ purchase_topics_version:z.literal(PURCHASE_TOPICS_VERSION),purchased_topics:releasePurchaseTopicsSchema}).strict();
+export const priceQuoteSchema=z.discriminatedUnion('schema_version',[historicalPriceQuoteSchema,releasePriceQuoteSchema]).superRefine((quote,ctx)=>{
  const fail=(message:string)=>ctx.addIssue({code:'custom',message});
  const {sha256,...payload}=quote;
  if(canonicalSha256(payload)!==sha256)fail('QUOTE_HASH_MISMATCH');
@@ -31,8 +35,9 @@ export const priceQuoteSchema=z.object({
   ||(quote.credit_minor===0)!==(quote.credit_order_id===null))fail('QUOTE_CREDIT_MISMATCH');
  const {from,to}=quote.purchased_period;
  const count=(Number(to.slice(0,4))-Number(from.slice(0,4)))*12+Number(to.slice(5))-Number(from.slice(5))+1;
+ const purchasedTopics:readonly string[]=quote.purchased_topics;
  if(count<1||count>600||quote.checked_months.some(m=>m<from||m>to)
-  ||quote.checked_topics.some(t=>!quote.purchased_topics.includes(t)))fail('QUOTE_SCOPE_MISMATCH');
+  ||quote.checked_topics.some(t=>!purchasedTopics.includes(t)))fail('QUOTE_SCOPE_MISMATCH');
  if(Date.parse(quote.expires_at)-Date.parse(quote.created_at)!==quote.pricing_policy.quote_valid_days*86400000)fail('QUOTE_EXPIRY_MISMATCH');
 });
 export type PriceQuote=z.infer<typeof priceQuoteSchema>;

@@ -1,4 +1,5 @@
 import {canonicalSha256} from '../rule-runtime/canonical.ts';
+import {attachObligationPaymentLinks} from './obligations/payment-link';
 import type {ReviewCompletionNeed} from '../document-review/completions.ts';
 import type {DocumentReviewSource} from '../document-review/calculations.ts';
 import {minimumWageEntitlementInputSchema} from './minimum-wage/contracts.ts';
@@ -109,6 +110,9 @@ export function materializeTypedEntitlementFacts(candidate:EntitlementEvidence,o
  if(original&&source)candidate=materializeQuestionnaireAgeRanges(candidate,original,source);
  if(candidate.obligations&&original?.obligations&&source){const current=obligationsEntitlementInputSchema.parse(candidate.obligations),raw=obligationsEntitlementInputSchema.parse(original.obligations);
   if(raw.case_policy===OBLIGATIONS_CASE_POLICY)candidate={...candidate,obligations:replayObligationProductFacts(current,raw,source)};}
+ if(candidate.obligations&&source?.obligation_payment_link_readings?.length){
+  candidate={...candidate,obligations:attachObligationPaymentLinks(obligationsEntitlementInputSchema.parse(candidate.obligations),source,source.obligation_payment_link_readings)};
+ }
  if(candidate.working_time&&original?.working_time&&source){const current=workingTimeEntitlementInputSchema.array().min(1).max(6).parse(candidate.working_time),rawItems=workingTimeEntitlementInputSchema.array().min(1).max(6).parse(original.working_time);
   if(current.length!==rawItems.length)throw Error('WT_MATERIALIZATION_WEEK_SCOPE');
   candidate={...candidate,working_time:current.map((p,i)=>{

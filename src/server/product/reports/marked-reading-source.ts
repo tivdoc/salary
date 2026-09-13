@@ -3,15 +3,23 @@ import {createHash} from 'node:crypto';
 import {PDFDocument,rgb} from 'pdf-lib';
 import {documentReadingTargetSchema} from './document-field-confirmation';
 import {documentFieldVerificationDisplay} from './reading-verification';
+import {selectedObligationPaymentTarget} from './document-obligation-payment-link';
 import type {CaseAccessDb} from '../case-access/db';
 
 /** Derive a view from the already authorized, hash-verified original. Never
  * modify storage or guess a cell rectangle from an unlocated text fragment. */
-export async function markReadingSource(input:{caseId:string;identityId:string;requestId:string;version:string;bytes:Buffer;mime:string},db:CaseAccessDb){
+export async function markReadingSource(input:{caseId:string;identityId:string;requestId:string;version:string;bytes:Buffer;mime:string;candidateHash?:string;linked?:'payroll'|'clause'},db:CaseAccessDb){
  const rows=await db.rpc<{request_id:string;target:unknown}>('case_request_field_reading_targets',{target_case:input.caseId,target_identity:input.identityId});
  const selected=rows.filter(row=>row.request_id===input.requestId);
  if(selected.length!==1)return null;
- const target=documentReadingTargetSchema.parse(selected[0].target),source=documentFieldVerificationDisplay(target).source,box=source.bounding_box;
+ let target=documentReadingTargetSchema.parse(selected[0].target);
+ if(target.schema_version==='obligation-payment-choice-v1'){
+  // The source RPC already verified both pins. These locators have no trusted
+  // rectangle; retain the original and page link rather than invent a crop.
+  if(input.linked==='clause')return null;
+  target=selectedObligationPaymentTarget(target,input.candidateHash);
+ }
+ const source=documentFieldVerificationDisplay(target).source,box=source.bounding_box;
  if(target.case_id!==input.caseId||target.version_id!==input.version||target.source_sha256!==createHash('sha256').update(input.bytes).digest('hex'))throw Error('REQUEST_FIELD_SOURCE_CHANGED');
  if(!box)return null;
  const pdf=input.mime==='application/pdf'?await PDFDocument.load(input.bytes):await PDFDocument.create();

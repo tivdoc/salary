@@ -115,6 +115,7 @@ export async function listCaseRequests(caseId: string, db?: CaseAccessDb | null,
     ...('evidence_context'in display?{evidence_context:display.evidence_context}:{}),
     ...('tariff_context'in display?{tariff_context:display.tariff_context}:{}),
     ...('period_intake_context'in display?{period_intake_context:display.period_intake_context}:{}),
+    ...('obligation_context'in display?{obligation_context:display.obligation_context}:{}),
     ...('structure_context'in display?{structure_context:display.structure_context}:{})});
   }
   const juneStates=identityId&&june.length?await store.rpc<{request_id:string;source_current:boolean}>('case_request_june_states',{target_case:caseId,target_identity:identityId}):[];

@@ -6,6 +6,7 @@ import {statement,type PostgresTransactionContext} from '@/server/platform/persi
 import {PROJECTION_TOPICS} from '../reports/case-report-projection';
 import {SERVICE_CALENDAR_2026} from '../reports/business-clock';
 import {priceQuoteSchema,type PriceQuote} from './price-quote';
+import {PURCHASE_TOPICS_VERSION,RELEASE_PURCHASE_TOPICS} from './purchase-topics';
 
 /** New AI offer only. Historical v1 orders keep their actual review/SLA terms.
  * Business-hour scheduling does not claim that a person reviewed the report. */
@@ -21,7 +22,9 @@ export function quotedFullOffer(candidate:PriceQuote,termsVersion:string){
   sla:{track:delivery.unit==='business_days'?'business' as const:'automatic' as const,budget_ms:budget,calendar:structuredClone(SERVICE_CALENDAR_2026),time_zone:'Asia/Jerusalem'},
  };
  // The ID is bound by the caller after the persisted quote row is loaded.
- return payload;
+ return quote.schema_version==='tivdoc-price-quote-v2'
+  ?{...payload,version:'tivdoc-order-offer-v3' as const,purchase_topics_version:PURCHASE_TOPICS_VERSION,maximum_checked_topics:9,topic_order:[...RELEASE_PURCHASE_TOPICS]}
+  :payload;
 }
 export type QuotedFullOffer=ReturnType<typeof quotedFullOffer>&{price_quote_id:string;sha256:string};
 

@@ -1,4 +1,5 @@
 import {documentSourcePeriodIntakeDisplay,validateDocumentSourcePeriodIntakeAnswer,resolveDocumentSourcePeriodIntakeVerification} from './document-source-period-intake';
+import {documentObligationPaymentLinkDisplay,validateDocumentObligationPaymentLinkAnswer} from './document-obligation-payment-link';
 import {documentSourceStructureTargetSchema,documentSourceStructureQuestion,validateDocumentSourceStructureAnswer,resolveDocumentSourceStructureVerification,materializeDocumentSourceStructureVerification} from './document-source-structure';
 import {documentEvidenceReadingDisplay,validateDocumentEvidenceAnswer,resolveDocumentEvidenceAnswer} from './document-evidence-reading';
 import {documentTravelTariffDisplay,validateDocumentTravelTariffAnswer,resolveDocumentTravelTariffVerification,type DocumentTravelTariffSource} from './document-travel-tariff';
@@ -93,6 +94,7 @@ function transcriptionAnswerValue(target:z.infer<typeof documentSourceTranscript
  * enforce request authorization/currentness, and the worker replays all pins. */
 export function validateDocumentReadingAnswerForTarget(targetInput:unknown,answerInput:unknown) {
  const target=documentReadingTargetSchema.parse(targetInput);
+ if(target.schema_version==='obligation-payment-link-v1'||target.schema_version==='obligation-payment-choice-v1')return validateDocumentObligationPaymentLinkAnswer(target,answerInput);
  if(target.schema_version==='document-source-period-intake-v1')return validateDocumentSourcePeriodIntakeAnswer(target,answerInput);
  if(target.schema_version==='document-travel-tariff-transcription-v1')return validateDocumentTravelTariffAnswer(target,answerInput);
  if(target.schema_version==='document-evidence-reading-v1'){
@@ -151,6 +153,7 @@ export function materializeDocumentFieldVerification(verification:DocumentFieldV
 
 export function documentFieldVerificationDisplay(input:unknown){
  const parsed=documentReadingTargetSchema.parse(input);
+ if(parsed.schema_version==='obligation-payment-link-v1'||parsed.schema_version==='obligation-payment-choice-v1')return documentObligationPaymentLinkDisplay(parsed);
  if(parsed.schema_version==='document-source-period-intake-v1')return documentSourcePeriodIntakeDisplay(parsed);
  if(parsed.schema_version==='document-travel-tariff-transcription-v1')return documentTravelTariffDisplay(parsed);
  if(parsed.schema_version==='document-evidence-reading-v1'){
@@ -240,6 +243,9 @@ function resolveDocumentSourceTranscriptionVerification(input:ResolveInput){
 type IntakeResolveInput=Omit<ResolveInput,'month'|'currentCheckpoint'|'sourcePeriodIntake'>&{month:null;sourcePeriodIntake:NonNullable<ResolveInput['sourcePeriodIntake']>};
 export function resolveDocumentReadingVerification(input:ResolveInput|IntakeResolveInput){
  const target=documentReadingTargetSchema.parse(input.target);
+ // Cross-document links are reconstructed after both sources enter the review,
+ // never from a single payroll checkpoint or a generic numerical confirmation.
+ if(target.schema_version==='obligation-payment-link-v1'||target.schema_version==='obligation-payment-choice-v1')throw Error('OBLIGATION_PAYMENT_CONTEXT_REQUIRED');
  if(target.schema_version==='document-source-period-intake-v1'){
   if(!input.sourcePeriodIntake)throw Error('SOURCE_INTAKE_CONTEXT_REQUIRED');
   if(input.caseId!==target.case_id)throw Error('REQUEST_FIELD_CASE_MISMATCH');

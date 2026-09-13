@@ -16,6 +16,8 @@ export type DocumentReadingDisplay=Readonly<{
  structure_context?:SourceStructureContext;
  tariff_context?:TravelTariffContext;
  period_intake_context?:SourcePeriodIntakeContext;
+ obligation_context?:Readonly<{payroll_page:number;payroll_locator:string;clause_page:number;clause_locator:string;period:Readonly<{from:string;to:string}>;
+  candidates?:readonly Readonly<{target_sha256:string;payroll_page:number;payroll_locator:string;amount:string}>[]}>;
  dependent_checks?:readonly string[];
 }>;
 export const documentRowCellLabels={quantity:'כמות',rate:'תעריף ליחידה',amount:'סכום',percentage:'שיעור'} as const;
@@ -47,7 +49,13 @@ export function displayDocumentReadingAnswer(value:string|null,display?:Document
  const tariff=displayTravelTariffAnswer(value,display?.tariff_context);if(tariff!==null)return tariff;
  const structured=displaySourceStructureAnswer(value,display?.structure_context);if(structured!==null)return structured;
  try{
-  const answer=JSON.parse(value) as {schema_version?:unknown;action?:unknown;corrected_raw_value?:unknown};
+  const answer=JSON.parse(value) as {schema_version?:unknown;action?:unknown;corrected_raw_value?:unknown;value?:{relationship?:unknown}};
+  if(display?.obligation_context){
+   if(answer.action==='unknown')return 'לא יודע — הקשר בין שורת התשלום לסעיף נשאר לא ידוע. החישוב שאינו תלוי בקשר נשמר.';
+   if(answer.action==='unreadable')return 'ההפניה אינה קריאה — נדרש מקור ברור יותר כדי לקשר תשלום לסעיף.';
+   if(answer.action==='correct'&&answer.value?.relationship==='same_obligation')return 'נשמרה קריאת קשר בין שורת התשלום לסעיף. הקריאה אינה מאשרת את הזכאות או את הקצאת התשלום.';
+   if(answer.action==='correct'&&answer.value?.relationship==='different_obligation')return 'השורה זוהתה כתשלום אחר; היא לא תשמש להשוואה מול הסעיף הזה.';
+  }
   if(answer.schema_version!=='document-field-answer-v2')return value;
   if(answer.action==='confirm')return 'הערך שמופיע בשאלה אושר כקריאה של התא במסמך.';
   if(answer.action==='correct'&&typeof answer.corrected_raw_value==='string'){

@@ -6,6 +6,7 @@ import {statement,type PostgresTransactionContext} from '@/server/platform/persi
 import {PROJECTION_TOPICS} from '../reports/case-report-projection';
 import {createPriceQuote,pricingBasisSchema,type PricingBasis,type InitialCredit} from './pricing';
 import {priceQuoteSchema,requireFreshPriceQuote} from './price-quote';
+import {PURCHASE_TOPICS_VERSION,releasePurchaseTopicsSchema} from './purchase-topics';
 
 const hash=z.string().regex(/^[a-f0-9]{64}$/u);
 const month=z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/u);
@@ -13,6 +14,8 @@ const requestSchema=z.object({id:z.uuid(),caseId:z.uuid(),identityId:z.uuid(),fr
  topics:z.array(z.enum(PROJECTION_TOPICS)).min(1).max(7).refine(v=>new Set(v).size===v.length),
 }).strict();
 type QuoteRequest=z.infer<typeof requestSchema>;
+const releaseRequestSchema=requestSchema.extend({topics:releasePurchaseTopicsSchema,purchase_topics_version:z.literal(PURCHASE_TOPICS_VERSION)}).strict();
+type ReleaseQuoteRequest=z.infer<typeof releaseRequestSchema>;
 /** Only a server implementation that loads immutable canonical evidence belongs
  * here. No default reader or HTTP amount/basis field is provided. Null means no
  * trusted monetary basis, including the current inactive real-rule catalog. */
@@ -26,7 +29,27 @@ const rowSchema=z.object({id:z.uuid(),request_sha256:hash,snapshot:z.unknown(),q
  * The database locks the case before reading credit/source/identity. Issuance
  * never reserves credit, creates an order or authorizes a sale. */
 export async function issueSavedPriceQuote(context:PostgresTransactionContext,candidate:QuoteRequest,readBasis:SavedPricingBasisReader){
- const request=requestSchema.parse(candidate);
+ return issueQuote(context,requestSchema.parse(candidate),readBasis);
+}
+/** Explicit release path. Purchased coverage never creates additional priced
+ * findings; the same existing monetary-basis parser and arithmetic apply. */
+export async function issueSavedReleasePriceQuote(context:PostgresTransactionContext,candidate:Omit<ReleaseQuoteRequest,'purchase_topics_version'>,readBasis:SavedPricingBasisReader){
+ const request=releaseRequestSchema.omit({purchase_topics_version:true}).parse(candidate);
+ return issueQuote(context,{...request,purchase_topics_version:PURCHASE_TOPICS_VERSION},readBasis);
+}
+export function createReleasePriceQuote(input:Parameters<typeof createPriceQuote>[0]){
+ const topics=releasePurchaseTopicsSchema.parse(input.topics),basis=pricingBasisSchema.parse(input.basis);
+ const purchasedTopics:readonly string[]=topics;
+ if(basis.checked_topics.some(topic=>!purchasedTopics.includes(topic)))throw Error('PRICING_PURCHASE_SCOPE');
+ // Reuse the established pricing policy and verified-credit arithmetic with
+ // its actually checked scope, then bind the independently purchased scope.
+ const result=createPriceQuote({...input,basis,topics:basis.checked_topics});
+ if(result.state!=='eligible')return result;
+ const {sha256,...historical}=result;void sha256;
+ const snapshot={...historical,schema_version:'tivdoc-price-quote-v2' as const,purchase_topics_version:PURCHASE_TOPICS_VERSION,purchased_topics:topics};
+ return priceQuoteSchema.parse({...snapshot,sha256:canonicalSha256(snapshot)});
+}
+async function issueQuote(context:PostgresTransactionContext,request:QuoteRequest|ReleaseQuoteRequest,readBasis:SavedPricingBasisReader){
  const loaded=await context.client.query(statement('price_quote_context',
   'select private.order_quote_context($1::uuid,$2::uuid) value',[request.caseId,request.identityId]));
  const current=contextSchema.parse(loaded.rows[0]?.value);
@@ -48,7 +71,8 @@ export async function issueSavedPriceQuote(context:PostgresTransactionContext,ca
  const parsed=pricingBasisSchema.safeParse(candidateBasis);
  if(!parsed.success)return {state:'amount_unknown' as const,reason:'invalid_saved_basis'};
  if(parsed.data.input_sha256!==current.input_sha256)throw new Error('PRICE_QUOTE_SOURCE_CHANGED');
- const result=createPriceQuote({basis:parsed.data,...request,credit:current.credit as InitialCredit,now:new Date(current.now)});
+ const create='purchase_topics_version'in request?createReleasePriceQuote:createPriceQuote;
+ const result=create({basis:parsed.data,...request,credit:current.credit as InitialCredit,now:new Date(current.now)});
  if(result.state!=='eligible')return result;
  const quote=priceQuoteSchema.parse(result);
  await context.client.query(statement('price_quote_insert',

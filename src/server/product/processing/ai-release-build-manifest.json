@@ -19,7 +19,10 @@
     "src/server/product/processing/ai-release-configuration.ts",
     "src/server/product/processing/automatic-dev-notifications.ts",
     "src/server/product/processing/saved-ai-release.ts",
-    "src/server/product/reports/ai-release-report.ts"
+    "src/server/product/processing/saved-real-ai-service-configuration.ts",
+    "src/server/product/reports/ai-release-report.ts",
+    "src/server/product/reports/real-ai-service-delivery.ts",
+    "src/server/product/reports/real-ai-service-notification.ts"
   ],
   "files": [
     {
@@ -28,7 +31,7 @@
     },
     {
       "path": "scripts/ai-release-build-manifest.mjs",
-      "sha256": "5c15c8962dba6d145595a9a963e547c27ae50070db88474b8f868324ebfd13b5"
+      "sha256": "2ff1a7be674029e7010cea6ce8da54edd20884e407656bc6c05cf12fca3ad2b0"
     },
     {
       "path": "src/engine/ai-release-decisions/apply.ts",
@@ -116,7 +119,7 @@
     },
     {
       "path": "src/engine/document-review/contracts.ts",
-      "sha256": "f92172a6eee1bd735cd1a61b237d099498697fbdac4ea5a7c4eef35a5beb9498"
+      "sha256": "d7d04b5157347ae354f949d2e25ab5255ff6b377dee6ead7bb84d0a7c38979f0"
     },
     {
       "path": "src/engine/document-review/coverage.ts",
@@ -168,7 +171,7 @@
     },
     {
       "path": "src/engine/entitlement-review/automatic-nonpay.ts",
-      "sha256": "9a26a21973802f3c26aa901ffb80a0f9333216f45afc9729319490d5884d194e"
+      "sha256": "4df5fc534b3a72654a5ebdfaa1c9fa757ac04f2613779ce3c0506c88b750a597"
     },
     {
       "path": "src/engine/entitlement-review/automatic-payroll.ts",
@@ -252,7 +255,7 @@
     },
     {
       "path": "src/engine/entitlement-review/obligations-product.ts",
-      "sha256": "47182992a8f26a9ca0db24dd9309b1f2278a6876fcd87727636ced0e7eedd5e0"
+      "sha256": "8ee6cdf5885ad6021022790d05938bd6d257ff312e47ce441b9a76f75650238e"
     },
     {
       "path": "src/engine/entitlement-review/obligations/case-bindings.ts",
@@ -273,6 +276,10 @@
     {
       "path": "src/engine/entitlement-review/obligations/literal-promise.ts",
       "sha256": "b1f0b1fe3b186fe81d15387d26b9ea09941e09f880c7c874c6e8c540933906ce"
+    },
+    {
+      "path": "src/engine/entitlement-review/obligations/payment-link.ts",
+      "sha256": "cdb63e5ae8d7c2fc36864fa0e1aa8f2ce7ba82d1d9a4805894a09345cab346c8"
     },
     {
       "path": "src/engine/entitlement-review/obligations/policy.ts",
@@ -404,7 +411,7 @@
     },
     {
       "path": "src/engine/entitlement-review/typed-product-facts.ts",
-      "sha256": "1a7626fa63913b5f6d2052fd20e23877e1c39fb1c37ebf4f47b59ce4bf774958"
+      "sha256": "f1fb7d00b9f2d746dff4bf8e8e5d6d0b7d29a0d4421cc1170cc3c7e248f365bb"
     },
     {
       "path": "src/engine/entitlement-review/vacation/contracts.ts",
@@ -723,6 +730,14 @@
       "sha256": "fdf2a643cccc23cb49453a874fcfa350774afed21a57b2d495e80b30536e7fd7"
     },
     {
+      "path": "src/server/platform/persistence/postgres/analysis/errors.ts",
+      "sha256": "1164bb1021358915a7ddedb6ff7f969d5fb00d1fc0fbcde727ba0dcd039ab946"
+    },
+    {
+      "path": "src/server/platform/persistence/postgres/analysis/validation.ts",
+      "sha256": "cc4ce365fc54e59acc811cc3b1ad213997330fa7a3ecbf7557876b7921a04682"
+    },
+    {
       "path": "src/server/platform/persistence/postgres/contracts.ts",
       "sha256": "f4b6a7d16f7a71e17e93c4ef814f38c8eb19ef1b3365fc89eb515c84010432db"
     },
@@ -796,7 +811,11 @@
     },
     {
       "path": "src/server/product/processing/saved-ai-release.ts",
-      "sha256": "2cd6ac18d3522c96c1cd318384c8d802b9fe3c4d9af351b9b5de437bb9ae994f"
+      "sha256": "5cb27b668420fa071dbb0f4031a88fc623dc6d2fa6031a30c91f68bfbc8c76bb"
+    },
+    {
+      "path": "src/server/product/processing/saved-real-ai-service-configuration.ts",
+      "sha256": "066ff7fe470ec4332d1b0d4222cadd71b61380b9144fbc8e62b559278d7fe1f6"
     },
     {
       "path": "src/server/product/processing/source-dispatch.ts",
@@ -823,6 +842,18 @@
       "sha256": "ac1a370b786dc254346010fba0053dc871c594b84664fc7e43ae7b5f0fb477ed"
     },
     {
+      "path": "src/server/product/reports/real-ai-service-admission.ts",
+      "sha256": "c9f25ccc0201a752f97b4c98eeb2c54ceb7a676b1b62d141ac28ab794c189323"
+    },
+    {
+      "path": "src/server/product/reports/real-ai-service-delivery.ts",
+      "sha256": "939e07a8abea622be8a8c8ffd9b0d2dc004afcf3c607b4acd0f95449201b8f55"
+    },
+    {
+      "path": "src/server/product/reports/real-ai-service-notification.ts",
+      "sha256": "de8b235e7573b2f69d4d8bf383dba210dcf1fb4f5dc583b5e0fa9c4e2be99191"
+    },
+    {
       "path": "src/server/reports/deterministic-hebrew-pdf.ts",
       "sha256": "9b8e322a698e4e0fdfc86cb4ea23873ecf80e1490725d5c9093e423422e21f2b"
     },
@@ -835,6 +866,6 @@
       "sha256": "14050db7e9b2ea12c31249112bf03d177966a516918cc781a585d94409bbc28a"
     }
   ],
-  "source_graph_sha256": "406ebe153932c7961a486039d3fd1249736de7d3d8daccad7dcbfbc14b247ca9",
-  "sha256": "d33048a6ea0d8409cab4c0ed680e6b26951b3ba8fc408e9f266755337d95cf69"
+  "source_graph_sha256": "0fcf15fa9cb6be2fcca9945fde96a8b3fa2da3f70c657bed33bb5074a3730e95",
+  "sha256": "2fc2eb994bf2e5c3279cf638b1d983e5391e62e0f35e4f37397eb71ef8176229"
 }

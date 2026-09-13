@@ -5,11 +5,12 @@ import type {ReviewCompletionNeed} from '../document-review/completions.ts';
 import {obligationsEntitlementInputSchema,resolveExplicitObligations,obligationCheckIds,OBLIGATIONS_CATALOG} from './obligations/index.ts';
 import type {EntitlementBranchReview,EntitlementAnswerTarget} from './branch-contract.ts';
 import {obligationProductQuestions} from './obligations/product-facts.ts';
+import {attachObligationPaymentLinks,type ObligationPaymentLinkReading} from './obligations/payment-link.ts';
 
 /** Clause and condition identities remain distinct from labels and monetary
  * allocation. An answer confirms a case fact, never a binding agreement. */
 export function obligationsProductReview(input:DocumentReviewInput,candidate:unknown):EntitlementBranchReview{
- const e=obligationsEntitlementInputSchema.parse(candidate);
+ const e=attachObligationPaymentLinks(obligationsEntitlementInputSchema.parse(candidate),input,(input as DocumentReviewInput&{obligation_payment_link_readings?:ObligationPaymentLinkReading[]}).obligation_payment_link_readings??[]);
  if(e.case_id!==input.case_id||canonicalSha256(e.period)!==canonicalSha256(input.period))throw Error('ENTITLEMENT_BRANCH_SCOPE');
  const topics=input.purchased_scope.topics.filter((t):t is 'contract'|'bonuses'=>t==='contract'||t==='bonuses');
  if(canonicalSha256([...topics].sort())!==canonicalSha256([...e.purchased_topics].sort()))throw Error('ENTITLEMENT_OBLIGATION_PURCHASE_SCOPE');
@@ -17,7 +18,7 @@ export function obligationsProductReview(input:DocumentReviewInput,candidate:unk
  const pinsFor=(id:string)=>{const o=e.obligations.find(o=>o.obligation_id===id)!;return [{case_id:input.case_id,document_id:o.clause.source.document_id,version_id:o.clause.source.version_id,source_sha256:o.clause.source.file_sha256}];};
  for(const m of raw.gaps){
   const pins=pinsFor(m.obligation_id),fact_key=`entitlement.obligations.${canonicalSha256({period:input.period,pins,path:m.input_path,key:m.dependency_id}).slice(0,28)}`;
-  const condition=m.kind==='missing_fact'&&/^obligations\.\d+\.conditions\.\d+\.fact$/u.test(m.input_path),legal=m.kind==='missing_applicability'||m.kind==='missing_rule';
+  const condition=m.kind==='missing_fact'&&/^obligations\.\d+\.conditions\.\d+\.fact$/u.test(m.input_path),legal=m.kind==='missing_applicability'||m.kind==='missing_rule'||m.dependency_id==='obligation.recorded_scope';
   if(!needs.some(n=>n.fact_key===fact_key)){
    needs.push({fact_key,kind:legal?'legal':'factual',reason:m.state==='conflict'?'conflicted':m.state==='unreadable'?'unreadable':m.state==='missing'?'missing':'unknown',required_evidence_kind:condition?'customer_declaration':'observed_reading',question:m.question,
     answer_kind:condition?'boolean':m.answer_kind==='number'?'number':'text',source_pins:pins,dependent_check_ids:[...m.dependent_check_ids],general_question:false});

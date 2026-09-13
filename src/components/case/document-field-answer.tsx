@@ -5,6 +5,7 @@ import {customerErrorFromResponse,customerErrorMessage} from '@/lib/customer-cop
 import {SourceStructureAnswer} from './source-structure-answer';
 import {TravelTariffAnswer} from './travel-tariff-answer';
 import {SourcePeriodIntakeAnswer} from './source-period-intake-answer';
+import {ObligationPaymentLinkAnswer} from './obligation-payment-link-answer';
 
 type Action='confirm'|'correct'|'unreadable'|'unknown';
 const labels:Record<Action,string>={confirm:'זה הערך בתא',correct:'הערך בתא שונה',unreadable:'לא קריא',unknown:'לא יודע'};
@@ -14,6 +15,8 @@ function previous(value:string|null|undefined):{action:Action|null;raw:string}{
 }
 type Props={request:StoredRequest;publicId:string;onAnswered:()=>void;correction?:boolean;sourceShared?:boolean};
 export function DocumentFieldAnswer(props:Props){
+ const obligation=props.request.reading_display?.obligation_context;
+ if(obligation)return <ObligationPaymentLinkAnswer {...props} context={obligation}/>;
  const intake=props.request.reading_display?.period_intake_context;
  if(intake)return <SourcePeriodIntakeAnswer {...props} context={intake}/>;
  const tariff=props.request.reading_display?.tariff_context;

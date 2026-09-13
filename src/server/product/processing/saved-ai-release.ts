@@ -7,14 +7,22 @@ import type {DocumentReviewInput} from '@/engine/document-review/contracts';
 import type {CaseAnalysisAiReleaseContext} from '@/engine/case-analysis/service';
 import {replayCaseAnalysisAiRelease,type CaseAnalysisAiRelease} from '@/engine/case-analysis/contracts';
 import {assertAiReleaseAdmission} from '@/engine/ai-release';
+import type {AiReleaseCurrentContext} from '@/engine/ai-release/contracts';
 import type {PostgresTransactionContext} from '@/server/platform/persistence/postgres/contracts';
 import {loadSavedAiReleaseConfiguration,type SavedAiReleaseConfiguration} from './saved-ai-release-configuration';
 import type {SourceJob} from './source-dispatch';
 
+/** Shared execution shape only. Each server loader remains responsible for
+ * its own purpose, namespace, authenticated enrollment and environment gates.
+ * This type does not convert a DEV profile or grant publication authority. */
+export type SavedAiReleaseExecutionProfile=Omit<SavedAiReleaseConfiguration,'environment'|'is_qa'>
+ &Pick<AiReleaseCurrentContext,'environment'|'is_qa'>;
+export type SavedAiReleaseProfileLoader=(context:PostgresTransactionContext,job:SourceJob)=>Promise<SavedAiReleaseExecutionProfile|null>;
+
 /** Preserve historical bytes but fence their present use. Admission expiry
  * includes source, interpretation, tests, reviewers and future revocations;
  * case-method decision expiry is checked separately against the same DB clock. */
-export function assertSavedAiReleaseCurrent(candidate:CaseAnalysisAiRelease,profile:SavedAiReleaseConfiguration){
+export function assertSavedAiReleaseCurrent(candidate:CaseAnalysisAiRelease,profile:SavedAiReleaseExecutionProfile){
  const envelope=replayCaseAnalysisAiRelease(candidate),{assessment_input}=envelope.input;
  if(assessment_input.policy.sha256!==profile.configuration.policy.sha256||assessment_input.registry.sha256!==profile.configuration.registry.sha256
   ||canonicalSha256(envelope.input.trusted_generator_pins)!==canonicalSha256(profile.trusted_generator_pins)
@@ -38,13 +46,14 @@ export function assertSavedAiReleaseCurrent(candidate:CaseAnalysisAiRelease,prof
 
 /** Called once after the authenticated answer journal, before the immutable
  * command hash. It never imports an earlier recipe's accepted decisions. */
-export function prepareSavedAiReleaseReview(source:DocumentReviewInput,profile:SavedAiReleaseConfiguration){
+export function prepareSavedAiReleaseReview(source:DocumentReviewInput,profile:SavedAiReleaseExecutionProfile){
  return applyAiReleaseDecisionRecipes({source,methods:profile.configuration.methods??[],at:profile.evaluated_at}).source;
 }
 
-export function savedAiReleasePreparation(context:PostgresTransactionContext,job:SourceJob,profile:SavedAiReleaseConfiguration){
+export function savedAiReleasePreparation(context:PostgresTransactionContext,job:SourceJob,profile:SavedAiReleaseExecutionProfile,
+ loadCurrent:SavedAiReleaseProfileLoader=loadSavedAiReleaseConfiguration){
  return async(pins:CaseAnalysisAiReleaseContext)=>{
-  const current=await loadSavedAiReleaseConfiguration(context,job);
+  const current=await loadCurrent(context,job);
   if(!current||current.profile_sha256!==profile.profile_sha256)throw Error('AI_RELEASE_CONFIGURATION_CHANGED');
   if(pins.previous_ai_release)assertSavedAiReleaseCurrent(pins.previous_ai_release,current);
   const source=pins.document_review_input,journal=pins.source_journal,command=pins.command;

@@ -4,6 +4,7 @@ import {enableObligationCasePolicy} from '@/engine/entitlement-review/obligation
 import {obligationsEntitlementInputSchema} from '@/engine/entitlement-review/obligations/contracts';
 import {attachAutomaticNonPayslipEvidence} from '@/engine/entitlement-review/automatic-nonpay';
 import {openSavedDocumentEvidenceRequests} from './saved-document-evidence-requests';
+import {readSavedObligationPaymentLinks,attachSavedObligationPaymentLinks,openSavedObligationPaymentLinkRequests} from './saved-obligation-payment-links';
 import {readSavedTravelTariffReadings,attachSavedTravelTariffReadings,openSavedTravelTariffRequests,projectSavedTravelTariffCompletions} from './saved-travel-tariff-readings';
 import {DOCUMENT_EVIDENCE_POLICY} from '@/engine/extraction/document-evidence/contracts';
 import {attachNonPayslipInventory} from '@/engine/document-review/non-payslip';
@@ -172,7 +173,10 @@ export function withSavedPurchaseCoverage(input:DocumentReviewInput,order:SavedE
 
 export async function savedDocumentReviewInput(context:PostgresTransactionContext,job:SourceJob,order:SavedExecutionOrder,month:string,snapshot:StoredCaseInputSnapshot,automaticOnly=false){
  const input=composeEntitlementReview((await automaticDocumentReview(context,job,order,month,snapshot,automaticOnly)).input);
- const effective=await replaySavedSourceReviewAnswers(context,job,snapshot,input);
+ let effective=await replaySavedSourceReviewAnswers(context,job,snapshot,input);
+ if(automaticOnly&&effective.entitlement_evidence?.obligations){
+  effective=composeEntitlementReview(attachSavedObligationPaymentLinks(effective,await readSavedObligationPaymentLinks(context,job,month,effective)));
+ }
  return automaticOnly&&order.topics.includes('travel')
   ?projectSavedTravelTariffCompletions(effective,await readSavedTravelTariffReadings(context,job,month)):effective;
 }
@@ -234,5 +238,6 @@ export async function openSavedNonPayslipReviewRequests(context:PostgresTransact
   opened.push(await openSavedDocumentEvidenceRequests(context,job,rows.rows[0].result,{month,observationIds:dependency.observation_ids}));
  }
  if(automaticOnly&&order.topics.includes('travel'))opened.push(...await openSavedTravelTariffRequests(context,job,month,effective));
+ if(automaticOnly&&effective.entitlement_evidence?.obligations)opened.push(...await openSavedObligationPaymentLinkRequests(context,job,month,effective));
  return opened;
 }

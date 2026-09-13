@@ -26,11 +26,13 @@ export async function GET(request:Request,context:{params:Promise<{token:string}
   const {token}=await context.params,found=(await listIdentityCases(session.identity_id)).find(c=>c.public_id===token);
   const id=z.uuid().safeParse(new URL(request.url).searchParams.get('source'));
   if(!found||!id.success)return new Response(null,{status:404,headers:PRODUCT_HTTP_HEADERS});
-  const source=await loadRequestDocumentSource({caseId:found.case_id,identityId:session.identity_id,requestId:id.data});
+  const params=new URL(request.url).searchParams,candidate=params.get('candidate'),linked=params.get('linked');
+  if(candidate!==null&&!/^[a-f0-9]{64}$/u.test(candidate)||linked!==null&&!['payroll','clause'].includes(linked))return new Response(null,{status:404,headers:PRODUCT_HTTP_HEADERS});
+  const source=await loadRequestDocumentSource({caseId:found.case_id,identityId:session.identity_id,requestId:id.data,...(candidate!==null?{candidateHash:candidate}:{}),...(linked!==null?{linked:linked as 'payroll'|'clause'}:{})});
   if(!source)return new Response(null,{status:404,headers:PRODUCT_HTTP_HEADERS});
   if(new URL(request.url).searchParams.get('view')==='marked'){
    const db=await resolveCaseAccessDb();if(!db)throw Error('REQUEST_STORE_UNAVAILABLE');
-   const marked=await markReadingSource({caseId:found.case_id,identityId:session.identity_id,requestId:id.data,...source},db);
+   const marked=await markReadingSource({caseId:found.case_id,identityId:session.identity_id,requestId:id.data,...source,...(candidate!==null?{candidateHash:candidate}:{}),...(linked!==null?{linked:linked as 'payroll'|'clause'}:{})},db);
    if(marked)return new Response(marked,{headers:{...PRODUCT_HTTP_HEADERS,'Content-Type':'application/pdf','Content-Disposition':`inline; filename="source-${source.version}-marked.pdf"`,'X-Tivdoc-Source-View':'derived-marker'}});
   }
   return new Response(source.bytes,{headers:{...PRODUCT_HTTP_HEADERS,'Content-Type':source.mime,'Content-Disposition':`inline; filename="source-${source.version}.${source.extension}"`}});

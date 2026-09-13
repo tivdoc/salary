@@ -8,11 +8,15 @@ import {SAVED_DRAFT_TEMPLATE} from './saved-draft-report';
 import type {SourceJob} from './source-dispatch';
 import {savedLegacySourceIntake,effectiveLegacySourcePeriods,sourceIntakeFullMonths,type SavedLegacySourceIntake} from './saved-legacy-source-intake.ts';
 import {parseLegacyPaidScope,legacyPaidMonthlyScope,type LegacyPaidScope} from '../orders/legacy-paid-receipt';
+import {PURCHASE_TOPICS_VERSION,releasePurchaseTopicsSchema} from '../orders/purchase-topics';
 
 const monthDate=z.iso.date().refine(value=>value.endsWith('-01'));
-export const savedOrderSchema=z.object({id:z.uuid(),kind:z.enum(['initial','full']),from:monthDate,to:monthDate,
+const historicalSavedOrderSchema=z.object({id:z.uuid(),kind:z.enum(['initial','full']),from:monthDate,to:monthDate,
  topics:z.array(z.enum(WAVE3_TOPICS)).min(1).max(7).refine(value=>new Set(value).size===value.length),
- offer_sha256:z.string().regex(/^[a-f0-9]{64}$/)}).refine(value=>value.from<=value.to&&(value.kind!=='initial'||value.from===value.to&&value.topics.length<=3));
+ offer_sha256:z.string().regex(/^[a-f0-9]{64}$/),purchase_topics_version:z.never().optional()});
+export const savedOrderSchema=z.union([historicalSavedOrderSchema,historicalSavedOrderSchema.extend({
+ purchase_topics_version:z.literal(PURCHASE_TOPICS_VERSION),topics:releasePurchaseTopicsSchema})])
+ .refine(value=>value.from<=value.to&&(value.kind!=='initial'||value.from===value.to&&value.topics.length<=3));
 export type SavedOrderScope=z.infer<typeof savedOrderSchema>;
 export type SavedLegacyOrderScope={id:string;kind:'legacy_initial';origin:'legacy_paid_receipt';from:string;to:string;
  topics:LegacyPaidScope['topics'];receipt_sha256:string;months:string[];legacy_scope:LegacyPaidScope;
@@ -81,7 +85,8 @@ async function readSavedOrderRows(context:PostgresTransactionContext,job:SourceJ
  const result=await context.client.query(statement('saved_order_entitlements',
   `select v.input->'orders' orders,v.input->'legacy_orders' legacy_orders,
    private.legacy_paid_scopes(v.case_id) current_legacy_orders,coalesce((select jsonb_agg(jsonb_build_object(
-   'id',o.id,'kind',o.kind,'from',o.period_from,'to',o.period_to,'topics',o.topics,'offer_sha256',o.offer_sha256))
+   'id',o.id,'kind',o.kind,'from',o.period_from,'to',o.period_to,'topics',o.topics,'offer_sha256',o.offer_sha256)
+    ||case when o.offer ? 'purchase_topics_version' then jsonb_build_object('purchase_topics_version',o.offer->'purchase_topics_version') else '{}'::jsonb end)
    from private.product_orders o join private.order_entitlements e on e.order_id=o.id
    where o.case_id=v.case_id and o.state='paid' and o.refund_state<>'refunded' and e.state='active'),'[]'::jsonb) current_orders
    from private.case_input_versions v where v.case_id=$1::uuid and v.revision=$2 and v.input_sha256=$3`,
