@@ -1,4 +1,5 @@
 import {documentSourcePeriodIntakeDisplay,validateDocumentSourcePeriodIntakeAnswer,resolveDocumentSourcePeriodIntakeVerification} from './document-source-period-intake';
+import {documentEvidenceSourceTranscriptionDisplay,validateDocumentEvidenceSourceAnswer,resolveDocumentEvidenceSourceReading,type EvidenceSourceDocument,type EvidenceSourcePurchase} from './document-evidence-source-transcription';
 import {documentObligationPaymentLinkDisplay,validateDocumentObligationPaymentLinkAnswer} from './document-obligation-payment-link';
 import {documentSourceStructureTargetSchema,documentSourceStructureQuestion,validateDocumentSourceStructureAnswer,resolveDocumentSourceStructureVerification,materializeDocumentSourceStructureVerification} from './document-source-structure';
 import {documentEvidenceReadingDisplay,validateDocumentEvidenceAnswer,resolveDocumentEvidenceAnswer} from './document-evidence-reading';
@@ -94,6 +95,7 @@ function transcriptionAnswerValue(target:z.infer<typeof documentSourceTranscript
  * enforce request authorization/currentness, and the worker replays all pins. */
 export function validateDocumentReadingAnswerForTarget(targetInput:unknown,answerInput:unknown) {
  const target=documentReadingTargetSchema.parse(targetInput);
+ if(target.schema_version==='document-evidence-source-transcription-v1'||target.schema_version==='document-evidence-source-transcription-v2')return validateDocumentEvidenceSourceAnswer(target,answerInput);
  if(target.schema_version==='obligation-payment-link-v1'||target.schema_version==='obligation-payment-choice-v1')return validateDocumentObligationPaymentLinkAnswer(target,answerInput);
  if(target.schema_version==='document-source-period-intake-v1')return validateDocumentSourcePeriodIntakeAnswer(target,answerInput);
  if(target.schema_version==='document-travel-tariff-transcription-v1')return validateDocumentTravelTariffAnswer(target,answerInput);
@@ -113,7 +115,7 @@ export function validateDocumentReadingAnswerForTarget(targetInput:unknown,answe
  return answer;
 }
 
-type ResolveInput=Omit<Parameters<typeof resolveDocumentFieldReading>[0],'answer'>&{answer:unknown;nonPayslipDocument?:ImmutableDocument;nonPayslipProductDocumentId?:string;travelTariffSource?:DocumentTravelTariffSource;sourcePeriodIntake?:Pick<Parameters<typeof resolveDocumentSourcePeriodIntakeVerification>[0],'scope'|'currentDocument'|'anchor'|'currentRevision'>;periodReadings?:ReadonlyMap<string,CustomerSourceStructureReading>};
+type ResolveInput=Omit<Parameters<typeof resolveDocumentFieldReading>[0],'answer'>&{answer:unknown;nonPayslipDocument?:ImmutableDocument;nonPayslipProductDocumentId?:string;travelTariffSource?:DocumentTravelTariffSource;evidenceSourceTranscription?:{source:EvidenceSourceDocument;purchase:EvidenceSourcePurchase};sourcePeriodIntake?:Pick<Parameters<typeof resolveDocumentSourcePeriodIntakeVerification>[0],'scope'|'currentDocument'|'anchor'|'currentRevision'>;periodReadings?:ReadonlyMap<string,CustomerSourceStructureReading>};
 export function resolveDocumentFieldVerification(input:ResolveInput){
  const answer=parseDocumentFieldAnswer(input.answer),target=documentFieldTargetSchema.parse(input.target);
  // Reuse the existing exact checkpoint/case/version/hash/month/policy fences.
@@ -153,6 +155,12 @@ export function materializeDocumentFieldVerification(verification:DocumentFieldV
 
 export function documentFieldVerificationDisplay(input:unknown){
  const parsed=documentReadingTargetSchema.parse(input);
+ if(parsed.schema_version==='document-evidence-source-transcription-v1'||parsed.schema_version==='document-evidence-source-transcription-v2'){
+  const display=documentEvidenceSourceTranscriptionDisplay(parsed);
+  return {question:display.question,field:display.field,raw_value:null,
+   source:{version_id:parsed.version_id,source_sha256:parsed.source_sha256,page:parsed.page??1,text_fragment:null,region:null,source_scope:null,bounding_box:null},
+   target_sha256:parsed.target_sha256,actions:['correct','unreadable','unknown'] as const,scope:'source_cell_reading_only' as const,source_transcription_context:display.source_transcription_context};
+ }
  if(parsed.schema_version==='obligation-payment-link-v1'||parsed.schema_version==='obligation-payment-choice-v1')return documentObligationPaymentLinkDisplay(parsed);
  if(parsed.schema_version==='document-source-period-intake-v1')return documentSourcePeriodIntakeDisplay(parsed);
  if(parsed.schema_version==='document-travel-tariff-transcription-v1')return documentTravelTariffDisplay(parsed);
@@ -253,6 +261,11 @@ export function resolveDocumentReadingVerification(input:ResolveInput|IntakeReso
   return resolveDocumentSourcePeriodIntakeVerification({...input,...input.sourcePeriodIntake,target});
  }
  if(input.month===null)throw Error('REQUEST_FIELD_SOURCE_CHANGED');
+ if(target.schema_version==='document-evidence-source-transcription-v1'||target.schema_version==='document-evidence-source-transcription-v2'){
+  if(!input.evidenceSourceTranscription)throw Error('SOURCE_TRANSCRIPTION_CONTEXT_REQUIRED');
+  const result=resolveDocumentEvidenceSourceReading({...input,target,currentSource:input.evidenceSourceTranscription.source,currentPurchase:input.evidenceSourceTranscription.purchase});
+  return result.state==='current'?{state:'source_transcription_current' as const,reading:result.reading}:result;
+ }
  if(target.schema_version==='document-travel-tariff-transcription-v1'){
   if(!input.travelTariffSource)throw Error('TRAVEL_TARIFF_PURPOSE_CONTEXT_REQUIRED');
   return resolveDocumentTravelTariffVerification({...input,target,source:input.travelTariffSource});
@@ -269,6 +282,7 @@ export function resolveDocumentReadingVerification(input:ResolveInput|IntakeReso
 }
 export type DocumentReadingVerification=ReturnType<typeof resolveDocumentReadingVerification>;
 export function materializeDocumentVerification(verification:DocumentReadingVerification,normalizedExtractionSha256:string){
+ if(verification.state==='source_transcription_current')return {kind:'document_source_transcription' as const,reading:verification.reading};
  if(verification.state==='tariff_current')return {kind:'travel_tariff' as const,reading:verification.reading,entry:verification.entry};
  if(verification.state==='current'){
   if(verification.reading.target.normalized_sha256!==normalizedExtractionSha256)throw Error('DOCUMENT_EVIDENCE_NORMALIZED_SCOPE');

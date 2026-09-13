@@ -2,6 +2,7 @@ import {readJune2026CanonicalTest} from "@/server/product/reports/june2026-canon
 import {readJune2026RegularArtifact} from '@/server/product/reports/june2026-regular-artifact';
 import {devFinancialCustomerReports,devFinancialPreviewEnabled} from '@/server/product/reports/dev-financial-customer';
 import {createHash} from 'node:crypto';
+import {realAiServiceCustomerArtifact,realAiServiceCustomerRefusal} from '@/server/product/reports/real-ai-service-customer';
 import {z} from 'zod';
 import {customerReports} from '@/server/product/reports/customer-reports';
 import {savedReportPdf} from '@/server/product/reports/report-artifacts';
@@ -21,6 +22,17 @@ export async function GET(request:Request,context:Context){
  try{
   const owner=await scope(context);if(!owner)return new Response(null,{status:404,headers:PRODUCT_HTTP_HEADERS});
   const url=new URL(request.url);const id=z.uuid().safeParse(url.searchParams.get('report'));if(!id.success)return new Response(null,{status:404});
+  if(url.searchParams.get('service')==='real'){
+   if(url.searchParams.has('version')||url.searchParams.has('review')||url.searchParams.has('engineering')||url.searchParams.has('canonical'))return new Response(null,{status:404,headers:PRODUCT_HTTP_HEADERS});
+   const token=await readCaseSessionCookie();if(!token)return new Response(null,{status:404,headers:PRODUCT_HTTP_HEADERS});
+   try{
+    const format=url.searchParams.get('format')==='html'?'html':'pdf';
+    const artifact=await realAiServiceCustomerArtifact({caseId:owner.item.case_id,identityId:owner.identity,sessionToken:token},id.data,format);
+    return new Response(Buffer.from(artifact.bytes),{headers:{...PRODUCT_HTTP_HEADERS,'Content-Type':artifact.content_type,
+     ...(format==='pdf'?{'Content-Disposition':`attachment; filename="Tivdoc-${id.data}.pdf"`}:{}),
+     'X-Tivdoc-Analysis-Run':artifact.analysis_run_id,'X-Tivdoc-Artifact-SHA256':artifact.sha256}});
+   }catch(error){const status=realAiServiceCustomerRefusal(error);if(status)return status===404?new Response(null,{status,headers:PRODUCT_HTTP_HEADERS}):Response.json({code:'analysis_superseded'},{status,headers:PRODUCT_HTTP_HEADERS});throw error;}
+  }
   if(url.searchParams.get('review')==='1'){
    const saved=await privateDocumentReviewArtifact(owner.item.case_id,owner.identity,id.data);
    if(!saved)return new Response(null,{status:404,headers:PRODUCT_HTTP_HEADERS});

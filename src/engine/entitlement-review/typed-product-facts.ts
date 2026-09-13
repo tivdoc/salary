@@ -1,5 +1,5 @@
 import {canonicalSha256} from '../rule-runtime/canonical.ts';
-import {attachObligationPaymentLinks} from './obligations/payment-link';
+import {attachObligationPaymentLinks} from './obligations/payment-link.ts';
 import type {ReviewCompletionNeed} from '../document-review/completions.ts';
 import type {DocumentReviewSource} from '../document-review/calculations.ts';
 import {minimumWageEntitlementInputSchema} from './minimum-wage/contracts.ts';

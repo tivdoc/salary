@@ -81,7 +81,13 @@ const MIGRATION_ROOT = path.resolve(process.cwd(), "supabase", "migrations");
 //193 redeclares only the same scoped request opener to disambiguate a local
 // variable. Both answer validators are private security invoker functions.
 //194 extends the existing receipt-scoped upload capture, without new grants.
-const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 403;
+//195–197:11 source/choice guards;198:5 REAL routing/context boundaries.
+//198 runtime ACL rollback audit:72 checks, worker gets only two authenticated reads.
+//199:11 delivery/read/notice boundaries;200:2 purchase boundaries;201:6 source-reading
+//boundaries;202:1 worker notice preparation;203:0 literal definers, exact wrappers retain ACLs.
+//DEV rollback checks preserve public source ACLs and deny all seven runtime roles on backups.
+//204:5 explicit activation/controller/dependency definitions;77 DEV ACL checks.
+const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 444;
 
 // Case-insensitive on purpose. pg_get_functiondef emits CREATE OR REPLACE
 // FUNCTION and SET search_path TO '' in upper case, and a migration written

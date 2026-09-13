@@ -2,6 +2,8 @@ import type { LegalCatalogSelection, LegalRuleCatalogPort, Wave3Topic } from "..
 import { evaluateLegalReadiness, type LegalReadinessCandidate, type LegalReadinessCase } from "../legal-knowledge/canonical-readiness/evaluate-legal-readiness.ts";
 import { CORPUS_LIFECYCLE, type CorpusLifecycleEntry } from "../wave23/corpus-trust/lifecycle.ts";
 import { frozen, legalOperationsSha256 } from "./canonical.ts";
+import {REAL_CATALOG_BOUNDARY,REAL_CATALOG_SHA256} from './real-catalog-fingerprint.ts';
+export {REAL_CATALOG_BOUNDARY,REAL_CATALOG_SHA256} from './real-catalog-fingerprint.ts';
 import {
   SYNTHETIC_CATALOG_DATE,
   SYNTHETIC_CATALOG_TIMESTAMP,
@@ -22,15 +24,6 @@ export const SYNTHETIC_CATALOG_BOUNDARY = frozen({
   legally_neutral: true as const,
 });
 
-export const REAL_CATALOG_BOUNDARY = frozen({
-  catalog_id: "tivdoc.real.inactive.catalog",
-  catalog_version: "1.0.0",
-  compile_time_mode: "real" as const,
-  active_sources: 0 as const,
-  active_parameters: 0 as const,
-  active_rules: 0 as const,
-});
-
 export const SYNTHETIC_CATALOG_SHA256 = legalOperationsSha256({
   boundary: SYNTHETIC_CATALOG_BOUNDARY,
   entries: SYNTHETIC_SEVEN_TOPIC_FIXTURES.map((fixture) => ({
@@ -39,17 +32,6 @@ export const SYNTHETIC_CATALOG_SHA256 = legalOperationsSha256({
     parameter_sha256: fixture.parameter.candidate_sha256,
     rule_sha256: fixture.rule.content_sha256,
     golden_cases_sha256: fixture.golden_cases.content_sha256,
-  })),
-});
-
-export const REAL_CATALOG_SHA256 = legalOperationsSha256({
-  boundary: REAL_CATALOG_BOUNDARY,
-  sources: CORPUS_LIFECYCLE.map((entry) => ({
-    source_version_id: entry.source_version_id,
-    topic: entry.topic,
-    technical_parse_status: entry.technical_parse_status,
-    instrument_boundary_status: entry.instrument_boundary_status,
-    activation_status: entry.activation_status,
   })),
 });
 

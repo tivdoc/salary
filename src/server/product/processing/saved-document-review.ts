@@ -4,6 +4,7 @@ import {enableObligationCasePolicy} from '@/engine/entitlement-review/obligation
 import {obligationsEntitlementInputSchema} from '@/engine/entitlement-review/obligations/contracts';
 import {attachAutomaticNonPayslipEvidence} from '@/engine/entitlement-review/automatic-nonpay';
 import {openSavedDocumentEvidenceRequests} from './saved-document-evidence-requests';
+import {attachSavedDocumentSourceTranscriptions,openSavedDocumentSourceTranscriptionRequests} from './saved-document-source-transcription';
 import {readSavedObligationPaymentLinks,attachSavedObligationPaymentLinks,openSavedObligationPaymentLinkRequests} from './saved-obligation-payment-links';
 import {readSavedTravelTariffReadings,attachSavedTravelTariffReadings,openSavedTravelTariffRequests,projectSavedTravelTariffCompletions} from './saved-travel-tariff-readings';
 import {DOCUMENT_EVIDENCE_POLICY} from '@/engine/extraction/document-evidence/contracts';
@@ -66,7 +67,7 @@ export async function saveSavedDocumentReview(context:PostgresTransactionContext
  const input=enhanceDocumentReviewNightEntitlements(documentReviewInputSchema.parse(candidate),nightSelections),month=input.period.from.slice(0,7);
  // This checkpoint records source readings. Identified answers enter only from
  // the append-only authenticated answer journal, below, never a caller receipt.
- if(input.entitlement_declarations||input.answer_history.length||input.documents.some(d=>d.reading_origin==='identified_document_reading'))throw Error('SAVED_REVIEW_ANSWER_JOURNAL_REQUIRED');
+ if(input.document_source_transcriptions!==undefined||input.entitlement_declarations||input.answer_history.length||input.documents.some(d=>d.reading_origin==='identified_document_reading'))throw Error('SAVED_REVIEW_ANSWER_JOURNAL_REQUIRED');
  const [order]=await readSavedOrders(context,job,input.purchased_scope.order_id);
  await verify(context,job,input,order,month);
  const sha=canonicalSha256(input);
@@ -98,7 +99,7 @@ async function load(context:PostgresTransactionContext,job:SourceJob,order:Saved
  if(source.state==='pinned'){
   const input=documentReviewInputSchema.parse(source.input);
   if(source.review_ref.order_id!==order.id||source.review_ref.month!==month||canonicalSha256(input)!==source.review_ref.review_sha256)throw Error('SAVED_REVIEW_HASH');
-  if(input.answer_history.length||input.documents.some(d=>d.reading_origin==='identified_document_reading'))throw Error('SAVED_REVIEW_ANSWER_JOURNAL_REQUIRED');
+  if(input.document_source_transcriptions!==undefined||input.answer_history.length||input.documents.some(d=>d.reading_origin==='identified_document_reading'))throw Error('SAVED_REVIEW_ANSWER_JOURNAL_REQUIRED');
   await verify(context,job,input,order,month);return input;
  }
  if(pinnedOnly)return null;
@@ -116,7 +117,7 @@ async function load(context:PostgresTransactionContext,job:SourceJob,order:Saved
  if(rows.row_count>1&&rows.rows[0].result_sha256!==rows.rows[1].result_sha256)throw Error('SAVED_REVIEW_AMBIGUOUS');
  const row=rows.rows[0],input=documentReviewInputSchema.parse(row.result);
  if(canonicalSha256(input)!==row.result_sha256)throw Error('SAVED_REVIEW_HASH');
- if(input.answer_history.length)throw Error('SAVED_REVIEW_ANSWER_JOURNAL_REQUIRED');
+ if(input.document_source_transcriptions!==undefined||input.answer_history.length)throw Error('SAVED_REVIEW_ANSWER_JOURNAL_REQUIRED');
  await verify(context,job,input,order,month);return input;
 }
 export type SavedDocumentReviewSourceScope=Readonly<{orderId:string;reviewSha256:string;sourceVersionIds:readonly string[]}>;
@@ -197,7 +198,7 @@ async function replaySavedSourceReviewAnswers(context:PostgresTransactionContext
 }
 
 async function automaticDocumentReview(context:PostgresTransactionContext,job:SourceJob,order:SavedExecutionOrder,month:string,snapshot:StoredCaseInputSnapshot,automaticOnly=false){
- const sources=attachNonPayslipInventory(await sourceReviewInput(context,job,order,month,snapshot,automaticOnly),snapshot);
+ const sources=attachSavedDocumentSourceTranscriptions(attachNonPayslipInventory(await sourceReviewInput(context,job,order,month,snapshot,automaticOnly),snapshot),snapshot);
  const payroll=attachAutomaticBenefitsEvidence(attachAutomaticPayrollEvidence(attachAutomaticPensionEvidence(sources,snapshot,automaticOnly?{source_facts:true}:undefined),snapshot),snapshot);
  let prepared=attachAutomaticNonPayslipEvidence(payroll,snapshot);
  if(automaticOnly&&order.topics.includes('travel')){
@@ -230,6 +231,7 @@ export async function openSavedNonPayslipReviewRequests(context:PostgresTransact
  const effective=automaticOnly?await replaySavedSourceReviewAnswers(context,job,snapshot,composeEntitlementReview(prepared.input)):prepared.input;
  const sourceDependencies=automaticOnly?entitlementSourceReadingDependencies(effective,prepared.reading_dependencies):prepared.reading_dependencies;
  const opened=[];
+ if(automaticOnly)opened.push(...await openSavedDocumentSourceTranscriptionRequests(context,job,month,effective));
  for(const dependency of sourceDependencies){
   const rows=await context.client.query(statement('review_nonpay_dependency_checkpoint',
    'select result from private.case_extraction_checkpoints where case_id=$1::uuid and revision=$2 and version_id=$3::uuid and policy_version=$4 and result_sha256=$5',

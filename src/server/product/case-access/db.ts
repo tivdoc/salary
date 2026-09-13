@@ -101,10 +101,10 @@ export function postgresCaseAccessDb(pool: PgPoolLike): CaseAccessDb {
   });
 }
 
-let pool: PgPoolLike | null = null;
+let pool: pg.Pool | null = null;
 let poolUrl: string | null = null;
 
-async function postgresPool(connectionString: string, tls?: Readonly<{ca:string;rejectUnauthorized:true}>): Promise<PgPoolLike> {
+async function postgresPool(connectionString: string, tls?: Readonly<{ca:string;rejectUnauthorized:true}>): Promise<pg.Pool> {
   const cacheKey = `${connectionString}:${tls?.ca ?? ""}`;
   if (pool && poolUrl === cacheKey) return pool;
   // Construction/cache assignment must not yield: parallel cold requests used
@@ -115,6 +115,24 @@ async function postgresPool(connectionString: string, tls?: Readonly<{ca:string;
   pool = created;
   poolUrl = cacheKey;
   return created;
+}
+
+/** REAL customer reads need one authenticated transaction, not a sequence of
+ * independent pooled RPCs. Never substitute service_role/PostgREST here. */
+export async function withCaseAccessPostgresTransaction<T>(operation:(db:CaseAccessDb)=>Promise<T>):Promise<T>{
+ const connection=isolatedPreviewDatabase(process.env)??process.env.TIVDOC_WEB_POSTGRES_URL;
+ if(!connection)throw Error('REAL_SERVICE_WEB_DATABASE_REQUIRED');
+ const target=new URL(connection);
+ if(!['postgres:','postgresql:'].includes(target.protocol)||!/^tivdoc_web_runtime(?:\.[a-z0-9]+)?$/u.test(decodeURIComponent(target.username)))throw Error('REAL_SERVICE_WEB_DATABASE_ROLE');
+ target.searchParams.delete('sslmode');
+ const current=await postgresPool(target.toString(),{ca:SUPABASE_ROOT_2021_CA,rejectUnauthorized:true}),client=await current.connect();
+ try{
+  await client.query('begin');
+  await client.query("set local lock_timeout='5s'");
+  const value=await operation(postgresCaseAccessDb(client));
+  await client.query('commit');return value;
+ }catch(error){await client.query('rollback').catch(()=>{});throw error;}
+ finally{client.release();}
 }
 
 let override: CaseAccessDb | null = null;

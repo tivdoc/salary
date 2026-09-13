@@ -17,8 +17,10 @@ const seal=<T extends object>(body:T)=>({...body,sha256:canonicalSha256(body)});
 /** Synthetic in-memory protocol data only, never service evidence to enroll.
  * REAL/acquisition labels deliberately simulate DB records for guard tests.
  * Uses actual compiled config verification, ordinary engine and HTML/PDF. */
-export function realAiServiceFixture(){
- const build=getCompiledAiReleaseBuild(),runtime=structuredClone(runtimeFixture(pensionFixture().input));
+export function realAiServiceFixture(options?:{orderId?:string}){
+ const input=pensionFixture().input;
+ if(options?.orderId){input.purchased_scope={...input.purchased_scope,order_id:options.orderId,origin:'saved_order'};if(input.entitlement_evidence)input.entitlement_evidence.order_id=options.orderId;}
+ const build=getCompiledAiReleaseBuild(),runtime=structuredClone(runtimeFixture(input));
  const a=runtime.assessment_input,replacements=new Map<string,string>();
  const replace=<T>(v:T):T=>JSON.parse(JSON.stringify(v,(_key,x)=>typeof x==='string'?(replacements.get(x)??x):x));
  const update=<T extends {sha256:string}>(v:T):T=>{

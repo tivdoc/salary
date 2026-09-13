@@ -15,6 +15,7 @@ import { readCaseSessionCookie } from "@/server/product/case-access/session-cook
 import { guardStableAppEntrypoint } from "@/server/platform/capabilities/stable-next-entrypoint";
 import {privateDocumentReviewReports} from '@/server/product/reports/private-document-review';
 import {privateReviewEnvironmentEnabled} from '@/server/product/reports/private-review-environment';
+import {realAiServiceCustomerEnabled,realAiServiceCustomerReports} from '@/server/product/reports/real-ai-service-customer';
 
 export const metadata: Metadata = {
   title: "הדוח | Tivdoc",
@@ -52,9 +53,23 @@ export default async function CaseReportsPage({ params }: { params: Promise<{ to
   if(devFinancialPreviewEnabled())try{engineering=await devFinancialCustomerReports(item.case_id,session.identity_id);}catch{engineeringUnavailable=true;}
   let reviews:Awaited<ReturnType<typeof privateDocumentReviewReports>>=[];let reviewsUnavailable=false;
   if(privateReviewEnvironmentEnabled())try{reviews=await privateDocumentReviewReports(item.case_id,session.identity_id);}catch{reviewsUnavailable=true;}
+  let serviceReports:Awaited<ReturnType<typeof realAiServiceCustomerReports>>=[];let serviceUnavailable=false;
+  if(realAiServiceCustomerEnabled())try{
+    const sessionToken=await readCaseSessionCookie();if(!sessionToken)throw Error('REAL_SERVICE_SESSION_REQUIRED');
+    serviceReports=await realAiServiceCustomerReports({caseId:item.case_id,identityId:session.identity_id,sessionToken});
+  }catch{serviceUnavailable=true;}
 
   return (
     <CaseShell publicId={item.public_id} eyebrow={`תיק ${item.public_id}`}>
+      {serviceUnavailable?<p role="alert">לא ניתן לאמת כרגע את דוחות בדיקת ה־AI. אפשר לנסות לרענן; זו אינה תוצאת בדיקה.</p>:null}
+      {serviceReports.map(report=><section key={report.report_id} className="space-y-3 rounded-xl border border-stone-200 p-5">
+        <h2>דוח בדיקת AI — <bdi>{report.from.slice(0,7)}</bdi></h2>
+        <p>נוצר ב־<bdi>{israelCreatedAt(report.published_at)}</bdi>. הדוח מציג את הבדיקות שנרכשו ואת הנתונים שחסרים להשלמתן.</p>
+        {report.current?<div className="flex flex-wrap gap-4">
+          <a href={`/api/cases/${item.public_id}/reports?service=real&report=${report.report_id}&format=html`}>פתיחת הדוח</a>
+          <a href={`/api/cases/${item.public_id}/reports?service=real&report=${report.report_id}`} download>הורדת PDF</a>
+        </div>:<p role="status">גרסה קודמת שמורה בהיסטוריה. המקור או תנאי הבדיקה השתנו, או שתוקפם פג; יש להמתין לדוח תקף ומעודכן.</p>}
+      </section>)}
       {engineeringUnavailable?<p role="alert">לא ניתן לטעון את דוחות הניסוי ההנדסי כרגע. זו אינה תוצאת ניתוח.</p>:null}
       {engineering.map(report=><DevFinancialReport key={report.run.run_id} report={report}/>)}
       {reviewsUnavailable?<p role="alert">לא ניתן לטעון את הטיוטות הפרטיות כרגע.</p>:null}
@@ -65,7 +80,7 @@ export default async function CaseReportsPage({ params }: { params: Promise<{ to
        {report.current?<p><a href={`/api/cases/${token}/reports?report=${report.report_id}&review=1&format=html`}>פתיחת הטיוטה העדכנית</a>{' · '}<a href={`/api/cases/${token}/reports?report=${report.report_id}&review=1`}>הורדת PDF של אותה גרסה</a></p>
         :<p>{report.unavailable_reason?privateReviewUnavailableText[report.unavailable_reason]:'הטיוטה אינה זמינה להצגה כעת; לא נמסרה סיבה מפורטת.'} הטיוטה נשמרה בהיסטוריה ואינה מוצגת כתוצאה עדכנית.</p>}
       </article>)}
-      {engineering.length>0||reviews.length>0 ? null : saved === null ? <div role="alert"><h1>לא ניתן לטעון את הדוחות כרגע</h1><p>אפשר לרענן ולנסות שוב. זו אינה תוצאת בדיקה.</p></div>
+      {serviceReports.length>0||engineering.length>0||reviews.length>0 ? null : saved === null ? <div role="alert"><h1>לא ניתן לטעון את הדוחות כרגע</h1><p>אפשר לרענן ולנסות שוב. זו אינה תוצאת בדיקה.</p></div>
         : saved.reports.length === 0 ? <div><h1>הדוח עדיין לא מוכן</h1>{saved.checkPeriodMonth ? <p>חודש הבדיקה: <bdi>{saved.checkPeriodMonth}</bdi></p> : null}<p>כשיפורסם דוח לתיק, הוא יופיע כאן. אפשר לראות את המצב והבקשות בעמוד התיק.</p></div>
         : saved.reports.map((report) => report.state==='authority_unavailable'?<article key={report.id} aria-label="דוח שאינו זמין">
           <p>דוח היסטורי מתאריך {new Date(report.publishedAt).toLocaleDateString('he-IL')}</p>

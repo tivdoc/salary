@@ -5,6 +5,7 @@ import {parseDocumentFieldAnswerV3} from './document-source-structure';
 import {parseTravelTariffWireAnswer} from './document-travel-tariff';
 import {parseDocumentSourcePeriodIntakeAnswer} from './document-source-period-intake';
 import {parseObligationPaymentWireAnswer} from './document-obligation-payment-link';
+import {documentEvidenceSourceAnswerSchema} from './document-evidence-source-transcription';
 export class RequestAnswerError extends Error { constructor(){super('REQUEST_ANSWER_INVALID');} }
 export function validateRequestAnswer(request:Pick<StoredRequest,'answer_kind'|'options'|'code'>&Partial<Pick<StoredRequest,'field_crop'>>,value:string):string{
  const answer=value.trim();
@@ -13,6 +14,7 @@ export function validateRequestAnswer(request:Pick<StoredRequest,'answer_kind'|'
   if(request.answer_kind!=='choice')throw new RequestAnswerError();
   try{
    const wire=JSON.parse(answer);
+   if(request.field_crop==='source_transcription.financial_clause')return JSON.stringify(documentEvidenceSourceAnswerSchema.parse(wire));
    if(request.field_crop==='obligation.payment_link')return JSON.stringify(parseObligationPaymentWireAnswer(wire));
    if(wire.v===1)return JSON.stringify(parseDocumentSourcePeriodIntakeAnswer(wire));
    if(wire.schema_version==='document-field-answer-v3'&&wire.structured_value?.kind==='travel_tariff')return JSON.stringify(parseTravelTariffWireAnswer(wire));

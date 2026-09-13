@@ -243,7 +243,9 @@ export class NodePostgresConnectionFactory implements PostgresConnectionFactory 
   }
 }
 
-class NodePostgresManagedClient implements ManagedPostgresClient {
+/** Mechanical adapter shared by explicitly authorized service hosts. It adds
+ * no target or identity authority; its caller owns those independent guards. */
+export class NodePostgresManagedClient implements ManagedPostgresClient {
   readonly #client: NodePostgresPoolClient;
   readonly #metrics: Readonly<{ query(): void; release(): void }>;
   #released = false;

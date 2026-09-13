@@ -1,5 +1,6 @@
 import {needsSavedSourceIntake,savedSourceDocumentRoute} from './saved-source-intake-planning.ts';
 import {readSavedNonPayslipEvidence} from './saved-non-payslip-snapshot';
+import {readSavedDocumentSourceTranscriptions} from './saved-document-source-transcription';
 import {assertSavedDocumentReviewSourceScope,type SavedDocumentReviewSourceScope} from './saved-document-review';
 import {assertJune2026TestAuthority,june2026TestIdempotencyKey,type June2026TestAuthority} from './saved-june2026-test-authority';
 import {assertSavedJune2026RegularAuthority,june2026RegularIdempotencyKey,type SavedJune2026RegularAuthority} from './saved-june2026-regular-authority';
@@ -116,6 +117,7 @@ export class SavedCaseSnapshot implements StoredCaseSnapshotPort {
   }
   const nonPayslipEvidence=await readSavedNonPayslipEvidence(this.context,job,
    routes.filter(r=>!(r.route.state==='ready'&&r.route.kind==='payslip')).map(r=>r.document),row.input,selectedMonth);
+  const sourceTranscriptions=await readSavedDocumentSourceTranscriptions(this.context,job,selectedMonth,row.input);
   // Free-text questionnaire/request answers are preserved by the source hash.
   // They cannot be promoted into verified critical facts by this adapter.
   const facts=[...savedDeclaredFacts({caseId:job.case_id,revision:job.revision,inputSha256:job.input_sha256,month:selectedMonth,journal:row.input,createdAt:new Date(String(row.created_at)).toISOString()})];
@@ -130,7 +132,7 @@ export class SavedCaseSnapshot implements StoredCaseSnapshotPort {
   }
   const reviewAnswers=z.object({answers:z.array(z.object({code:z.string().optional()}).passthrough()).optional()}).passthrough().parse(row.input)
    .answers?.some(a=>a.code?.startsWith('document_review:'));
-  return deepFreeze({source_journal:{case_id:job.case_id,input_revision:job.revision,input_sha256:job.input_sha256},...(nonPayslipEvidence.length?{non_payslip_evidence:nonPayslipEvidence}:{}),...(reviewAnswers?{has_document_review_answers:true}:{}),document_snapshot_id:`saved-documents:${selectedMonth}:${job.input_sha256}`,document_snapshot_sha256:canonicalSha256(documents),documents,
+  return deepFreeze({source_journal:{case_id:job.case_id,input_revision:job.revision,input_sha256:job.input_sha256},...(sourceTranscriptions.length?{document_source_transcriptions:sourceTranscriptions}:{}),...(nonPayslipEvidence.length?{non_payslip_evidence:nonPayslipEvidence}:{}),...(reviewAnswers?{has_document_review_answers:true}:{}),document_snapshot_id:`saved-documents:${selectedMonth}:${job.input_sha256}`,document_snapshot_sha256:canonicalSha256(documents),documents,
    extraction_snapshot_id:`saved-extractions:${selectedMonth}:${job.input_sha256}`,extraction_snapshot_sha256:canonicalSha256(extractions),extractions,
    declared_fact_snapshot:{snapshot_id:`saved-declarations:${selectedMonth}:${job.input_sha256}`,snapshot_sha256:canonicalSha256(facts),facts}});
  }

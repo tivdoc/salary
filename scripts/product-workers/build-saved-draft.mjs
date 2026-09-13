@@ -8,8 +8,8 @@ import path from 'node:path';
 
 async function main(){
  const root=process.cwd(),directory=path.join(root,'output/release-completion/saved-worker');
- const gitSha=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
- const dirty=execFileSync('git',['status','--porcelain','--untracked-files=normal'],{encoding:'utf8'}).trim().length>0;
+ const gitSha=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8',windowsHide:true}).trim();
+ const dirty=execFileSync('git',['status','--porcelain','--untracked-files=normal'],{encoding:'utf8',windowsHide:true}).trim().length>0;
  await mkdir(path.join(directory,'assets/fonts'),{recursive:true});
  const result=await build({entryPoints:['scripts/product-workers/saved-draft.mts'],outfile:path.join(directory,'worker.cjs'),
   bundle:true,platform:'node',format:'cjs',target:'node22',packages:'external',metafile:true,

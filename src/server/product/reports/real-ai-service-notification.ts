@@ -5,7 +5,7 @@ import {statement,type PostgresTransactionContext} from '@/server/platform/persi
 import {normalizeContact} from '../case-access/crypto';
 import {encryptNotification} from '../case-access/notification-outbox';
 import {payloadDigest,recipientRefusal,renderReportReady,type NotificationMessage} from '../case-access/notifications';
-import {loadRealAiServiceDelivery,type RealAiServiceSelector} from './real-ai-service-delivery';
+import {loadRealAiServiceDelivery,realAiServiceSelectorSchema,type RealAiServiceSelector} from './real-ai-service-delivery';
 
 const hash=z.string().regex(/^[a-f0-9]{64}$/u),time=z.iso.datetime({offset:true});
 export const REAL_AI_SERVICE_NOTIFICATION_TEMPLATE='real-ai-report-ready-v1' as const;
@@ -85,6 +85,30 @@ export async function enqueueRealAiReportNotification(context:PostgresTransactio
  assert(receipt.delivery_id===authorized.payload_sha256&&receipt.grant_sha256===authorized.grant_sha256
   &&receipt.delivery_binding_sha256===authorized.delivery_binding_sha256,'REAL_SERVICE_NOTIFICATION_ENQUEUE_BINDING');
  return receipt;
+}
+
+const preparationSchema=z.discriminatedUnion('state',[
+ z.object({state:z.literal('not_authorized'),reason:z.enum(['not_authorized','revoked','expired','opted_out','contact_changed'])}).strict(),
+ z.object({state:z.literal('prepared'),grant_sha256:hash,derived:z.boolean()}).strict(),
+]);
+/** Derives the unchanged per-report grant only from recorded, live case
+ * authorization. An absent or revoked authorization is an ordinary skip, so
+ * callers can retain an otherwise valid publication. SQL/validation failures
+ * still throw; they must never be reported as a successful queue operation. */
+export async function prepareAndEnqueueRealAiReportNotification(context:PostgresTransactionContext,selector:RealAiServiceSelector,trustedAppOrigin:string,secret:string){
+ assert(process.env.TIVDOC_REAL_AI_SERVICE_ENABLED==='1','REAL_SERVICE_DISABLED');
+ assert(process.env.TIVDOC_REAL_AI_NOTIFICATIONS_ENABLED==='1','REAL_SERVICE_NOTIFICATIONS_DISABLED');
+ const bound=realAiServiceSelectorSchema.parse(selector),origin=trustedOrigin(trustedAppOrigin);
+ assert(Buffer.from(secret,'base64').length===32,'NOTIFICATION_KEY_INVALID');
+ const result=await context.client.query(statement('real_ai_service_notification_prepare',
+  'select private.real_ai_service_notification_prepare($1::uuid,$2::uuid,$3::uuid) value',
+  [bound.case_id,bound.identity_id,bound.report_id]));
+ assert(result.row_count===1,'REAL_SERVICE_NOTIFICATION_PREPARE_ACK');
+ const prepared=preparationSchema.parse(result.rows[0]?.value);
+ if(prepared.state==='not_authorized')return {state:'skipped_not_authorized' as const,reason:prepared.reason};
+ const receipt=await enqueueRealAiReportNotification(context,bound,origin,secret);
+ assert(receipt.grant_sha256===prepared.grant_sha256,'REAL_SERVICE_NOTIFICATION_PREPARATION_CHANGED');
+ return {state:'queued' as const,...receipt,derived:prepared.derived};
 }
 
 /** Invoke after decrypting an existing claimed intention and before sending.

@@ -88,6 +88,18 @@ function resolveConfiguration(candidate:unknown,job:SourceJob){
 }
 export type SavedRealAiServiceConfiguration=ReturnType<typeof resolveConfiguration>;
 
+/** Route by authenticated enrollment history, including revoked/expired grants.
+ * An unavailable REAL profile must never fall through to the DEV policy. */
+export async function loadSavedRealAiServiceIfEnrolled(context:PostgresTransactionContext,candidate:SourceJob){
+ const job=sourceJobSchema.parse(candidate);
+ if(job.processing_profile!=='qualified_ai_v1')return null;
+ const result=await context.client.query(statement('real_ai_service_processing_enrolled',
+  'select private.real_ai_service_processing_enrolled($1::uuid,$2,$3) enrolled',[job.case_id,job.revision,job.input_sha256]));
+ assert(result.row_count===1&&typeof result.rows[0]?.enrolled==='boolean','REAL_SERVICE_PROCESSING_ROUTING_ACK');
+ if(!result.rows[0].enrolled)return null;
+ return loadSavedRealAiServiceConfiguration(context,job);
+}
+
 /** Authenticated worker RPC only. Its SQL must verify machine tenant, active
  * identity-case relation, REAL service enrollment, paid journal and current
  * source/order heads before returning this context. Missing/unavailable data

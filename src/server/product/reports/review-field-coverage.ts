@@ -135,7 +135,7 @@ function pendingPeriodPrerequisite(operand:DocumentReviewOperand,generic:ReviewC
  return matches.length===1?matches[0]:null;
 }
 function coversOperand(operand:DocumentReviewOperand,target:DocumentReadingTarget,phase:'pending'|'identified'='pending',effectiveRaw?:string):boolean{
- if(target.schema_version==='obligation-payment-link-v1'||target.schema_version==='obligation-payment-choice-v1'||target.schema_version==='document-evidence-reading-v1'||target.schema_version==='document-travel-tariff-transcription-v1'||target.schema_version==='document-source-period-intake-v1')return false; // Independent source intake, never a payroll scalar alias.
+ if(target.schema_version==='obligation-payment-link-v1'||target.schema_version==='obligation-payment-choice-v1'||target.schema_version==='document-evidence-source-transcription-v1'||target.schema_version==='document-evidence-source-transcription-v2'||target.schema_version==='document-evidence-reading-v1'||target.schema_version==='document-travel-tariff-transcription-v1'||target.schema_version==='document-source-period-intake-v1')return false; // Independent source intake, never a payroll scalar alias.
  if('proposed_value'in target)return false; // Structure decisions do not certify numeric operands.
  const rawFor=(raw:string|null)=>effectiveRaw??raw;
  if(target.schema_version==='document-source-transcription-v1'){
@@ -255,7 +255,7 @@ export function reviewRequestsCoveredByFieldReadings(input:{review:unknown;field
    &&target.source_pins.length===1&&target.source_pins[0].case_id===row.target.case_id&&target.source_pins[0].version_id===row.target.version_id
    &&target.source_pins[0].source_sha256===row.target.source_sha256&&coversOperand(operand,row.target));
   if(matches.length!==1)continue;
-  const match=matches[0];if(match.target.schema_version==='obligation-payment-link-v1'||match.target.schema_version==='obligation-payment-choice-v1'||match.target.schema_version==='document-source-period-intake-v1'||match.target.schema_version==='document-evidence-reading-v1'||match.target.schema_version==='document-travel-tariff-transcription-v1'||'proposed_value'in match.target||match.target.schema_version==='document-source-transcription-v1'&&match.target.subject.kind!=='reported_work_hours')continue;
+  const match=matches[0];if(match.target.schema_version==='obligation-payment-link-v1'||match.target.schema_version==='obligation-payment-choice-v1'||match.target.schema_version==='document-source-period-intake-v1'||match.target.schema_version==='document-evidence-source-transcription-v1'||match.target.schema_version==='document-evidence-source-transcription-v2'||match.target.schema_version==='document-evidence-reading-v1'||match.target.schema_version==='document-travel-tariff-transcription-v1'||'proposed_value'in match.target||match.target.schema_version==='document-source-transcription-v1'&&match.target.subject.kind!=='reported_work_hours')continue;
   const subject=match.target.schema_version==='document-source-transcription-v1'?{transcription_kind:'reported_work_hours' as const}
    :match.target.schema_version==='document-field-confirmation-v1'?{candidate_id:match.target.candidate.candidate_id}
    :match.target.schema_version==='document-row-cell-confirmation-v1'?{component_id:match.target.original_component.component_id,cell:match.target.cell}
@@ -445,7 +445,7 @@ export type HistoricalReviewRequestProjection=Readonly<{request_id:string;state:
 function acceptedIdentifiedAnswer(operand:DocumentReviewOperand,field:ExistingFieldReadingRequest){
  try{
   const target=field.target,answer=validateDocumentReadingAnswerForTarget(target,field.answer_text);
-  if(target.schema_version==='document-evidence-reading-v1'||target.schema_version==='document-source-period-intake-v1'||'proposed_value'in target||!('schema_version'in answer)||answer.schema_version==='document-field-answer-v3')return false;
+  if(target.schema_version==='document-evidence-source-transcription-v1'||target.schema_version==='document-evidence-source-transcription-v2'||target.schema_version==='document-evidence-reading-v1'||target.schema_version==='document-source-period-intake-v1'||'proposed_value'in target||!('schema_version'in answer)||answer.schema_version!=='document-field-answer-v2')return false;
   if(answer.action!=='confirm'&&answer.action!=='correct')return false;
   const raw=answer.action==='correct'?answer.corrected_raw_value:target.schema_version==='document-field-confirmation-v1'?target.candidate.raw_value
    :target.schema_version==='document-row-cell-confirmation-v1'?target.original_component[`${target.cell}_raw`]

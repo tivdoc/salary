@@ -8,6 +8,7 @@ import type {NormalizedDocumentEvidence,DocumentEvidenceValue} from '../extracti
 import {workingTimeEntitlementInputSchema,type WorkingTimeEntitlementInput,type WorkingTimeWorkday} from './working-time/index.ts';
 import {obligationsEntitlementInputSchema,obligationTextSha256,type ExplicitObligation} from './obligations/index.ts';
 import {parseObligationLiteralPromise as literalPromise} from './obligations/literal-promise.ts';
+import {attachIdentifiedClauseTranscriptions} from './obligations/identified-clause-transcriptions.ts';
 import {workingTimePayrollRate} from './working-time/payroll-rate.ts';
 import {enableObligationProductFacts} from './obligations/product-facts.ts';
 import {attachObligationPaymentLinks,type ObligationPaymentLinkReading} from './obligations/payment-link.ts';
@@ -28,6 +29,7 @@ const rowKey=(o:Observation)=>canonicalSha256({page:o.original.page,block:o.orig
 /** A normalized candidate is never accepted by its confidence. The caller's
  * saved snapshot must contain exactly the same authenticated reading journal. */
 export function attachAutomaticNonPayslipEvidence(candidate:DocumentReviewInput,snapshot:StoredCaseInputSnapshot):AutomaticNonPayslipResult{
+ candidate=attachIdentifiedClauseTranscriptions(candidate,snapshot);
  const unchanged={input:candidate,reading_dependencies:[]};
  const time=(candidate.purchased_scope.topics.includes('working_time')||candidate.purchased_scope.topics.includes('rest_day'))&&candidate.entitlement_evidence?.working_time===undefined;
  const contracts=candidate.purchased_scope.topics.filter((t):t is 'contract'|'bonuses'=>t==='contract'||t==='bonuses');

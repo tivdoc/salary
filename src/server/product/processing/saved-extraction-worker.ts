@@ -21,7 +21,8 @@ import {ensureSavedExtractionPromptProvenance} from './saved-extraction-prompt-a
 
 type Extraction=Awaited<ReturnType<typeof extractSavedPayslip>>;
 export type SavedExtractionLease={jobId:string;workerId:string;fencingToken:number;versionId:string};
-export type SavedWorkerTransactions=<T>(operation:(context:PostgresTransactionContext)=>Promise<T>)=>Promise<T>;
+import type {SavedWorkerTransactions} from './saved-worker-contracts';
+export type {SavedWorkerTransactions} from './saved-worker-contracts';
 type Invocation={invocation_id:string;case_id:string;version_id:string;expected_month:string;input_sha256:string;source_revision:number;dispatched_at:string;result:Extraction|null;source_period_evidence?:unknown};
 type Admission={job:SourceJob;document:Record<string,unknown>;month:string;requestedMonths:string[];sourcePeriodEvidence:ReturnType<typeof savedSourcePeriodEvidence>};
 

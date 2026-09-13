@@ -1,19 +1,14 @@
 import type {LegalCatalogSelection,LegalRuleCatalogPort} from '../wave3/contracts.ts';
 import {evaluateLegalReadiness} from '../legal-knowledge/canonical-readiness/evaluate-legal-readiness.ts';
 import {june2026MinimumWageSourceCandidates,JUNE2026_SOURCE_VERSION_IDS} from '../minimum-wage-june2026/admission.ts';
-import {JUNE2026_MINIMUM_WAGE_POLICY_SHA256,JUNE2026_SOURCE_SET_SHA256} from '../minimum-wage-june2026/sources.ts';
-import {LegalOperationsCatalog,REAL_CATALOG_SHA256} from './catalog.ts';
-import {frozen,legalOperationsSha256} from './canonical.ts';
+import {LegalOperationsCatalog} from './catalog.ts';
+import {frozen} from './canonical.ts';
+import {JUNE2026_REVIEW_CATALOG_SHA256} from './june2026-catalog-fingerprint.ts';
+export {JUNE2026_REVIEW_CATALOG_SHA256} from './june2026-catalog-fingerprint.ts';
 
 /** A pinned review catalog, never an activation override. Only June2026 real
  * analyses gain the newly acquired sources. Existing historical selections are
  * immutable; all topics in one analysis retain a common catalog fingerprint. */
-export const JUNE2026_REVIEW_CATALOG_SHA256=legalOperationsSha256({
- catalog:'tivdoc.real.june2026.review-candidate',version:'1.0.0',
- inherited_catalog_sha256:REAL_CATALOG_SHA256,source_set_sha256:JUNE2026_SOURCE_SET_SHA256,
- policy_sha256:JUNE2026_MINIMUM_WAGE_POLICY_SHA256,
- review_diagnostic_version:'saved-june2026-review-v5-unadmitted-assessment-packet',
-});
 export class June2026ReviewCatalog implements LegalRuleCatalogPort {
  readonly #fallback=new LegalOperationsCatalog();
  async resolve(input:Parameters<LegalRuleCatalogPort['resolve']>[0]):Promise<LegalCatalogSelection>{

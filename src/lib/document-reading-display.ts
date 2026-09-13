@@ -2,6 +2,8 @@
 import {displaySourceStructureAnswer,type SourceStructureContext} from './source-structure-display';
 import {displayTravelTariffAnswer,type TravelTariffContext} from './travel-tariff-display';
 import {displaySourcePeriodIntakeAnswer,type SourcePeriodIntakeContext} from './source-period-intake-display';
+import {displayEvidenceSourceAnswer} from './document-evidence-source-display';
+import type {EvidenceSourceTranscriptionContext} from '@/engine/extraction/document-evidence/source-transcription';
 export type {SourceStructureContext,SourceStructureValue,SourceRelationshipValue,SourceDeductionGroupValue,SourceBalanceMovementValue,SourcePeriodAssociationValue} from './source-structure-display';
 export type DocumentReadingDisplay=Readonly<{
  question:string;field:string;raw_value:string|null;page:number;text_fragment:string|null;
@@ -11,6 +13,7 @@ export type DocumentReadingDisplay=Readonly<{
  row_context?:Readonly<{group_id:string;label:string;cell:'quantity'|'rate'|'amount'|'percentage'}>;
  /** Missing source information has no existing value that can be confirmed. */
  transcription_context?:Readonly<{kind:'reported_work_hours'|'balance_unit'}>;
+ source_transcription_context?:EvidenceSourceTranscriptionContext;
  evidence_context?:Readonly<{value_kind:'iso_date'|'clock_time'|'duration_hhmm'|'decimal'|'money'|'percentage'|'text';can_confirm:boolean;
   reading_state:'candidate'|'missing'|'unreadable'|'conflict'|'invalid';basis_origin:'system_action_context'}>;
  structure_context?:SourceStructureContext;
@@ -45,6 +48,7 @@ export function groupDocumentReadingRequests<T extends ReadingRequest>(requests:
 }
 export function displayDocumentReadingAnswer(value:string|null,display?:DocumentReadingDisplay):string|null{
  if(!value)return value;
+ if(display?.source_transcription_context)return displayEvidenceSourceAnswer(value)??value;
  const intake=displaySourcePeriodIntakeAnswer(value,display?.period_intake_context);if(intake!==null)return intake;
  const tariff=displayTravelTariffAnswer(value,display?.tariff_context);if(tariff!==null)return tariff;
  const structured=displaySourceStructureAnswer(value,display?.structure_context);if(structured!==null)return structured;

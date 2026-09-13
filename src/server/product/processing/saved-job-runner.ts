@@ -19,7 +19,8 @@ import {completeSavedDraftJob} from './saved-job-completion';
 
 type Lease={jobId:string;workerId:string;fencingToken:number};
 type ExtractionInput=Parameters<typeof runSavedWorkerExtraction>[0];
-export type SavedMonthCompletion=(input:{context:PostgresTransactionContext;job:SourceJob;orderId:string;month:string;parent:Awaited<ReturnType<typeof runSavedWorkerMonth>>})=>Promise<void>;
+import type {SavedMonthCompletion} from './saved-worker-contracts';
+export type {SavedMonthCompletion} from './saved-worker-contracts';
 /** Historical host error contract; new inventory reviews do not throw it. */
 export class SavedJobMissingDocuments extends Error {
  constructor(readonly months:readonly string[]){super('SAVED_PURCHASED_MONTH_DOCUMENT_REQUIRED');}

@@ -53,6 +53,7 @@ export type StoredCaseInputSnapshot = Readonly<{
   /** Independently typed evidence; never counted as payroll extraction. The
    * ordinary document-review input pins these records in its command hash. */
   non_payslip_evidence?: readonly import('../extraction/document-evidence/snapshot.ts').SavedNonPayslipEvidence[];
+  document_source_transcriptions?: readonly import('../extraction/document-evidence/source-transcription.ts').DocumentEvidenceSourceReading[];
   declared_fact_snapshot: DeclaredFactSnapshot;
   /** Optional source-reviewed inputs, separately pinned in the command. */
   document_review_input?: DocumentReviewInput;

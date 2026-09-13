@@ -2,7 +2,7 @@ import {z} from 'zod';
 import {CASE_ANALYSIS_CODE_VERSION} from '@/engine/case-analysis/contracts';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import {WAVE3_TOPICS} from '@/engine/wave3/contracts';
-import {JUNE2026_REVIEW_CATALOG_SHA256} from '@/engine/legal-operations/june2026-catalog';
+import {JUNE2026_REVIEW_CATALOG_SHA256} from '@/engine/legal-operations/june2026-catalog-fingerprint';
 import {statement,type PostgresTransactionContext} from '@/server/platform/persistence/postgres/contracts';
 import {SAVED_DRAFT_TEMPLATE} from './saved-draft-report';
 import type {SourceJob} from './source-dispatch';

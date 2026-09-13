@@ -43,8 +43,8 @@ export function aiControlPrivatePath(value,repo=ROOT){
   if(existsSync(path.join(current,'.git'))){
    const relative=path.relative(current,resolved).replaceAll('\\','/');
    try{
-    assert(relative&&execFileSync('git',['--literal-pathspecs','-C',current,'ls-files','-z','--',relative],{stdio:['ignore','pipe','pipe']}).length===0,'AI_CONTROL_PRIVATE_PATH_TRACKED');
-    execFileSync('git',['-C',current,'check-ignore','--quiet','--no-index','--',relative],{stdio:'ignore'});
+    assert(relative&&execFileSync('git',['--literal-pathspecs','-C',current,'ls-files','-z','--',relative],{stdio:['ignore','pipe','pipe'],windowsHide:true}).length===0,'AI_CONTROL_PRIVATE_PATH_TRACKED');
+    execFileSync('git',['-C',current,'check-ignore','--quiet','--no-index','--',relative],{stdio:'ignore',windowsHide:true});
    }catch{throw Error('AI_CONTROL_PRIVATE_PATH_NOT_IGNORED');}
   }
   const parent=path.dirname(current);if(parent===current)break;current=parent;

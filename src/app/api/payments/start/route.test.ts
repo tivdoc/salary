@@ -1,10 +1,10 @@
 import {beforeEach,describe,it,expect,vi} from 'vitest';
-const mock=vi.hoisted(()=>({cookie:vi.fn(),session:vi.fn(),cases:vi.fn(),create:vi.fn(),checkout:vi.fn(),rpc:vi.fn(),cancel:vi.fn()}));
+const mock=vi.hoisted(()=>({cookie:vi.fn(),session:vi.fn(),cases:vi.fn(),create:vi.fn(),quote:vi.fn(),checkout:vi.fn(),rpc:vi.fn(),cancel:vi.fn()}));
 vi.mock('@/server/platform/capabilities/stable-http-entrypoint',()=>({guardStableHttpEntrypoint:vi.fn()}));
 vi.mock('@/lib/case-cookie',()=>({readCaseIdFromCookie:mock.cookie}));
 vi.mock('@/server/product/case-access/service',()=>({resolveIdentitySession:mock.session,listIdentityCases:mock.cases}));
 vi.mock('@/server/product/case-access/session-cookie',()=>({readCaseSessionCookie:vi.fn()}));
-vi.mock('@/server/product/orders/service',()=>({createOrder:mock.create,orderCheckout:mock.checkout}));
+vi.mock('@/server/product/orders/service',()=>({createReleaseInitialOrder:mock.create,customerReleaseQuote:mock.quote,orderCheckout:mock.checkout}));
 vi.mock('@/server/product/orders/customer-cancellation',()=>({cancelCustomerUnstartedOrder:mock.cancel}));
 vi.mock('@/server/product/case-access/db',()=>({resolveCaseAccessDb:async()=>({rpc:mock.rpc})}));
 import {POST} from './route';
@@ -38,5 +38,28 @@ describe('order HTTP scope',()=>{
  it('refuses cross-origin before reading a case',async()=>{expect((await POST(request({action:'quote'},'https://foreign.invalid'))).status).toBe(403);expect(mock.cookie).not.toHaveBeenCalled();});
  it('does not checkout an order through a foreign case',async()=>{expect((await POST(request({action:'checkout',publicId:'TV-OTHER001',orderId:'9c4c5752-d1c4-4e12-9e64-17b22b1c4330',termsAccepted:true}))).status).toBe(404);expect(mock.checkout).not.toHaveBeenCalled();});
  it('rejects client price injection',async()=>{expect((await POST(request({action:'quote',publicId:'TV-OWN00001',request:{kind:'full',from:'2026-01',to:'2026-02',amount:1}}))).status).toBe(400);expect(mock.create).not.toHaveBeenCalled();});
- it('derives the case and identity from the verified owner',async()=>{mock.create.mockResolvedValue({id:'saved'});expect((await POST(request({action:'quote',publicId:'TV-OWN00001',request:{kind:'full',from:'2026-01',to:'2026-02'}}))).status).toBe(200);expect(mock.create).toHaveBeenCalledWith({caseId:'owned',identityId:'owner',request:{kind:'full',from:'2026-01',to:'2026-02'}});});
+ it('reads an actual saved full quote using only the verified owner scope',async()=>{
+  mock.quote.mockResolvedValue({quote:{id:'saved'},order:null});
+  const response=await POST(request({action:'quote',publicId:'TV-OWN00001',request:{kind:'full',from:'2026-05',to:'2026-07'}}));
+  expect(response.status).toBe(200);expect(await response.json()).toEqual({quote:{id:'saved'},order:null});
+  expect(mock.quote).toHaveBeenCalledWith({caseId:'owned',identityId:'owner',request:{kind:'full',from:'2026-05',to:'2026-07'}});expect(mock.create).not.toHaveBeenCalled();expect(mock.checkout).not.toHaveBeenCalled();
+ });
+ it('derives a new initial offer period from the funnel while preserving historical paid redirects',async()=>{
+  mock.cookie.mockResolvedValue('owned');mock.rpc.mockResolvedValue([{value:{check_period_month:'2026-06-01',payment_status:'unpaid',legacy_payment:false}}]);mock.create.mockResolvedValue({id:'new-initial'});
+  expect((await POST(request({action:'quote'}))).status).toBe(200);
+  expect(mock.create).toHaveBeenCalledExactlyOnceWith({caseId:'owned',identityId:null,request:{kind:'initial',from:'2026-06',to:'2026-06'}});expect(mock.checkout).not.toHaveBeenCalled();
+  mock.create.mockClear();mock.rpc.mockResolvedValue([{value:{check_period_month:'2026-06-01',payment_status:'verified',legacy_payment:true}}]);
+  expect(await (await POST(request({action:'quote'}))).json()).toEqual({url:'/check/received'});expect(mock.create).not.toHaveBeenCalled();
+ });
+ it('returns the precise missing saved-pricing-basis refusal without opening an order or checkout',async()=>{
+  mock.quote.mockRejectedValueOnce(Error('ORDER_PRICING_BASIS_UNAVAILABLE'));
+  const response=await POST(request({action:'quote',publicId:'TV-OWN00001',request:{kind:'full',from:'2026-06',to:'2026-06'}}));
+  expect(response.status).toBe(409);expect(await response.json()).toMatchObject({code:'pricing_basis_unavailable'});expect(mock.create).not.toHaveBeenCalled();expect(mock.checkout).not.toHaveBeenCalled();
+ });
+ it.each(['foreign','anonymous','injected_topics','injected_basis'])('rejects %s full-quote requests before its reader',async defect=>{
+  const body:Record<string,unknown>={action:'quote',publicId:defect==='foreign'?'TV-OTHER001':'TV-OWN00001',request:{kind:'full',from:'2026-06',to:'2026-06'}};
+  if(defect==='anonymous'){delete body.publicId;mock.cookie.mockResolvedValue('owned');}
+  if(defect==='injected_topics')body.topics=['contract'];if(defect==='injected_basis')body.basis_minor=50000;
+  const response=await POST(request(body));expect(response.status).toBe(defect.startsWith('injected')?400:404);expect(mock.quote).not.toHaveBeenCalled();
+ });
 });

@@ -1,4 +1,5 @@
 import {loadSavedOwnerEngineeringConfiguration} from './saved-owner-engineering-configuration';
+import {completeRealAiServiceMonth} from './automatic-real-service';
 import {assertSavedOwnerEngineeringCurrent} from './saved-owner-engineering';
 import {renderOwnerEngineeringBundle,OWNER_ENGINEERING_REPORT_TEMPLATE} from '../reports/owner-engineering-report';
 import {loadJune2026TestAuthority,june2026TestIdempotencyKey} from "./saved-june2026-test-authority";
@@ -262,6 +263,9 @@ export async function saveAutomaticDevCanonicalDraft(input:Input){
  * Answers create a new source revision and therefore a new canonical run;
  * retries reuse both run and artifact rather than appending duplicates. */
 export const runAutomaticDevMonth:SavedMonthCompletion=async input=>{
+ if(input.parent.bundle?.ai_release?.input.assessment_input.current.namespace==='real'){
+  await completeRealAiServiceMonth(input);return;
+ }
  if(input.job.processing_profile==='qualified_ai_v1'||input.parent.bundle?.ai_release){
   if(input.parent.bundle?.owner_engineering)await completeOwnerEngineeringMonth(input);
   else await completeQualifiedAiMonth(input);return;

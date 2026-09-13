@@ -1,11 +1,16 @@
 import {randomUUID} from 'node:crypto';
+import {z} from 'zod';
 import pg from 'pg';
 import {attachDatabasePool} from '@vercel/functions';
 import {Invoice4uClient,invoice4uErrorCode} from '../../../lib/invoice4u';
 import {createPaymentReturnToken,hashPaymentReturnToken,getPaymentReturnUrl} from '../../../lib/payment';
 import {validateInvoice4uClearingLog,PaymentVerificationError} from '../../../lib/payment-verification';
 import {resolveCaseAccessDb,postgresCaseAccessDb,type CaseAccessDb} from '../case-access/db';
-import {offerSnapshot,orderRequestSchema,priceCorrectionStatusSchema,OrderError,type OrderRequest,type ProductOrder} from './contracts';
+import {offerSnapshot,releaseInitialOfferSnapshot,orderRequestSchema,priceCorrectionStatusSchema,OrderError,type OrderRequest,type ProductOrder} from './contracts';
+import {requireFreshPriceQuote} from './price-quote';
+import {canonicalSha256} from '@/engine/rule-runtime/canonical';
+
+export type CustomerReleaseQuote={id:string;from:string;to:string;topics:string[];total_minor:number;credit_minor:number;balance_minor:number;currency:'ILS';expires_at:string};
 async function storeOrThrow(db?:CaseAccessDb){const store=db??await resolveCaseAccessDb();if(!store)throw new OrderError('ORDER_STORE_UNAVAILABLE');return store;}
 export async function createOrder(input:{caseId:string;identityId:string|null;request:OrderRequest},db?:CaseAccessDb){
  const request=orderRequestSchema.parse(input.request);const store=await storeOrThrow(db);
@@ -35,6 +40,39 @@ export async function orderVerifierDb(){
  const pool=new pg.Pool({connectionString:url,max:2,min:0,idleTimeoutMillis:5000,connectionTimeoutMillis:15000,application_name:'tivdoc_payment_verifier'});
  pool.on('error',()=>console.error('PAYMENT_VERIFIER_POOL_IDLE_ERROR'));attachDatabasePool(pool);
  verifier=postgresCaseAccessDb(pool);return verifier;
+}
+/** Explicit new-customer path. SQL preserves an existing order unchanged and
+ * applies the v3 offer only when creating a new one. This opens no checkout. */
+export async function createReleaseInitialOrder(input:{caseId:string;identityId:string|null;request:OrderRequest},db?:CaseAccessDb){
+ const request=orderRequestSchema.parse(input.request);
+ if(request.kind!=='initial')throw new OrderError('ORDER_PRICING_BASIS_UNAVAILABLE');
+ const store=await storeOrThrow(db);
+ const result=await store.rpc<{value:ProductOrder}>('case_order_create',{target_case:input.caseId,target_identity:input.identityId,target_kind:'initial',target_from:request.from+'-01',target_to:request.to+'-01',target_offer:releaseInitialOfferSnapshot()});
+ if(result.length!==1||!result[0]?.value)throw new OrderError('ORDER_NOT_CREATED');return result[0].value;
+}
+/** Read an actual worker-issued quote only. A missing quote remains missing
+ * evidence; this web path neither synthesizes a basis nor impersonates worker
+ * authority to create an order or reserve credit. */
+export async function customerReleaseQuote(input:{caseId:string;identityId:string;request:OrderRequest},db?:CaseAccessDb):Promise<{quote:CustomerReleaseQuote;order:ProductOrder|null}>{
+ const caseId=z.uuid().parse(input.caseId),identityId=z.uuid().parse(input.identityId),request=orderRequestSchema.parse(input.request);
+ if(request.kind!=='full')throw new OrderError('ORDER_PERIOD_INVALID');
+ const store=await storeOrThrow(db),rows=await store.rpc<{value:unknown}>('case_order_release_quote',{target_case:caseId,target_identity:identityId,target_from:request.from+'-01',target_to:request.to+'-01'});
+ if(rows.length!==1)throw new OrderError('ORDER_QUOTE_LOOKUP_INVALID');
+ if(rows[0].value===null)throw new OrderError('ORDER_PRICING_BASIS_UNAVAILABLE');
+ const row=z.object({id:z.uuid(),snapshot:z.unknown(),quote_sha256:z.string().regex(/^[a-f0-9]{64}$/u),input_sha256:z.string().regex(/^[a-f0-9]{64}$/u),now:z.iso.datetime({offset:true}),order_id:z.uuid().nullable()}).strict().parse(rows[0].value);
+ const quote=requireFreshPriceQuote(row.snapshot,{caseId,identityId,inputSha256:row.input_sha256,now:new Date(row.now)});
+ if(quote.schema_version!=='tivdoc-price-quote-v2'||quote.sha256!==row.quote_sha256||quote.purchased_period.from!==request.from||quote.purchased_period.to!==request.to)throw new OrderError('ORDER_QUOTE_LOOKUP_INVALID');
+ let order:ProductOrder|null=null;
+ if(row.order_id){
+  const saved=await store.rpc<{value:ProductOrder}>('case_order_get',{target_case:caseId,target_identity:identityId,target_order:row.order_id});
+  if(saved.length!==1||!saved[0]?.value)throw new OrderError('ORDER_QUOTE_LOOKUP_INVALID');
+  order=saved[0].value;
+  if(order.id!==row.order_id||order.case_id!==caseId||order.kind!=='full'||order.state!=='awaiting_payment'||order.offer.version!=='tivdoc-order-offer-v3'
+   ||!('price_quote_id'in order.offer)||order.offer.price_quote_id!==row.id||order.offer.price_quote_sha256!==quote.sha256
+   ||canonicalSha256(order.offer.price_quote)!==canonicalSha256(quote)||order.amount_minor!==quote.balance_minor||order.currency!=='ILS'
+   ||order.period_from!==request.from+'-01'||order.period_to!==request.to+'-01'||canonicalSha256(order.topics)!==canonicalSha256(quote.purchased_topics))throw new OrderError('ORDER_QUOTE_LOOKUP_INVALID');
+ }
+ return {quote:{id:row.id,from:quote.purchased_period.from,to:quote.purchased_period.to,topics:[...quote.purchased_topics],total_minor:quote.total_minor,credit_minor:quote.credit_minor,balance_minor:quote.balance_minor,currency:'ILS',expires_at:quote.expires_at},order};
 }
 export async function reconcileOrders(db?:CaseAccessDb,provider=new Invoice4uClient(),onlyOrder?:string){
  const store=db??await orderVerifierDb();const result=await store.rpc<{value:(ProductOrder&{provider_log_id:string;provider_order_id:string;provider_payment_id?:string|null})[]}>('case_order_payment_pending',{target_limit:100});const summary={scanned:0,verified:0,pending:0,rejected:0,failed:0};

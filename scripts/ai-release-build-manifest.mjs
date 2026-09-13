@@ -14,9 +14,14 @@ const ENTRIES=[
  'src/engine/case-analysis/service.ts',
  'src/server/product/processing/saved-ai-release.ts',
  'src/server/product/processing/saved-real-ai-service-configuration.ts',
+ 'src/server/product/processing/automatic-real-service.ts',
+ 'src/server/product/processing/real-service-activation.ts',
+ 'src/server/product/processing/real-service-worker-host.ts',
+ 'src/server/product/processing/real-service-notification-dispatch.ts',
  'src/server/product/processing/automatic-dev-notifications.ts',
  'src/server/product/reports/ai-release-report.ts',
  'src/server/product/reports/real-ai-service-delivery.ts',
+ 'src/server/product/reports/real-ai-service-customer.ts',
  'src/server/product/reports/real-ai-service-notification.ts',
  'src/engine/document-review/non-payslip.ts',
  ...['pension','payroll','benefits','nonpay'].map(name=>`src/engine/entitlement-review/automatic-${name}.ts`),
@@ -63,11 +68,11 @@ export async function collectAiReleaseBuildManifest(root=ROOT,options={}){
  const parsed=ts.convertCompilerOptionsFromJson(tsconfig.compilerOptions??{},base);
  if(parsed.errors.length)throw Error('AI_BUILD_TSCONFIG');
  const entrypoints=options.entrypoints??[...ENTRIES,...(await readdir(path.join(base,DECISIONS))).filter(n=>/\.(?:ts|tsx|json)$/u.test(n)&&!excluded(`${DECISIONS}/${n}`)).map(n=>`${DECISIONS}/${n}`)];
- const pending=[...entrypoints];
+ const pending=entrypoints.map(p=>({p,chain:[]}));
  while(pending.length){
-  const p=pending.pop();
+  const {p,chain}=pending.pop();
   if(sourceMap.has(p)||p===OUTPUT)continue;
-  if(excluded(p))throw Error('AI_BUILD_EXCLUDED_DEPENDENCY',{cause:p});
+  if(excluded(p))throw Error('AI_BUILD_EXCLUDED_DEPENDENCY',{cause:{path:p,chain:[...chain,p]}});
   const content=await source(p);sourceMap.set(p,content);
   if(p.endsWith('.json'))continue;
   const ast=ts.createSourceFile(p,content,ts.ScriptTarget.Latest,true),imports=[];
@@ -93,7 +98,7 @@ export async function collectAiReleaseBuildManifest(root=ROOT,options={}){
    if(!resolved)throw Error(`AI_BUILD_IMPORT_UNRESOLVED:${p}:${specifier}`);
    const rel=relative(resolved.resolvedFileName);
    if(!rel.startsWith('src/')||rel.includes('/node_modules/'))throw Error('AI_BUILD_IMPORT_OUTSIDE_SOURCE');
-   pending.push(rel);
+   pending.push({p:rel,chain:[...chain,p]});
   }
  }
  for(const p of options.buildInputs??BUILD_INPUTS)sourceMap.set(p,await source(p));

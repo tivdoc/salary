@@ -9,8 +9,8 @@ async function main(){
  if(process.env.VERCEL_ENV==='production')throw Error('MANAGED_DEV_PRODUCTION_REFUSED');
  const directory=path.resolve('output/release-completion/managed-worker');
  const synthetic=process.argv.includes('--synthetic-proof'),basename=synthetic?'synthetic-proof':'worker';
- const gitSha=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
- const dirty=execFileSync('git',['status','--porcelain','--untracked-files=normal'],{encoding:'utf8'}).trim().length>0;
+ const gitSha=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8',windowsHide:true}).trim();
+ const dirty=execFileSync('git',['status','--porcelain','--untracked-files=normal'],{encoding:'utf8',windowsHide:true}).trim().length>0;
  await mkdir(path.join(directory,'assets/fonts'),{recursive:true});
  const result=await build({entryPoints:[synthetic?'src/server/product/processing/managed-worker.synthetic-proof.entry.mts':'src/server/product/processing/managed-worker.entry.mts'],outfile:path.join(directory,`${basename}.cjs`),bundle:true,
   platform:'node',format:'cjs',target:'node22',packages:'external',metafile:true,

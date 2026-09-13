@@ -1,6 +1,6 @@
 import {z} from 'zod';
 import {readCaseIdFromCookie} from '@/lib/case-cookie';
-import {createOrder,orderCheckout} from '@/server/product/orders/service';
+import {createReleaseInitialOrder,customerReleaseQuote,orderCheckout} from '@/server/product/orders/service';
 import {cancelCustomerUnstartedOrder} from '@/server/product/orders/customer-cancellation';
 import {orderRequestSchema} from '@/server/product/orders/contracts';
 import {resolveCaseAccessDb} from '@/server/product/case-access/db';
@@ -50,6 +50,10 @@ export async function POST(request:Request){
    const month=String(data.check_period_month).slice(0,7);desired={kind:'initial',from:month,to:month};
   }
   if(!desired)return Response.json({error:'צריך לבחור תקופת בדיקה'},{status:400});
-  return Response.json({order:await createOrder({caseId,identityId,request:desired})},{headers:PRODUCT_HTTP_HEADERS});
+  if(desired.kind==='full'){
+   if(!identityId)return new Response(null,{status:404,headers:PRODUCT_HTTP_HEADERS});
+   return Response.json(await customerReleaseQuote({caseId,identityId,request:desired}),{headers:PRODUCT_HTTP_HEADERS});
+  }
+  return Response.json({order:await createReleaseInitialOrder({caseId,identityId,request:desired})},{headers:PRODUCT_HTTP_HEADERS});
  }catch(error){const code=error instanceof Error?error.message:'';if(code==='ORDER_PRICING_BASIS_UNAVAILABLE')return Response.json({error:'עדיין אין בתיק בסיס כספי וכיסוי מאומתים להצעת שדרוג. התוצאה הראשונית ששולמה נשארת זמינה.',code:'pricing_basis_unavailable'},{status:409,headers:PRODUCT_HTTP_HEADERS});const uncertain=code.includes('UNCERTAIN')||code.includes('LEGACY_PAYMENT');return Response.json({error:uncertain?'מצב התשלום דורש בירור. לא נפתח חיוב נוסף.':'לא ניתן לפתוח את ההזמנה כרגע. הסטטוס הקיים נשמר.',code:uncertain?'checkout_requires_reconciliation':'order_unavailable'},{status:409,headers:PRODUCT_HTTP_HEADERS});}
 }

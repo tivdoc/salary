@@ -6,6 +6,7 @@ import {SourceStructureAnswer} from './source-structure-answer';
 import {TravelTariffAnswer} from './travel-tariff-answer';
 import {SourcePeriodIntakeAnswer} from './source-period-intake-answer';
 import {ObligationPaymentLinkAnswer} from './obligation-payment-link-answer';
+import {DocumentEvidenceSourceTranscriptionAnswer} from './document-evidence-source-transcription-answer';
 
 type Action='confirm'|'correct'|'unreadable'|'unknown';
 const labels:Record<Action,string>={confirm:'זה הערך בתא',correct:'הערך בתא שונה',unreadable:'לא קריא',unknown:'לא יודע'};
@@ -15,6 +16,8 @@ function previous(value:string|null|undefined):{action:Action|null;raw:string}{
 }
 type Props={request:StoredRequest;publicId:string;onAnswered:()=>void;correction?:boolean;sourceShared?:boolean};
 export function DocumentFieldAnswer(props:Props){
+ const sourceTranscription=props.request.reading_display?.source_transcription_context;
+ if(sourceTranscription)return <DocumentEvidenceSourceTranscriptionAnswer {...props} context={sourceTranscription}/>;
  const obligation=props.request.reading_display?.obligation_context;
  if(obligation)return <ObligationPaymentLinkAnswer {...props} context={obligation}/>;
  const intake=props.request.reading_display?.period_intake_context;

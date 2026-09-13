@@ -13,11 +13,12 @@ import {savedDocumentReviewInput,savedDocumentReviewSourceScope} from './saved-d
 import {savedMonthIdempotencyKey} from './saved-order-scope';
 import {prepareSavedAiReleaseReview} from './saved-ai-release';
 import type {SavedAiReleaseConfiguration} from './saved-ai-release-configuration';
+import {prepareSavedRealAiServiceReview,type SavedRealAiServiceConfiguration} from './saved-real-ai-service-configuration';
 import {AI_RELEASE_REPORT_TEMPLATE} from '../reports/ai-release-report';
 
 /** Configuration and report policy are execution dependencies, independent of
  * the source revision. Never derive this identity from caller-supplied facts. */
-export function savedAiReleaseBaseKey(job:SourceJob,orderId:string,month:string,profile:SavedAiReleaseConfiguration|SavedOwnerEngineeringConfiguration){
+export function savedAiReleaseBaseKey(job:SourceJob,orderId:string,month:string,profile:SavedAiReleaseConfiguration|SavedOwnerEngineeringConfiguration|SavedRealAiServiceConfiguration){
  z.string().regex(/^[a-f0-9]{64}$/u).parse(profile.profile_sha256);
  return canonicalSha256({base:savedMonthIdempotencyKey(job,orderId,month),ai_profile:profile.profile_sha256,template:'owner_scope' in profile?OWNER_ENGINEERING_REPORT_TEMPLATE:AI_RELEASE_REPORT_TEMPLATE});
 }
@@ -34,14 +35,14 @@ export function documentReviewIdempotencyKey(baseKey:string,reviewSha256:string,
 
 /** Use the same authenticated snapshot/receipt adapters as saved analysis.
  * This only resolves current inputs; it neither calculates nor publishes. */
-export async function resolveSavedDocumentReviewKey(context:PostgresTransactionContext,job:SourceJob,order:SavedExecutionOrder,month:string,baseKey:string,options?:{aiProfile?:SavedAiReleaseConfiguration;ownerProfile?:SavedOwnerEngineeringConfiguration}){
- if(options?.aiProfile&&options.ownerProfile)throw Error('ANALYSIS_PROFILE_AMBIGUOUS');
- const profile=options?.ownerProfile??options?.aiProfile;
+export async function resolveSavedDocumentReviewKey(context:PostgresTransactionContext,job:SourceJob,order:SavedExecutionOrder,month:string,baseKey:string,options?:{aiProfile?:SavedAiReleaseConfiguration;ownerProfile?:SavedOwnerEngineeringConfiguration;realProfile?:SavedRealAiServiceConfiguration}){
+ if([options?.aiProfile,options?.ownerProfile,options?.realProfile].filter(Boolean).length>1)throw Error('ANALYSIS_PROFILE_AMBIGUOUS');
+ const profile=options?.realProfile??options?.ownerProfile??options?.aiProfile;
  if(profile&&baseKey!==savedAiReleaseBaseKey(job,order.id,month,profile))throw Error('AI_RELEASE_BASE_KEY_MISMATCH');
  const sourceScope=profile?undefined:await savedDocumentReviewSourceScope(context,job,order,month);
  const snapshot=await new SavedCaseSnapshot(context,job,month,undefined,undefined,true,sourceScope).read();
  const source=await savedDocumentReviewInput(context,job,order,month,snapshot,!!profile);
- const review=profile?('owner_scope' in profile?prepareSavedOwnerEngineeringReview(source,profile):prepareSavedAiReleaseReview(source,profile)):source;
+ const review=options?.realProfile?prepareSavedRealAiServiceReview(source,options.realProfile):profile?('owner_scope' in profile?prepareSavedOwnerEngineeringReview(source,profile):prepareSavedAiReleaseReview(source,profile)):source;
  const reviewSha256=canonicalSha256(review);
  return {key:documentReviewIdempotencyKey(baseKey,reviewSha256),review,reviewSha256,snapshot};
 }

@@ -8,7 +8,7 @@ export const SOURCE_KIND_FIXTURE_NAME='Synthetic source kind SQL proof';
 /** Owner fixture bootstrap only. All UUIDs and source/payment metadata are
  * synthetic. Append-only receipts and their QA cases deliberately remain as
  * labeled test history; this is not an import or validation of a real payment. */
-export async function seedSourceKindFixture(owner:pg.Client,kind:'attendance'|'contract'){
+export async function seedSourceKindFixture(owner:pg.Client,kind:'attendance'|'contract',syntheticPrintedText='SYNTHETIC ONLY - June 2026 payslip',physicalPages=1){
  const caseId=randomUUID(),documentId=randomUUID(),versionId=randomUUID(),paymentId=randomUUID();
  const sid=`source-kind-proof:${randomUUID()}`,jti=randomUUID(),tenant=`saved-case:${caseId}`;
  const capturedAt=new Date().toISOString(),publicId=`SYNTHETIC-KIND-${caseId}`;
@@ -20,7 +20,10 @@ export async function seedSourceKindFixture(owner:pg.Client,kind:'attendance'|'c
  const sourceHash=canonicalSha256(source);
  const built=buildLegacyPaidScope({case:sourceCase,payment,source:{project_ref:source.sourceProject,captured_at:capturedAt,snapshot_sha256:sourceHash},periods:[]});
  if(built.state!=='admitted')throw Error('SYNTHETIC_LEGACY_FIXTURE');
- const scope=built.scope,pdf=await PDFDocument.create();pdf.addPage().drawText('SYNTHETIC ONLY - June 2026 payslip');
+ if(!syntheticPrintedText.startsWith('SYNTHETIC ONLY - ')||syntheticPrintedText.length>180)throw Error('SYNTHETIC_SOURCE_TEXT_REQUIRED');
+ if(!Number.isInteger(physicalPages)||physicalPages<1||physicalPages>7)throw Error('SYNTHETIC_SOURCE_PAGE_BOUND');
+ const scope=built.scope,pdf=await PDFDocument.create();
+ for(let page=1;page<=physicalPages;page++)pdf.addPage().drawText(physicalPages===1||page===3?syntheticPrintedText:`SYNTHETIC ONLY - source page ${page}`,{size:9});
  const bytes=await pdf.save(),hash=createHash('sha256').update(bytes).digest('hex');
  const configurationId=randomUUID(),enrollmentId=randomUUID();
  const issuedAt=new Date(Date.now()-60000).toISOString(),expiresAt=new Date(Date.now()+15*60000).toISOString();

@@ -2,6 +2,7 @@ import {loadSavedOwnerEngineeringConfiguration} from './saved-owner-engineering-
 import {prepareSavedOwnerEngineeringReview,savedOwnerEngineeringPreparation,assertSavedOwnerEngineeringCurrent} from './saved-owner-engineering';
 import {OWNER_ENGINEERING_REPORT_TEMPLATE} from '../reports/owner-engineering-report';
 import {loadSavedAiReleaseConfiguration} from './saved-ai-release-configuration';
+import {loadSavedRealAiServiceIfEnrolled,prepareSavedRealAiServiceReview,savedRealAiServicePreparation,assertSavedRealAiServiceCurrent} from './saved-real-ai-service-configuration';
 import {prepareSavedAiReleaseReview,savedAiReleasePreparation,assertSavedAiReleaseCurrent} from './saved-ai-release';
 import {AI_RELEASE_REPORT_TEMPLATE} from '../reports/ai-release-report';
 import {assessSavedReviewUploads} from '../documents/review-fulfillment-saved';
@@ -51,9 +52,10 @@ export async function runSavedMonthAnalysis(input:{context:PostgresTransactionCo
    join public.engine_case_state ecs on ecs.canonical_case_id=v.case_id::text and ecs.tenant_id=$3
    where v.case_id=$1::uuid and v.revision=$2 and v.input_sha256=$4`,[job.case_id,job.revision,input.tenantId,job.input_sha256]));
  const row=selected.rows[0];if(!row)throw new Error('SAVED_ENGINE_CASE_NOT_ADMITTED');
- const ownerProfile=await loadSavedOwnerEngineeringConfiguration(input.context,job);
- const aiProfile=ownerProfile?null:await loadSavedAiReleaseConfiguration(input.context,job);
- const activeProfile=ownerProfile??aiProfile;
+ const realProfile=await loadSavedRealAiServiceIfEnrolled(input.context,job);
+ const ownerProfile=realProfile?null:await loadSavedOwnerEngineeringConfiguration(input.context,job);
+ const aiProfile=realProfile||ownerProfile?null:await loadSavedAiReleaseConfiguration(input.context,job);
+ const activeProfile=realProfile??ownerProfile??aiProfile;
  const testAuthority=!activeProfile&&input.month==="2026-06"&&order.topics.length===1&&order.topics[0]==="minimum_wage"
   ?await loadJune2026TestAuthority(input.context,job,order.id):null;
  const canonical=testAuthority?new SavedJune2026CanonicalRuntime(testAuthority,job,order.id):null;
@@ -70,12 +72,12 @@ export async function runSavedMonthAnalysis(input:{context:PostgresTransactionCo
   regularAuthority?{authority:regularAuthority,orderId:order.id}:undefined,!runtime,sourceScope),baseSnapshot=await baseSnapshots.read();
  const prepareReview=async(base:Awaited<ReturnType<typeof baseSnapshots.read>>)=>{
   const source=await savedDocumentReviewInput(input.context,job,order,input.month,base,!!activeProfile);
-  return ownerProfile?prepareSavedOwnerEngineeringReview(source,ownerProfile):aiProfile?prepareSavedAiReleaseReview(source,aiProfile):source;
+  return realProfile?prepareSavedRealAiServiceReview(source,realProfile):ownerProfile?prepareSavedOwnerEngineeringReview(source,ownerProfile):aiProfile?prepareSavedAiReleaseReview(source,aiProfile):source;
  };
  const review=runtime?undefined:await prepareReview(baseSnapshot);
  const key=runtime?baseKey:documentReviewIdempotencyKey(baseKey,canonicalSha256(review));
  const existing=await input.analysis.caseAnalysis.getCompletedByIdempotencyKey(key);
- if(existing){if(ownerProfile){if(!existing.bundle?.owner_engineering)throw Error('OWNER_ENGINEERING_REPLAY_ENVELOPE_REQUIRED');assertSavedOwnerEngineeringCurrent(existing.bundle.owner_engineering,ownerProfile);}if(aiProfile){if(!existing.bundle?.ai_release)throw Error('AI_RELEASE_REPLAY_ENVELOPE_REQUIRED');assertSavedAiReleaseCurrent(existing.bundle.ai_release,aiProfile);}if(existing.command.case_id!==job.case_id||!existing.bundle||!existing.report||review&&existing.command.document_review_sha256!==canonicalSha256(review))throw new Error('SAVED_REPLAY_SCOPE');if(review){await openSavedNonPayslipReviewRequests(input.context,job,order,input.month,baseSnapshot,!!activeProfile);await assessSavedReviewUploads(input.context,job,existing.bundle.analysis_run_id);}return existing;}
+ if(existing){if(realProfile){if(!existing.bundle?.ai_release)throw Error('REAL_SERVICE_REPLAY_ENVELOPE_REQUIRED');assertSavedRealAiServiceCurrent(existing.bundle.ai_release,realProfile);}if(ownerProfile){if(!existing.bundle?.owner_engineering)throw Error('OWNER_ENGINEERING_REPLAY_ENVELOPE_REQUIRED');assertSavedOwnerEngineeringCurrent(existing.bundle.owner_engineering,ownerProfile);}if(aiProfile){if(!existing.bundle?.ai_release)throw Error('AI_RELEASE_REPLAY_ENVELOPE_REQUIRED');assertSavedAiReleaseCurrent(existing.bundle.ai_release,aiProfile);}if(existing.command.case_id!==job.case_id||!existing.bundle||!existing.report||review&&existing.command.document_review_sha256!==canonicalSha256(review))throw new Error('SAVED_REPLAY_SCOPE');if(review){await openSavedNonPayslipReviewRequests(input.context,job,order,input.month,baseSnapshot,!!activeProfile);await assessSavedReviewUploads(input.context,job,existing.bundle.analysis_run_id);}return existing;}
  const snapshot={...baseSnapshot,...(review?{document_review_input:review}:{})};
  const snapshots={async loadPinned(command:CaseAnalysisCommand){
   const base=await baseSnapshots.loadPinned(command);
@@ -101,7 +103,7 @@ export async function runSavedMonthAnalysis(input:{context:PostgresTransactionCo
  const service=new CaseAnalysisService({clock:{now:()=>now},ids:{derive:savedAnalysisId},
   readingPolicy:regularReadingPolicy,
   prepareOwnerEngineering:ownerProfile?savedOwnerEngineeringPreparation(input.context,job,ownerProfile):undefined,
-  prepareAiRelease:aiProfile?savedAiReleasePreparation(input.context,job,aiProfile):undefined,
+  prepareAiRelease:realProfile?savedRealAiServicePreparation(input.context,job,realProfile):aiProfile?savedAiReleasePreparation(input.context,job,aiProfile):undefined,
   hashes:{hashCanonical:canonicalSha256,hashBytes:b=>createHash('sha256').update(b).digest('hex')},
   snapshots,repository:input.analysis.caseAnalysis,legalCatalog:testAuthority?new June2026IsolatedTestCatalog(testAuthority.assessment):regularAuthority?new June2026RegularCatalog(regularAuthority.authority):new June2026ReviewCatalog(),
   executor:runtime??{async execute(){throw new Error('REGULAR_AUTHORITY_REQUIRED');}},
@@ -143,7 +145,7 @@ export async function runSavedMonthAnalysis(input:{context:PostgresTransactionCo
     blockers:{...diagnostic.blockers,technical:[],authority:regularState?.state==='blocked'?regularState.blockers:['signed_case_assessment_and_current_registry_required']},
     customer_requests_created:collection.resolutions.length>0};
   },
-  logs:{write(){}},templateVersion:ownerProfile?OWNER_ENGINEERING_REPORT_TEMPLATE:aiProfile?AI_RELEASE_REPORT_TEMPLATE:canonical?JUNE2026_CANONICAL_TEST_TEMPLATE:regular?JUNE_REGULAR_REPORT_TEMPLATE:SAVED_DRAFT_TEMPLATE});
+  logs:{write(){}},templateVersion:ownerProfile?OWNER_ENGINEERING_REPORT_TEMPLATE:realProfile||aiProfile?AI_RELEASE_REPORT_TEMPLATE:canonical?JUNE2026_CANONICAL_TEST_TEMPLATE:regular?JUNE_REGULAR_REPORT_TEMPLATE:SAVED_DRAFT_TEMPLATE});
  const bundle=await service.runCaseAnalysis(command);
  const completed=await service.getCompletedRun(bundle.analysis_run_id);
  if(!completed?.report)throw new Error('SAVED_ANALYSIS_NOT_COMMITTED');

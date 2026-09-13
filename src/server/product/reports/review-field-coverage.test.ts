@@ -15,8 +15,22 @@ import {sourceStructureEntries} from '@/engine/document-review/source-structure-
 import {sourceStructureSelector} from '@/engine/extraction/source-structure-resolution';
 import {documentSourceStructureTarget,documentSourceStructureTargetSchema,resolveDocumentSourceStructureVerification,materializeDocumentSourceStructureVerification} from './document-source-structure';
 import {documentSourceTranscriptionTarget,documentSourceTranscriptionTargetSchema} from './document-source-transcription';
+import {documentEvidenceSourceTranscriptionTarget} from './document-evidence-source-transcription';
 vi.mock('server-only',()=>({}));
 const nowMs=Date.parse('2026-09-11T00:00:00Z');
+it.each(['pending','correct','unknown']as const)('keeps a clause transcription outside numeric operand coverage: %s',action=>{
+ const f=reviewRowCellCoverageFixture(),old=f.fieldRequest.target;
+ const target=documentEvidenceSourceTranscriptionTarget({source:{case_id:old.case_id,product_document_id:old.product_document_id,version_id:old.version_id,
+  source_sha256:old.source_sha256,document_kind:'contract',document_month:null,page_count:1,reading_dependencies:[]},
+  purchase:{order_id:randomUUID(),origin:'saved_order',receipt_sha256:'a'.repeat(64),topics:['contract']},month:old.month,page:1});
+ const field:ExistingFieldReadingRequest={...f.fieldRequest,target,code:`document_field:${target.target_sha256}`,
+  answered_at:action==='pending'?null:'2026-09-10T00:00:00Z',answer_text:action==='pending'?null:JSON.stringify({schema_version:'document-evidence-source-answer-v1',action,
+   ...(action==='correct'?{value:{raw_value:'SYNTHETIC ONLY - 100.00',locator:'Complete synthetic clause'}}:{})})};
+ const before=canonicalSha256(f.review);
+ expect(reviewRequestsCoveredByFieldReadings({review:f.review,fieldRequests:[field],nowMs})).toEqual([]);
+ expect(reviewFieldReadingCheckLabels({review:f.review,fieldRequests:[field],nowMs})).toEqual(action==='pending'?[{field_request_id:field.request_id,check_titles:[]}]:[]);
+ expect(canonicalSha256(f.review)).toBe(before);
+});
 it.each(['unknown','unreadable']as const)('links the duplicate numeric request to a saved %s reading without claiming confirmation',action=>{
  const f=reviewRowCellCoverageFixture(),field={...f.fieldRequest,answered_at:'2026-09-10T00:00:00Z',answer_text:JSON.stringify({schema_version:'document-field-answer-v2',action})};
  const before=canonicalSha256(f.review),result=reviewRequestsCoveredByFieldReadings({review:f.review,fieldRequests:[field],nowMs});
