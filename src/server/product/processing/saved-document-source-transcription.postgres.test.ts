@@ -6,6 +6,7 @@ import {mkdirSync,readFileSync,writeFileSync} from 'node:fs';
 import {execFileSync} from 'node:child_process';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import {documentReviewInputSchema} from '@/engine/document-review/contracts';
+import {attachDocumentReviewCoverage} from '@/engine/document-review/coverage';
 import {attachNonPayslipInventory} from '@/engine/document-review/non-payslip';
 import {attachAutomaticNonPayslipEvidence} from '@/engine/entitlement-review/automatic-nonpay';
 import type {PostgresTransactionContext} from '@/server/platform/persistence/postgres/contracts';
@@ -33,6 +34,7 @@ it.skipIf(process.env.TIVDOC_SOURCE_TRANSCRIPTION_DB_PROOF!=='1')('captures an o
  const workingTreeDirty=execFileSync('git',['status','--porcelain','--untracked-files=normal'],{encoding:'utf8',windowsHide:true}).trim().length>0;
  const sourceFiles=['src/server/product/processing/saved-source-physical-pages.ts','src/server/product/processing/saved-source-physical-pages.test.ts',
   'src/server/product/processing/saved-document-source-transcription.postgres.test.ts','src/server/product/processing/saved-admission.ts',
+  'src/server/product/processing/saved-document-source-transcription.ts','src/engine/document-review/coverage.ts',
   'src/server/platform/persistence/postgres/runtime/node-pg-driver.ts',
   'supabase/migrations/20260914021000_contract_physical_effective_legacy_period.sql'];
  const sourcePins=()=>sourceFiles.map(path=>({path,utf8_lf_sha256:createHash('sha256').update(readFileSync(path,'utf8').replace(/\r\n/g,'\n'),'utf8').digest('hex')}));
@@ -60,6 +62,9 @@ it.skipIf(process.env.TIVDOC_SOURCE_TRANSCRIPTION_DB_PROOF!=='1')('captures an o
   await Promise.all([owner.connect(),worker.connect(),web.connect()]);
   for(const [db,role] of [[owner,'tivdoc_dev_migrator'],[worker,'tivdoc_worker_runtime'],[web,'tivdoc_web_runtime']] as const)expect((await db.query('select current_database() database,session_user role')).rows[0]).toEqual({database:'tivdoc_release_replay_20260907',role});
   proofStage='seed_synthetic_fixture';fixture=await seedSourceKindFixture(owner,'contract',printed,7);const f=fixture;
+  const purchaseReceiptSql='select scope::text scope_bytes,receipt_sha256 from private.legacy_paid_scope_admissions where payment_id=$1 and case_id=$2';
+  const originalPurchaseReceipt=(await owner.query(purchaseReceiptSql,[f.paymentId,f.caseId])).rows[0];expect(originalPurchaseReceipt).toBeDefined();
+  expect(f.scope.period_state).toBe('missing');expect(f.scope.periods).toEqual([]);
   // A contract period cannot establish an executable financial month. Keep the
   // original periods=[] receipt and identify a separate synthetic attendance
   // source through the same ordinary web route, without any extraction output.
@@ -115,13 +120,27 @@ it.skipIf(process.env.TIVDOC_SOURCE_TRANSCRIPTION_DB_PROOF!=='1')('captures an o
     purchased_scope:{order_id:order.id,origin:savedOrderOrigin(order),receipt_sha256:savedOrderReceiptSha256(order),topics:[...order.topics]},
     documents:[{case_id:f.caseId,document_id:f.versionId,version_id:f.versionId,file_sha256:f.hash,page_count:7,kind:'contract',label:'Synthetic contract source',period:null,reading_origin:'source_inventory',reading_sha256:f.hash}],checks:[],coverage_gaps:[],
     completion_input:{case_id:f.caseId,period,documents:[],evidence:[],needs:[]}});
-   const review=attachSavedDocumentSourceTranscriptions(attachNonPayslipInventory(base,snapshot),snapshot);
+   // Ordinary coverage preserves the original empty-period purchase receipt;
+   // the independently identified attendance month never rewrites that receipt.
+   const covered=attachDocumentReviewCoverage(base,{schema_version:'document-review-purchase-period-v1',
+    receipt_sha256:savedOrderReceiptSha256(order),state:'missing',periods:[]});
+   const review=attachSavedDocumentSourceTranscriptions(attachNonPayslipInventory(covered,snapshot),snapshot);
    return {job,snapshot,review,composed:attachAutomaticNonPayslipEvidence(review,snapshot).input};
   });}
-  proofStage='ordinary_transcription';const initial=await replay(),opened=await tx(worker,c=>openSavedDocumentSourceTranscriptionRequests(c,initial.job,'2026-06',initial.review),true);
-  expect(opened).toHaveLength(1);expect(await tx(worker,c=>openSavedDocumentSourceTranscriptionRequests(c,initial.job,'2026-06',initial.review))).toEqual(opened);
+  proofStage='ordinary_transcription';const initial=await replay(),reviewBefore=canonicalSha256(initial.review);
+  expect(initial.review.purchased_scope.purchase_period_evidence).toEqual({schema_version:'document-review-purchase-period-v1',
+   receipt_sha256:f.scope.receipt_sha256,state:'missing',periods:[]});
+  const opened=await tx(worker,c=>openSavedDocumentSourceTranscriptionRequests(c,initial.job,'2026-06',initial.review),true);
+  expect(opened).toHaveLength(1);
   const requestId=opened[0].requestId;
-  const target=(await owner.query('select target from private.document_field_targets where request_id=$1',[requestId])).rows[0].target;
+  const targetReceiptSql='select target,target::text target_bytes from private.document_field_targets where request_id=$1';
+  const originalTarget=(await owner.query(targetReceiptSql,[requestId])).rows[0],target=originalTarget.target;
+  expect(await tx(worker,c=>openSavedDocumentSourceTranscriptionRequests(c,initial.job,'2026-06',initial.review))).toEqual(opened);
+  expect((await owner.query(targetReceiptSql,[requestId])).rows[0]).toEqual(originalTarget);
+  expect(canonicalSha256(initial.review)).toBe(reviewBefore);
+  expect((await owner.query(purchaseReceiptSql,[f.paymentId,f.caseId])).rows[0]).toEqual(originalPurchaseReceipt);
+  stagedEvidence.push({stage:proofStage,purchase_period_evidence_state:'missing',purchase_receipt_bytes_sha256:createHash('sha256').update(originalPurchaseReceipt.scope_bytes,'utf8').digest('hex'),
+   target_bytes_sha256:createHash('sha256').update(originalTarget.target_bytes,'utf8').digest('hex'),review_unchanged_after_open_retry:true});
   expect(target).toMatchObject({schema_version:'document-evidence-source-transcription-v2',page:null,page_count:7});
   expect((await owner.query("select count(*)::integer n from private.document_field_targets where case_id=$1 and target->>'schema_version'='document-evidence-source-transcription-v2'",[f.caseId])).rows[0].n).toBe(1);
   expect(target.reading_dependencies).toHaveLength(1);expect(target.reading_dependencies[0].request_id).toBe(periodRequest);
@@ -210,6 +229,7 @@ it.skipIf(process.env.TIVDOC_SOURCE_TRANSCRIPTION_DB_PROOF!=='1')('captures an o
   expect((await pending()).rows[0].value).toEqual([]);
   expect((await owner.query('select answer_text from private.case_request_answer_versions where request_id=$1 and revision=1',[requestId])).rows[0]).toEqual(original);
   expect((await owner.query('select version_id from public.document_versions where case_id=$1 and document_id=$2 and version_id=$3',[f.caseId,physicalId,f.versionId])).rows).toEqual([{version_id:f.versionId}]);
+  expect((await owner.query(purchaseReceiptSql,[f.paymentId,f.caseId])).rows[0]).toEqual(originalPurchaseReceipt);
   expect(sourcePins()).toEqual(testedSourceFiles);
   checks.push('actual worker LOGIN cannot execute private actor helper (42501); SQL211 pending allows exact actor/job/fence and denies foreign actor/fence; physical facade rechecks scoped RPC before and after local synthetic PDF read and records four actual pages without provider or external Storage');
   proofStage='complete';passed=true;

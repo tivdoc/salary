@@ -34,6 +34,22 @@ function fixture(text='Synthetic unsupported clause with all its conditions.'){
  return {source,purchase,target,answer,journal,job,queries,saved,context,review};
 }
 describe('ordinary saved contract transcription integration',()=>{
+ it.each(['missing','recorded'] as const)('opens a contract request with %s purchase-period evidence while preserving that review metadata',async periodState=>{
+  const f=fixture(),purchase={...f.purchase,origin:'legacy_paid_receipt' as const};
+  const review=documentReviewInputSchema.parse({...f.review,purchased_scope:{...purchase,purchase_period_evidence:{
+   schema_version:'document-review-purchase-period-v1',receipt_sha256:purchase.receipt_sha256,state:periodState,
+   periods:periodState==='recorded'?[f.target.period]:[],
+  }}});
+  const before=canonicalSha256(review),expected=documentEvidenceSourceTranscriptionTarget({source:f.source,purchase,month:'2026-06',page:null});
+  // The target's closed purchase contract remains strict. The integration
+  // boundary must select its fields, not remove period evidence from a review.
+  expect(()=>documentEvidenceSourceTranscriptionTarget({source:f.source,purchase:review.purchased_scope,month:'2026-06',page:null})).toThrow();
+  expect(await openSavedDocumentSourceTranscriptionRequests(f.context,f.job,'2026-06',review)).toEqual([
+   {requestId:uuid(5),month:'2026-06',versionId:f.source.version_id,page:null},
+  ]);
+  expect(f.queries.find(q=>q.name==='saved_evidence_source_transcription_open')?.values[3]).toBe(JSON.stringify(expected));
+  expect(canonicalSha256(review)).toBe(before);expect(review.purchased_scope.purchase_period_evidence?.state).toBe(periodState);
+ });
  it('replays latest authenticated text separately, opens one document target across seven physical pages, and emits a semantic gap without replacing extraction bytes',async()=>{
   const f=fixture(),readings=await readSavedDocumentSourceTranscriptions(f.context,f.job,'2026-06',f.journal);
   expect(readings).toHaveLength(1);expect(readings[0].identity_id).toBe(uuid(6));

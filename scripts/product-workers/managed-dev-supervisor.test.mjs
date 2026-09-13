@@ -22,6 +22,13 @@ function fixture(program=`console.log(JSON.stringify({worker:'managed_dev',state
  return {directory,repositoryRoot,control,controlPath,save,run:()=>runManagedSupervisor(controlPath,{repositoryRoot,parentEnvironment:{...process.env,NODE_ENV:'development',VERCEL:undefined,VERCEL_ENV:undefined}})};
 }
 describe('local managed supervisor, injected subprocess only',()=>{
+ it.each(['source_intake_required','source_integrity_required','source_file_unavailable'])('retains the bounded source diagnostic %s without exposing raw errors',code=>{
+  const summarize=lastError=>summarizeSupervisorOutput(JSON.stringify({worker:'managed_dev',state:'finished',items:[{
+   caseId:'11111111-1111-4111-8111-111111111111',state:'dead_letter',lastError,jobId:'saved_'+'a'.repeat(64)}]}));
+  expect(summarize(code).items[0]).toMatchObject({state:'dead_letter',lastError:code});
+  const untrusted=summarize(`${code}: private document or credential`);
+  expect(untrusted.items[0].lastError).toBeNull();expect(JSON.stringify(untrusted)).not.toContain('private document');
+ });
  it('runs a pinned child, retains safe evidence and supports a separate process restart with no persistent child',async()=>{
   const f=fixture();const first=await f.run(),second=await f.run();
   expect(first.state).toBe('finished');expect(second.state).toBe('finished');expect(second.tick).toBe(2);expect(first.child_pid).not.toBe(second.child_pid);

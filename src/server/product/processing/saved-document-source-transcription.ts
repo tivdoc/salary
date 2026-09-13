@@ -66,8 +66,12 @@ export async function openSavedDocumentSourceTranscriptionRequests(context:Postg
  await admitSavedSource(context,job);
  const saved=await contextFor(context,job),sources=saved.source_documents.filter(s=>!review.non_payslip_evidence?.some(e=>e.document.document_id===s.version_id&&e.extraction?.observations.some(o=>o.original.semantic==='clause_text')));
  const opened:{requestId:string;month:string;versionId:string;page:null}[]=[];
+ const {order_id,origin,receipt_sha256,topics}=review.purchased_scope;
+ // Coverage retains the purchase's original period evidence. The source-text
+ // target accepts only the purchase identity and coverage fields it hashes.
+ const purchase={order_id,origin,receipt_sha256,topics};
  for(const source of sources){
-  const target=documentEvidenceSourceTranscriptionTarget({source,purchase:review.purchased_scope,month,page:null});
+  const target=documentEvidenceSourceTranscriptionTarget({source,purchase,month,page:null});
   const rows=await context.client.query(statement('saved_evidence_source_transcription_open','select private.document_field_request_open($1::uuid,$2,$3,$4::jsonb,$5) id',
    [job.case_id,job.revision,job.input_sha256,JSON.stringify(target),documentEvidenceSourceTranscriptionQuestion(target).question]));
   if(rows.row_count!==1)throw Error('SOURCE_TRANSCRIPTION_REQUEST_REQUIRED');
