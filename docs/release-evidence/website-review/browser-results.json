@@ -1,0 +1,31 @@
+{
+  "origin": "http://localhost:3114",
+  "checks": [
+    {
+      "width": 360,
+      "pageHeight": 8759
+    },
+    {
+      "width": 390,
+      "pageHeight": 8614
+    },
+    {
+      "width": 768,
+      "pageHeight": 6961
+    },
+    {
+      "width": 1440,
+      "pageHeight": 7106
+    },
+    {
+      "video": "play, pause, seek, captions and pause offscreen passed"
+    },
+    {
+      "mediaError": "visible error and written fallback passed"
+    }
+  ],
+  "errors": [],
+  "zoom200": "CSS zoom and reflow",
+  "menu": "passed",
+  "reducedMotion": "passed"
+}

@@ -1,115 +1,70 @@
-"use client";
-
-import { useRef, useState, type KeyboardEvent } from "react";
-import { FileText } from "@phosphor-icons/react/dist/csr/FileText";
-import { Plus } from "@phosphor-icons/react/dist/csr/Plus";
-import { productOffer } from "@/config/product-offer";
+import samples from "@/content/report-samples.json";
+import { parseProjection } from "@/server/product/reports/case-report-projection";
+import { ReportView } from "@/components/case/report-view";
+import { DetailDialog } from "./detail-dialog";
 
 export function ReportPreview() {
-  const [tab, setTab] = useState(0);
-  const tabs = useRef<(HTMLButtonElement | null)[]>([]);
-  function changeTab(event: KeyboardEvent<HTMLButtonElement>) {
-    let next: number;
-    if (event.key === "Home") next = 0;
-    else if (event.key === "End") next = 1;
-    else if (event.key === "ArrowLeft" || event.key === "ArrowRight")
-      next = 1 - tab;
-    else return;
-    event.preventDefault();
-    setTab(next);
-    tabs.current[next]?.focus();
-  }
+  const document = samples.reports[0];
+  const projection = parseProjection(document.projection);
   return (
     <section
-      className="home-section report-preview"
+      className="report-preview home-section"
       id="what-you-get"
       aria-labelledby="report-title"
     >
-      <div className="shell">
-        <div className="section-intro" data-reveal>
-          <h2 id="report-title">
-            המידע מקבל סדר.
-            <br />
-            והצעד הבא מתבהר.
-          </h2>
-          <p>
-            כך מתוכנן להיראות המידע בתוצר: מה נבדק, על מה הוא מבוסס ומה אפשר
-            לעשות עכשיו.
-          </p>
-        </div>
-        <div className="report-preview__box" data-reveal>
-          <div className="report-tabs" role="tablist" aria-label="מבנה התוצר">
-            {["בדיקה ראשונית", "דוח מלא"].map((label, index) => (
-              <button
-                key={label}
-                type="button"
-                role="tab"
-                id={`report-tab-${index}`}
-                aria-selected={tab === index}
-                aria-controls="report-panel"
-                tabIndex={tab === index ? 0 : -1}
-                ref={(node) => {
-                  tabs.current[index] = node;
-                }}
-                onClick={() => setTab(index)}
-                onKeyDown={changeTab}
-              >
-                {label}
-              </button>
-            ))}
+      <div className="studio-shell">
+        <h2 id="report-title" className="studio-section-title">
+          מקבלים ממצאים עם הסבר ומקור.
+        </h2>
+        <p className="sample-disclosure">
+          דוגמה להמחשה על נתונים סינתטיים; אינה דוח של לקוח.
+        </p>
+        <article className="focused-finding" aria-labelledby="finding-title">
+          <div className="focused-finding__heading">
+            <span className="studio-eyebrow">פנסיה · יוני 2026</span>
+            <h3 id="finding-title">הרכיב מופיע. האישור עדיין חסר.</h3>
+            <p className="sample-status">אי אפשר לקבוע סכום</p>
           </div>
-          <div
-            role="tabpanel"
-            id="report-panel"
-            aria-labelledby={`report-tab-${tab}`}
-            tabIndex={0}
-            className="report-preview__content"
-          >
-            <div className="report-preview__description">
-              <FileText size={40} weight="duotone" aria-hidden="true" />
-              <h3>{tab === 0 ? "נקודת התחלה מסודרת" : "להעמיק בתמונה"}</h3>
+          <div className="finding-steps">
+            <div>
+              <span>01 / מה נבדק</span>
+              <p>רכיב הפנסיה במסמך והמידע על הקרן בתחילת ההעסקה.</p>
+            </div>
+            <div>
+              <span>02 / המקור</span>
               <p>
-                {tab === 0
-                  ? `בדיקה של חודש אחד ועד ${productOffer.initial.maxTopics} נושאים שנבדקו, לפי המסמכים והמידע שנמסרו.`
-                  : "המשך מתוכנן לתקופה שתוסכם מראש, בדיקת AI עם פירוט, מקורות ואפשרות לבירור. המוצר עדיין אינו זמין לרכישה."}
-              </p>
-              <p className="preview-disclosure">
-                מבנה תוצר מתוכנן להמחשה. זה אינו דוח שהופק במערכת ואינו תוצאה של
-                לקוח.
+                מסמך ההדגמה, עמוד {document.evidence[0].page}: רכיב פנסיה מופיע;
+                מצב הקרן לא נמסר.
               </p>
             </div>
-            <div className="report-preview__findings">
-              {[
-                [
-                  "מה נבדק — ומה עדיין חסר",
-                  "כיסוי הבדיקה",
-                  "לכל נושא יוצג האם נבדק, חסר עבורו מידע או שאינו כלול. היעדר ממצאים לבדו אינו מעיד שהכול תקין.",
-                ],
-                [
-                  "על איזה מידע הבדיקה נשענת",
-                  "מקור והסבר",
-                  "לצד כל ממצא מתוכנן להופיע המסמך, העמוד או התשובה שעליהם הוא מבוסס, יחד עם הסבר קריא.",
-                ],
-                [
-                  "מה כדאי לברר בהמשך",
-                  "הצעד הבא",
-                  "יופיע פירוט של השאלה או המסמך הדרושים להמשך. כשאין בסיס מספיק או כשהוודאות נמוכה, לא יוצגו סכום או טווח.",
-                ],
-              ].map(([title, label, text]) => (
-                <details key={`${tab}-${label}`}>
-                  <summary>
-                    <span>
-                      <small>{label}</small>
-                      <strong>{title}</strong>
-                    </span>
-                    <Plus size={20} aria-hidden="true" />
-                  </summary>
-                  <p>{text}</p>
-                </details>
-              ))}
+            <div>
+              <span>03 / הצעד הבא</span>
+              <p>
+                להשלים אישור על מצב הקרן בתחילת ההעסקה. אין הבטחה לממצא כספי.
+              </p>
             </div>
           </div>
-        </div>
+          <DetailDialog
+            label="לפירוט הדוגמה והכיסוי"
+            title="הדוגמה המלאה · יוני 2026"
+          >
+            <p>
+              דוגמה להמחשה על נתונים סינתטיים; אינה דוח של לקוח. הכיסוי כאן הוא
+              חודש אחד בלבד.
+            </p>
+            <figure className="sample-source">
+              <figcaption>מסמך ההדגמה · עמוד 1</figcaption>
+              <p className="sample-source-text">{samples.source}</p>
+            </figure>
+            <p>
+              נוסח בירור לדוגמה: אבקש לקבל את פירוט ההפקדות ואת מועד תחילתן, כדי
+              להשלים את המידע החסר.
+            </p>
+            <div className="sample-coverage">
+              <ReportView projection={projection} embedded />
+            </div>
+          </DetailDialog>
+        </article>
       </div>
     </section>
   );

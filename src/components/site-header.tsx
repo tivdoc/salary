@@ -81,6 +81,7 @@ export function SiteHeader({ compact = false }: { compact?: boolean }) {
           {links.map(([id, label]) => (
             <Link
               key={id}
+              prefetch={false}
               href={"/#" + id}
               aria-current={currentSection === id ? "location" : undefined}
               onClick={() => followSection(id)}

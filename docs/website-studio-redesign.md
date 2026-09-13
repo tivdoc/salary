@@ -1,3 +1,5 @@
+> Historical snapshot. For the current integrated website review, see [website-review-full-handoff.md](website-review-full-handoff.md). The test counts and production state below describe their original SHA only.
+
 > Provenance: copied from parallel UI branch `68d82cc15577f306776a82ca0c2c34a2529dbdfb` (design code `133a41c`). Deployment and verification claims below belong to that task. Release-branch integration and independent acceptance are recorded in `release-completion-tracker.md`; this document does not attest that the release branch was deployed to production.
 
 # Tivdoc studio redesign — 8 September 2026

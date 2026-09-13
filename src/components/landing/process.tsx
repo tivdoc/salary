@@ -8,24 +8,28 @@ import { MagnifyingGlass } from "@phosphor-icons/react/dist/csr/MagnifyingGlass"
 import { ListChecks } from "@phosphor-icons/react/dist/csr/ListChecks";
 const stages = [
   {
-    title: "קודם, מה שכתוב.",
+    title: "המסמך נכנס לבדיקה.",
     text: "תלוש שכר, חוזה ודוח נוכחות. כל מסמך נותן זווית אחרת על העבודה שלך.",
-    label: "המסמכים",
+    label: "מעלים מסמכים",
+    detail: "מסמך מיוני 2026 מציין רכיב פנסיה.",
   },
   {
-    title: "ואז, מה שקורה באמת.",
+    title: "תשובה משלימה את ההקשר.",
     text: "השעות, התפקיד והתנאים בפועל. כמה תשובות משלימות את מה שהמסמכים לא מספרים.",
-    label: "התשובות שלך",
+    label: "עונים על שאלות",
+    detail: "נשאלת שאלה על קרן פעילה בתחילת ההעסקה. בדוגמה עדיין אין תשובה.",
   },
   {
-    title: "מחברים את הקצוות.",
+    title: "הרכיב מקבל מקור.",
     text: "מצליבים מקורות ובודקים את ההקשר. מידע חסר נשאר שאלה לבירור, ולא הופך לניחוש.",
-    label: "הצלבת המידע",
+    label: "הנתונים נבדקים",
+    detail: "רכיב הפנסיה מסומן בעמוד 1; האישור על מצב הקרן עדיין חסר.",
   },
   {
-    title: "רואים מה הצעד הבא.",
+    title: "יודעים מה צריך להשלים.",
     text: "מה נבדק, על סמך מה, ומה עוד צריך להשלים. תמונה שאפשר להבין ולהמשיך ממנה.",
-    label: "מבנה התוצר",
+    label: "מקבלים הסבר",
+    detail: "נדרשת השלמת אישור על מצב הקרן. אי אפשר לקבוע סכום.",
   },
 ];
 export function Process() {
@@ -56,13 +60,9 @@ export function Process() {
     >
       <div className="studio-shell">
         <h2 id="process-title" className="studio-section-title" data-reveal>
-          הפרטים כבר שם.
-          <br />
-          <span>מחברים ביניהם.</span>
+          מעלים תלוש. אנחנו בודקים.
         </h2>
-        <p className="process-intro">
-          בוחרים שלב ורואים איך המסמכים והתשובות מתחברים.
-        </p>
+        <p className="process-intro">מסמך אחד, ארבע פעולות. דוגמה סינתטית.</p>
         <div className="process-explorer">
           <div
             className="process-tabs"
@@ -101,21 +101,30 @@ export function Process() {
               <div className="assembly__orbit" />
               <div className="assembly__sheet assembly__sheet--one">
                 <FileText size={26} />
-                <span>תלוש שכר</span>
-                <i />
-                <i />
-                <i />
+                <span>מסמך הדגמה</span>
+                <small className="assembly-fact">יוני 2026 · עמוד 1</small>
+                <strong className="assembly-field">רכיב פנסיה</strong>
               </div>
               <div className="assembly__sheet assembly__sheet--two">
                 <ChatText size={26} />
-                <span>העבודה בפועל</span>
+                <span>התשובה שלך</span>
+                <small className="assembly-fact">
+                  קרן פעילה בתחילת ההעסקה?
+                  <br />
+                  עדיין לא נמסר
+                </small>
                 <i />
                 <i />
                 <i />
               </div>
               <div className="assembly__sheet assembly__sheet--three">
                 <ListChecks size={26} />
-                <span>התמונה שלך</span>
+                <span>הצעד הבא</span>
+                <small className="assembly-fact">
+                  להשלים אישור על מצב הקרן
+                  <br />
+                  אין סכום מבוסס
+                </small>
                 <i />
                 <i />
                 <i />
@@ -138,7 +147,13 @@ export function Process() {
             tabIndex={0}
           >
             <h3>{stages[active].title}</h3>
-            <p>{stages[active].text}</p>
+            <p className="process-example" aria-live="polite">
+              {stages[active].detail}
+            </p>
+            <details className="stage-more" key={active}>
+              <summary>עוד על השלב</summary>
+              <p>{stages[active].text}</p>
+            </details>
             <div className="process-pager">
               <span aria-live="polite" aria-atomic="true">
                 שלב {active + 1} מתוך {stages.length}
@@ -160,9 +175,6 @@ export function Process() {
                 <ArrowLeft size={22} aria-hidden="true" />
               </button>
             </div>
-            <a className="process-outcome" href="#what-you-get">
-              ומה מקבלים בסוף? <ArrowLeft size={18} aria-hidden="true" />
-            </a>
           </div>
           <noscript>
             <ol>

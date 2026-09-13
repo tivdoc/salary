@@ -4,10 +4,6 @@ import {EXTERNAL_MEASUREMENT_ENABLED} from "@/lib/measurement-policy";
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import Script from "next/script";
-import {
-  trackMetaBrowserEvent,
-  trackMetaViewContentOnce,
-} from "@/lib/meta-browser";
 
 export function MetaPixelProvider({ pixelId }: { pixelId?: string }) {
   const pathname = usePathname();
@@ -15,9 +11,14 @@ export function MetaPixelProvider({ pixelId }: { pixelId?: string }) {
 
   useEffect(() => {
     if (!EXTERNAL_MEASUREMENT_ENABLED || !pixelId || lastPathname.current === pathname) return;
-    lastPathname.current = pathname;
-    trackMetaBrowserEvent("PageView");
-    if (pathname === "/check") trackMetaViewContentOnce();
+    let cancelled = false;
+    void import("@/lib/meta-browser").then(({ trackMetaBrowserEvent, trackMetaViewContentOnce }) => {
+      if (cancelled) return;
+      lastPathname.current = pathname;
+      trackMetaBrowserEvent("PageView");
+      if (pathname === "/check") trackMetaViewContentOnce();
+    }).catch(() => undefined);
+    return () => { cancelled = true; };
   }, [pathname, pixelId]);
 
   if (!EXTERNAL_MEASUREMENT_ENABLED || !pixelId) return null;
