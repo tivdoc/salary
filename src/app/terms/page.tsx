@@ -10,7 +10,7 @@ import { guardStableAppEntrypoint } from "@/server/platform/capabilities/stable-
 
 export const metadata: Metadata = { alternates: { canonical: "/terms" }, title: "תנאי שימוש | Tivdoc" };
 
-export default async function TermsPage({searchParams}: {searchParams?:Promise<{version?:string|string[]}>}={}) {
+export default async function TermsPage({searchParams}: {searchParams:Promise<{version?:string|string[]}>}) {
   await guardStableAppEntrypoint("CEP-009");
   const version=resolveTermsPresentationVersion((await searchParams)?.version);
   if(version===RETAINED_TERMS_VERSION)return <RetainedTerms20260907 />;

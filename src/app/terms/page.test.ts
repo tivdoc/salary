@@ -10,7 +10,7 @@ vi.mock('@/components/site-header',()=>({SiteHeader:()=>null}));
 vi.mock('@/components/site-footer',()=>({SiteFooter:()=>null}));
 beforeEach(()=>vi.clearAllMocks());
 it.each([TermsPage,PrivacyPage])('renders the new notice only on the current version',async Page=>{
- const html=renderToStaticMarkup(await Page());expect(html).toContain('13.9.2026');
+ const html=renderToStaticMarkup(await Page({searchParams:Promise.resolve({})}));expect(html).toContain('13.9.2026');
  expect(html).toContain('כאשר דוח חדש זמין בתיק');expect(html).toContain('ללא מסמכי השכר');expect(html).toContain('לא הודעות פרסומיות');
  expect(guard).toHaveBeenCalledTimes(1);
  const explicit=renderToStaticMarkup(await Page({searchParams:Promise.resolve({version:TERMS_VERSION})}));expect(explicit).toBe(html);

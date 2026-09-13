@@ -8,7 +8,7 @@ import RetainedPrivacy20260907 from "@/components/legal/retained-privacy-2026-09
 
 export const metadata: Metadata = { alternates: { canonical: "/privacy" }, title: "מדיניות פרטיות | Tivdoc" };
 
-export default async function PrivacyPage({searchParams}: {searchParams?:Promise<{version?:string|string[]}>}={}) {
+export default async function PrivacyPage({searchParams}: {searchParams:Promise<{version?:string|string[]}>}) {
   await guardStableAppEntrypoint("CEP-008");
   const version=resolveTermsPresentationVersion((await searchParams)?.version);
   if(version===RETAINED_TERMS_VERSION)return <RetainedPrivacy20260907 />;
