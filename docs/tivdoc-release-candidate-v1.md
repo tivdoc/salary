@@ -2,7 +2,7 @@
 
 **מצב: בפיתוח; אין עדיין מועמדת שעברה קבלת שחרור.** זהו מסמך השחרור המרכזי. הוא מחליף את העצירה בסוף חבילות ביניים, בהתאם להנחיית הבעלים מ־12.09.2026. מסירות קודמות הן ראיות היסטוריות, לא רשימות עבודה מתחרות. בסיס תחילת העבודה: `0c5d9c0`, ענף `codex/tivdoc-release-completion`.
 
-עדכון שילוב 13.09.2026: `6324578` נדחף; API מקומי3423 ו־worker נבנו מעותק נקי באותה גרסה. DEV206 הוחלה. קריאת חוזה מזוהה נבדקה בתפקידי web/worker; חיבורי פרסום, קריאת HTML/PDF והצעת המשך REAL קיימים בקוד, אך קבלתם הרציפה עוד פתוחה. workers97618de נשארו בהשהיה אחרי תפוגה; הכנת חלון QA חדש שומרת קבלות מקור ותקציב ללא קריאת ספק נוספת. CI632 העביר7462 בדיקות ונכשל בבדיקה שחיפשה שם פונקציה ישן בנתיב רכישה; תיקון הבדיקה המקומי עדיין דורש ריצה. מנפיק מכונה, controller ותקציב בקשות ספק נמצאים בשילוב ובהוכחה, ולא נחשבים שירות לקוח מופעל. מצב עדכני וראיות ב־[HANDOFF](../HANDOFF.md); אין שינוי בהיקף הקפוא שלהלן.
+עדכון שילוב 13.09.2026: נקודת הקוד שנדחפה היא `28b918d`; CI של המיזוג עבר7751 בדיקות ואת שערי types/lint/build/closure. API3423 ו־worker נבנו מעותק נקי מול DEV214. ניסיון התיק בתזמון גילה קריאה לפונקציית הרשאה שאינה זמינה לתפקיד worker; תיקון מקומי משתמש ב־RPC211 הקיים ודורש הוכחת DEV חיובית לפני ניסיון נוסף. תיקון כיסוי השלמות מונע שאלות כלליות כאשר כל תצפיות המקור כבר מכוסות בבקשות קריאה נפרדות, בלי לקבל ערך או להסתיר סתירה. קבלת המסלול והמסירה נשארת פתוחה; פירוט הראיות והמצב הקצר ב־[HANDOFF](../HANDOFF.md). אין שינוי Production, בהיקף הקפוא או ברכישות.
 
 ## היקף קפוא
 
@@ -104,7 +104,7 @@ Production נשאר ללא שינוי עד שמועמדת ומעבר מוכני�
 | חיבור שהשתנה | משתנה הפעלה מפורש, בערך `1` | קובץ בדיקה קיים |
 |---|---|---|
 | קליטת סוג מקור, תקופה ותכנון עבודה | `TIVDOC_SOURCE_KIND_DB_PROOF` | `src/server/product/processing/saved-source-intake-worker.postgres.test.ts` |
-| פתיחת קריאת סעיף, תשובה מזוהה והיסטוריה | `TIVDOC_SOURCE_TRANSCRIPTION_DB_PROOF` | `src/server/product/processing/saved-document-source-transcription.postgres.test.ts` |
+| פתיחת קריאת סעיף, תשובה והיסטוריה; גם גילוי עמודי חוזה דרך facade העיבוד עם LOGIN worker ונעילה אמיתיים | `TIVDOC_SOURCE_TRANSCRIPTION_DB_PROOF` | `src/server/product/processing/saved-document-source-transcription.postgres.test.ts` |
 | בקשת מסמך, העלאה, finalizer והערכת ההשלמה | `TIVDOC_SAVED_REVIEW_UPLOAD_DB_PROOF` | `src/server/product/processing/saved-review-upload.postgres.test.ts` |
 | סירוב תקציב/הרשאת ספק בתפקידי השירות | `TIVDOC_REAL_PROVIDER_DB_REFUSAL_PROOF` | `src/server/product/processing/real-service-budgeted-extractor.postgres.test.ts` |
 

@@ -24,17 +24,15 @@ function setup(bytes:Uint8Array,mime:Mime='application/pdf'){
  const context:PostgresTransactionContext={transaction_id:'synthetic-physical-pages',client:{async query(query){
   expect(depth).toBe(1);queries.push(query);events.push(query.name);
   if(query.name==='source_physical_lease'||query.name==='source_contract_physical_lease'){
-   if(query.name==='source_contract_physical_lease'){
-    expect(query.text).toContain('private.runtime_verified_actor()::text=$4');
-    if(!state.actor)return {rows:[],row_count:0};
-   }
+   expect(query.text).not.toContain('private.runtime_verified_actor()');
    expect(query.values).toEqual(['synthetic-job',job.case_id,JSON.stringify(job),'synthetic-worker',7]);
    for(const fence of ["state='running'",'lease_owner=$4','fencing_token=$5','lease_expires_at>clock_timestamp()','not cancellation_requested','payload=$3::jsonb'])expect(query.text).toContain(fence);
    return {rows:state.lease?[{job_id:'synthetic-job'}]:[],row_count:state.lease?1:0};
   }
   if(query.name==='source_contract_physical_pending'){
    expect(query.values).toEqual([job.case_id,job.revision,job.input_sha256,'synthetic-job','synthetic-worker',7]);
-   return {rows:[{value:state.pending}],row_count:1};
+   if(!state.actor)throw Error('SOURCE_INTAKE_FORBIDDEN');
+   return {rows:[{value:structuredClone(state.pending)}],row_count:1};
   }
   if(query.name==='source_physical_pending'){
    expect(query.values).toEqual([job.case_id,job.revision,job.input_sha256]);return {rows:[{value:state.pending}],row_count:1};
@@ -110,6 +108,8 @@ describe('contract transcription physical metadata independent of source-period 
   expect(await ensureSavedSourcePhysicalPages({...f.input,purpose:'contract_transcription'})).toEqual({recorded:1,unreadableVersions:[]});
   expect(f.queries.some(q=>q.name==='source_physical_pending')).toBe(false);
   expect(f.records()[0].values.at(-1)).toBe(7);
+  expect(f.queries.filter(q=>q.name==='source_contract_physical_pending')).toHaveLength(3);
+  expect(f.events.slice(f.events.indexOf('download')+1)).toEqual(['begin','admit','source_contract_physical_lease','source_contract_physical_pending','source_physical_record','commit']);
  });
  it('does no storage work when the current paid scope has no eligible contract or its receipt exists',async()=>{
   const f=setup(await pdfBytes());f.state.pending=[];
@@ -125,7 +125,29 @@ describe('contract transcription physical metadata independent of source-period 
   if(reason==='mime'){f.row.mime_type='image/png';f.row.storage_path=f.row.storage_path.replace('.pdf','.png');}
   const result=ensureSavedSourcePhysicalPages({...f.input,purpose:'contract_transcription'});
   if(reason==='unreadable'||reason==='mime')expect(await result).toEqual({recorded:0,unreadableVersions:[f.row.version_id]});
-  else await expect(result).rejects.toThrow(reason==='source'?'ANALYSIS_INPUT_SUPERSEDED':reason==='lease'||reason==='actor'?'SAVED_JOB_FENCE':'SOURCE_INTAKE_PHYSICAL_CHANGED');
+  else await expect(result).rejects.toThrow(reason==='source'?'ANALYSIS_INPUT_SUPERSEDED':reason==='lease'?'SAVED_JOB_FENCE':reason==='actor'?'SOURCE_INTAKE_FORBIDDEN':'SOURCE_INTAKE_PHYSICAL_CHANGED');
+  expect(f.records()).toEqual([]);
+ });
+ it('rejects the wrong actual actor through the scoped RPC before any storage read',async()=>{
+  const f=setup(await pdfBytes());f.state.actor=false;
+  await expect(ensureSavedSourcePhysicalPages({...f.input,purpose:'contract_transcription'})).rejects.toThrow('SOURCE_INTAKE_FORBIDDEN');
+  expect(f.download).not.toHaveBeenCalled();expect(f.records()).toEqual([]);
+ });
+ it.each(['paid_scope','version','hash','size','mime','path']as const)('rechecks exact pending contract %s after storage before recording',async reason=>{
+  const f=setup(await pdfBytes());f.state.afterRead=()=>{
+   if(reason==='paid_scope')f.state.pending=[];
+   else if(reason==='version')f.row.version_id=randomUUID();
+   else if(reason==='hash')f.row.source_sha256='f'.repeat(64);
+   else if(reason==='size')f.row.byte_size++;
+   else if(reason==='mime')f.row.mime_type='image/png';
+   else f.row.storage_path+='changed';
+  };
+  await expect(ensureSavedSourcePhysicalPages({...f.input,purpose:'contract_transcription'})).rejects.toThrow('SOURCE_INTAKE_PHYSICAL_CHANGED');
+  expect(f.download).toHaveBeenCalledOnce();expect(f.records()).toEqual([]);expect(f.events.at(-1)).toBe('rollback');
+ });
+ it('rechecks actual actor after unreadable bytes before returning an unreadable outcome',async()=>{
+  const f=setup(brokenPdf());f.state.afterRead=()=>{f.state.actor=false;};
+  await expect(ensureSavedSourcePhysicalPages({...f.input,purpose:'contract_transcription'})).rejects.toThrow('SOURCE_INTAKE_FORBIDDEN');
   expect(f.records()).toEqual([]);
  });
 });

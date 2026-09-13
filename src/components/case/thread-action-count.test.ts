@@ -38,3 +38,12 @@ it('excludes answered, deferred, covered, stale and expired requests without hid
  expect(html).toContain('אין כרגע שאלות פתוחות');expect(html).not.toContain('הרשימה עשויה להתעדכן');
  expect(render([])).toContain('0 פעולות נדרשות כעת');
 });
+
+it('counts each source decision while excluding only the fully covered generic question',()=>{
+ const fields=eightDecisions().slice(0,2),question={...fields[0],id:'55555555-5555-4555-8555-555555555555',
+  code:'document_review:'+'e'.repeat(64),reading_display:undefined,covered_by_field_request_ids:fields.map(r=>r.id)};
+ const html=render([...fields,question]);expect(html).toContain('2 פעולות נדרשות כעת');
+ expect(html.match(/aria-label="תוצאת בדיקת המקור"/g)).toHaveLength(2);
+ for(const field of fields)expect(html).toContain(`href="#request-${field.id}"`);
+ expect(render([...fields,{...question,covered_by_field_request_ids:[]}])).toContain('3 פעולות נדרשות כעת');
+});

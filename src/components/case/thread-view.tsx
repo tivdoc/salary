@@ -11,6 +11,7 @@ import {HOURS_CONFLICT_NAMESPACE,formatHoursConflictAnswer} from '@/server/produ
 import {DocumentFieldAnswer} from './document-field-answer';
 import {displayDocumentReadingAnswer,documentRowCellLabels,groupDocumentReadingRequests,type DocumentReadingRequestGroup} from '@/lib/document-reading-display';
 import {balanceMovementLabels} from '@/lib/source-structure-display';
+import {requestReadingCoverageIds} from '@/lib/request-reading-coverage';
 import {createThreadFollowupRefreshBudget,startThreadFollowupRefresh} from './thread-followup-refresh';
 
 function displayAnswer(request:StoredRequest){
@@ -162,6 +163,12 @@ function RowReadingGroup({group,publicId,onAnswered}:{group:Extract<DocumentRead
  </div>;
 }
 
+function ReadingCoverageLinks({request}:{request:StoredRequest}){
+ const ids=requestReadingCoverageIds(request);
+ if(ids.length===1)return <a href={`#request-${ids[0]}`}>{request.covered_by_confirmed_reading||request.covered_by_unresolved_reading?'מעבר לקריאה שנשמרה':'מעבר לשאלת אימות הקריאה'}</a>;
+ return <span>יש לבדוק כל תצפית בנפרד; לא נבחר ערך במקום הקריאות. {ids.map((id,index)=><span key={id}>{index>0?' · ':''}<a href={`#request-${id}`}>אימות תצפית {index+1}</a></span>)}</span>;
+}
+
 export function ThreadView({ publicId, requests, renderedAt }: { publicId: string; requests: readonly StoredRequest[]; renderedAt: number }) {
   const router = useRouter();
   const [refreshEpoch,setRefreshEpoch]=useState(0);
@@ -175,7 +182,7 @@ export function ThreadView({ publicId, requests, renderedAt }: { publicId: strin
       isVisible:()=>document.visibilityState==='visible',onFinished:()=>setFinishedRefreshEpoch(refreshEpoch)});
   },[publicId,refreshEpoch,router]);
   function refreshAfterAction(){setRefreshEpoch(epoch=>epoch+1);router.refresh();}
-  const current = requests.filter((request) => request.answered_at === null && !request.not_required_for_current_review && !request.covered_by_field_request_id && !documentSatisfied(request) && request.source_current !== false && Date.parse(request.expires_at) > renderedAt);
+  const current = requests.filter((request) => request.answered_at === null && !request.not_required_for_current_review && requestReadingCoverageIds(request).length===0 && !documentSatisfied(request) && request.source_current !== false && Date.parse(request.expires_at) > renderedAt);
   const waiting = current.filter(request=>request.answer_kind==='document'&&request.source_intake_upload_state?.state==='received_pending_reading');
   const open = current.filter(request=>!waiting.includes(request));
   const deferred=requests.filter(request=>request.answered_at===null&&request.not_required_for_current_review&&request.source_current===true&&Date.parse(request.expires_at)>renderedAt);
@@ -191,7 +198,7 @@ export function ThreadView({ publicId, requests, renderedAt }: { publicId: strin
   }, [requests, renderedAt, router]);
   const answered = requests.filter((request) => request.answered_at !== null);
   const fulfilled = requests.filter((request) => request.answered_at === null && documentSatisfied(request));
-  const covered = requests.filter(request=>request.answered_at===null&&request.source_current!==false&&!!request.covered_by_field_request_id&&Date.parse(request.expires_at)>renderedAt);
+  const covered = requests.filter(request=>request.answered_at===null&&request.source_current!==false&&requestReadingCoverageIds(request).length>0&&Date.parse(request.expires_at)>renderedAt);
   const blocking = open.filter((request) => request.blocking);
 
   return (
@@ -244,7 +251,7 @@ export function ThreadView({ publicId, requests, renderedAt }: { publicId: strin
         </div>
       );})}
 
-      {covered.length>0?<div className="received-card"><h2>שאלות שמטופלות באימות השדה</h2><p>אין צורך להשיב על אותו תא פעמיים. אימות הקריאה אינו אישור לחישוב או לזכאות.</p>{covered.map(request=><p key={request.id} id={`request-${request.id}`}>{request.question} — {request.covered_by_confirmed_reading?'הקריאה כבר נבדקה ונכללה בדוח העדכני. ':request.covered_by_unresolved_reading?'נשמרה תשובה שלא ניתן לאמת את התא. הבדיקה נשארת חסרה; אפשר לתקן את התשובה או לצרף מקור ברור. ':''}<a href={`#request-${request.covered_by_field_request_id}`}>{request.covered_by_confirmed_reading||request.covered_by_unresolved_reading?'מעבר לקריאה שנשמרה':'מעבר לשאלת אימות הקריאה'}</a></p>)}</div>:null}
+      {covered.length>0?<div className="received-card"><h2>שאלות שמטופלות באימות השדה</h2><p>אין צורך להשיב על אותו תא פעמיים. אימות הקריאה אינו אישור לחישוב או לזכאות.</p>{covered.map(request=><p key={request.id} id={`request-${request.id}`}>{request.question} — {request.covered_by_confirmed_reading?'הקריאה כבר נבדקה ונכללה בדוח העדכני. ':request.covered_by_unresolved_reading?'נשמרה תשובה שלא ניתן לאמת את התא. הבדיקה נשארת חסרה; אפשר לתקן את התשובה או לצרף מקור ברור. ':''}<ReadingCoverageLinks request={request}/></p>)}</div>:null}
       {expired.length > 0 ? <div className="received-card"><h2>שאלות שנסגרו ללא תשובה</h2>{expired.map(request => <p key={request.id}>{request.question} — הסתיים המועד להשלמה.</p>)}</div> : null}
       {superseded.length > 0 ? <div className="received-card"><h2>שאלות ממסמך קודם</h2><p>המסמך או תקופתו השתנו. השאלות נשמרות בהיסטוריה ואינן ממתינות לאישור. אם יהיה צורך בהשלמה מהמסמך העדכני, תופיע שאלה חדשה.</p>{superseded.map(request => <p key={request.id}>{request.question}</p>)}</div> : null}
 
@@ -260,7 +267,7 @@ export function ThreadView({ publicId, requests, renderedAt }: { publicId: strin
                 <p className="thread-answered__question">{request.question}</p>
                 {request.statement_month ? <p>תקופת התשובה: {formatRequestMonth(request.statement_month)}</p> : null}
                 <p className="thread-answered__answer">{displayAnswer(request)}</p>
-                {request.covered_by_field_request_id?<p>התשובה המספרית נשמרה כהצהרה. כדי להשתמש בה כקריאת מסמך נדרש אימות התא במקור. <a href={`#request-${request.covered_by_field_request_id}`}>מעבר לאימות השדה</a></p>:null}
+                {requestReadingCoverageIds(request).length>0?<p>התשובה המספרית נשמרה כהצהרה. כדי להשתמש בה כקריאת מסמך נדרש אימות התא במקור. <ReadingCoverageLinks request={request}/></p>:null}
                 {request.source_current === true && request.code.startsWith('document_field:') && ['הערך שונה במסמך','לא ניתן לקרוא את השדה'].includes(request.answer_text ?? '') ? <div><p>אפשר לצרף גרסה ברורה או מתוקנת של אותו מסמך. המסמך הקודם נשמר עד להשלמת ההחלפה. התשובה נשארת בהיסטוריה; המסמך החדש ייבדק בנפרד.</p><AddDocumentButton publicId={publicId} sourceRequestId={request.id} label="החלפת המסמך של השאלה" /></div> : null}
                 {(request.answer_revision ?? 1) > 1 ? <p>תשובה מתוקנת · גרסה {request.answer_revision}. התשובה המקורית נשמרה.</p> : null}
                 {request.source_current === false ? <p>התשובה נשמרה ביחס למסמך הקודם. היא אינה מאשרת נתונים מהמסמך העדכני.</p> : request.answer_kind !== "document" ? <details><summary>תיקון התשובה</summary><AnswerForm key={`${request.id}:${request.draft_revision}:${request.answer_revision}`} request={request} publicId={publicId} correction onAnswered={refreshAfterAction} /></details> : null}

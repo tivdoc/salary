@@ -1,5 +1,5 @@
 import {legacySourceIntakeFixture} from './saved-legacy-source-intake.fixture.ts';
-import {reviewFieldCoverageFixture} from '../reports/review-field-coverage.fixture';
+import {reviewFieldCoverageFixture,reviewMultipleFieldCoverageFixture} from '../reports/review-field-coverage.fixture';
 import {beforeEach,expect,it,vi} from 'vitest';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import {documentReviewInputSchema} from '@/engine/document-review/contracts';
@@ -147,4 +147,25 @@ it('does not suppress an unresolved monthly numeric request using a monthless in
  const result=await openSavedReviewRequests(context,job,review.analysis_run_id);
  expect(result.opened_request_ids).toEqual([requestId]);expect(result.covered_by_field_requests).toBeUndefined();
  expect(queries.filter(q=>q.name==='review_request_open')).toHaveLength(1);
+});
+
+it.each([true,false])('opens no generic multi-candidate question only when its entire field group is available: %s',complete=>{
+ const f=reviewMultipleFieldCoverageFixture(),review=f.review,payload={bundle:{document_review:review}},queries:PostgresStatement[]=[];
+ const job:SourceJob={schema_version:'saved-case-work-v1',case_id:review.case_id,revision:11,input_sha256:'d'.repeat(64),mode:'draft'};
+ ports.orders.mockResolvedValue([{id:review.purchased_scope.order_id,kind:'initial',from:'2025-01-01',to:'2025-01-01',topics:['working_time'],offer_sha256:review.purchased_scope.receipt_sha256}]);
+ const context:PostgresTransactionContext={transaction_id:'synthetic-complete-field-group',client:{async query(query){queries.push(query);
+  if(query.name==='review_requests_stage')return {rows:[{payload,payload_sha256:canonicalSha256(payload)}],row_count:1};
+  if(query.name==='review_existing_field_targets'){
+   const rows=(complete?f.fields:f.fields.slice(0,1)).map(r=>({...r,checkpoint:f.checkpoint}));return {rows,row_count:rows.length};
+  }
+  if(query.name==='review_request_open')return {rows:[{id:requestId}],row_count:1};throw Error('Unexpected query');
+ }}};
+ return openSavedReviewRequests(context,job,review.analysis_run_id).then(result=>{
+  expect(result.opened_request_ids).toEqual(complete?[]:[requestId]);
+  expect(result.covered_by_field_request_groups?.flatMap(g=>g.field_requests.map(r=>r.request_id))).toEqual(complete?f.fields.map(r=>r.request_id):undefined);
+  const select=queries.find(q=>q.name==='review_existing_field_targets')!;
+  expect(select.text).toContain('c.revision=$2 and v.input_sha256=$3');
+  expect(select.text).toContain('d.content_sha256=c.input_sha256');
+  expect(canonicalSha256(payload.bundle.document_review)).toBe(canonicalSha256(review));
+ });
 });

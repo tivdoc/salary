@@ -2,7 +2,7 @@ import {it,expect,vi} from 'vitest';
 import pg from 'pg';
 import {randomUUID,createHash} from 'node:crypto';
 import {PDFDocument} from 'pdf-lib';
-import {mkdirSync,writeFileSync} from 'node:fs';
+import {mkdirSync,readFileSync,writeFileSync} from 'node:fs';
 import {execFileSync} from 'node:child_process';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import {documentReviewInputSchema} from '@/engine/document-review/contracts';
@@ -17,6 +17,8 @@ import {savedLegacySourceIntake,legacySourceIntakeRequests} from './saved-legacy
 import {SavedCaseSnapshot} from './saved-snapshot';
 import {readSavedOrders,savedOrderOrigin,savedOrderReceiptSha256} from './saved-order-scope';
 import {attachSavedDocumentSourceTranscriptions,openSavedDocumentSourceTranscriptionRequests} from './saved-document-source-transcription';
+import {claimSavedDraftJob} from './saved-job-runtime';
+import {ensureSavedSourcePhysicalPages} from './saved-source-physical-pages';
 vi.mock('server-only',()=>({}));
 
 /** Opt-in, actual named PG statements and web/worker login roles. Only new
@@ -28,8 +30,17 @@ it.skipIf(process.env.TIVDOC_SOURCE_TRANSCRIPTION_DB_PROOF!=='1')('captures an o
   u.search='';return new pg.Client({connectionString:u.toString(),ssl:{rejectUnauthorized:true,ca:SUPABASE_ROOT_2021_CA},connectionTimeoutMillis:15000,statement_timeout:30000});};
  const owner=client('TIVDOC_DEV_DATABASE_URL'),worker=client('TIVDOC_WORKER_POSTGRES_URL'),web=client('TIVDOC_WEB_POSTGRES_URL');
  const runId=randomUUID(),head=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8',windowsHide:true}).trim(),checks:string[]=[],names=new Set<string>(),cleanup:unknown[]=[];
+ const workingTreeDirty=execFileSync('git',['status','--porcelain','--untracked-files=normal'],{encoding:'utf8',windowsHide:true}).trim().length>0;
+ const sourceFiles=['src/server/product/processing/saved-source-physical-pages.ts','src/server/product/processing/saved-source-physical-pages.test.ts',
+  'src/server/product/processing/saved-document-source-transcription.postgres.test.ts','src/server/product/processing/saved-admission.ts',
+  'src/server/platform/persistence/postgres/runtime/node-pg-driver.ts',
+  'supabase/migrations/20260914021000_contract_physical_effective_legacy_period.sql'];
+ const sourcePins=()=>sourceFiles.map(path=>({path,utf8_lf_sha256:createHash('sha256').update(readFileSync(path,'utf8').replace(/\r\n/g,'\n'),'utf8').digest('hex')}));
+ const testedSourceFiles=sourcePins();
  const printed='SYNTHETIC ONLY - June 2026 contract. An award is discretionary; no fixed payment is promised.';
- let fixture:Awaited<ReturnType<typeof seedSourceKindFixture>>|undefined,primary:unknown,passed=false,revoked=false,lastStatement='';
+ let fixture:Awaited<ReturnType<typeof seedSourceKindFixture>>|undefined,primary:unknown,passed=false,revoked=false,lastStatement='',physicalJobId:string|undefined;
+ let localSourceReads=0,physicalAdmissions=0,proofStage='connect';
+ const stagedEvidence:Record<string,unknown>[]=[];
  const rawRowTypes:Record<string,Record<string,string>>={};
  async function tx<T>(db:pg.Client,fn:(context:PostgresTransactionContext)=>Promise<T>,commit=false){
   // Reuse the production named-query/Date normalization adapter. This fixture
@@ -40,7 +51,7 @@ it.skipIf(process.env.TIVDOC_SOURCE_TRANSCRIPTION_DB_PROOF!=='1')('captures an o
   await db.query('begin');try{
    await db.query("set local lock_timeout='5s'");
    if(db===worker){await db.query('select * from private.runtime_context_install($1,$2,$3)',[fixture!.sid,fixture!.jti,`source-transcription-proof:${runId}`]);await db.query("select set_config('tivdoc.engine_git_sha',$1,true)",[head]);}
-   const context:PostgresTransactionContext={transaction_id:randomUUID(),client:{async query(q){names.add(q.name);lastStatement=q.name;return managed.query(q);}}};
+   const context:PostgresTransactionContext={transaction_id:randomUUID(),client:{async query(q){names.add(q.name);lastStatement=q.name;if(q.name==='source_contract_physical_pending')physicalAdmissions++;return managed.query(q);}}};
    const value=await fn(context);await db.query(commit?'commit':'rollback');return value;
   }catch(error){await db.query('rollback').catch(e=>cleanup.push(e));throw error;}finally{managed.release();}
  }
@@ -48,7 +59,7 @@ it.skipIf(process.env.TIVDOC_SOURCE_TRANSCRIPTION_DB_PROOF!=='1')('captures an o
  try{
   await Promise.all([owner.connect(),worker.connect(),web.connect()]);
   for(const [db,role] of [[owner,'tivdoc_dev_migrator'],[worker,'tivdoc_worker_runtime'],[web,'tivdoc_web_runtime']] as const)expect((await db.query('select current_database() database,session_user role')).rows[0]).toEqual({database:'tivdoc_release_replay_20260907',role});
-  fixture=await seedSourceKindFixture(owner,'contract',printed,7);const f=fixture;
+  proofStage='seed_synthetic_fixture';fixture=await seedSourceKindFixture(owner,'contract',printed,7);const f=fixture;
   // A contract period cannot establish an executable financial month. Keep the
   // original periods=[] receipt and identify a separate synthetic attendance
   // source through the same ordinary web route, without any extraction output.
@@ -66,8 +77,36 @@ it.skipIf(process.env.TIVDOC_SOURCE_TRANSCRIPTION_DB_PROOF!=='1')('captures an o
   const periodRequest=await openPeriod(f.versionId),attendanceRequest=await openPeriod(attendanceVersion);
   const identify=async(id:string,answer:string,identity=f.identityId)=>tx(web,async()=>web.query({name:'source_transcription_proof_identify',text:'select * from public.case_request_answer_identified($1,$2,$3,$4)',values:[id,f.caseId,identity,answer]}),true);
   const edit=async(id:string,answer:string,revision:number)=>tx(web,async()=>web.query({name:'source_transcription_proof_edit',text:"select public.case_request_edit($1,$2,$3,$4,$5,'correction')",values:[f.caseId,id,f.identityId,answer,revision]}),true);
+  const paidPeriodEvidence=async()=>{
+   const result=await owner.query(`select h.revision,jsonb_array_length(o->'periods') raw_period_count,
+    private.legacy_source_period_evidence(h.case_id,o)->'periods' effective_periods,
+    private.document_review_paid_scope_current(h.case_id,(o->>'id')::uuid,'legacy_paid_receipt',o->>'receipt_sha256',o->'topics',date '2026-06-01') paid_june_current
+    from private.case_input_heads h join private.case_input_versions v on v.case_id=h.case_id and v.revision=h.revision and v.input_sha256=h.input_sha256
+    cross join lateral jsonb_array_elements(v.input->'legacy_orders') o where h.case_id=$1`,[f.caseId]);
+   expect(result.rows).toHaveLength(1);stagedEvidence.push({stage:proofStage,...result.rows[0]});return result.rows[0];
+  };
+  const noContractDiscovery=async()=>{
+   const job=await current();
+   // An actual scoped claim and RPC, rolled back together. There is no queued
+   // execution and no retained lease from either negative admission probe.
+   await tx(worker,async c=>{
+    const denied=await claimSavedDraftJob(c,{caseId:f.caseId,workerId:'synthetic.saved.worker',leaseMs:300000});
+    if(denied.state!=='claimed')throw Error('SOURCE_PHYSICAL_NEGATIVE_EXPECTED_CLAIM');
+    const result=await worker.query({name:'source_transcription_physical_proof_pending',
+     text:'select private.contract_transcription_physical_pages_pending($1::uuid,$2,$3,$4,$5,$6) value',
+     values:[f.caseId,job.revision,job.input_sha256,denied.jobId,'synthetic.saved.worker',denied.fencingToken]});
+    stagedEvidence.push({stage:proofStage,source_revision:job.revision,pending:result.rows[0].value});expect(result.rows[0].value).toEqual([]);
+   });
+  };
   const periodAnswer=JSON.stringify({v:1,action:'correct',value:{document_kind:'contract',period,page:3,source_label:'SYNTHETIC ONLY - June 2026 contract'}});await identify(periodRequest,periodAnswer);
-  await identify(attendanceRequest,JSON.stringify({v:1,action:'correct',value:{document_kind:'attendance',period,page:1,source_label:attendanceLabel}}));
+  proofStage='contract_only_period_negative';
+  expect(await paidPeriodEvidence()).toMatchObject({raw_period_count:0,effective_periods:[],paid_june_current:false});
+  await noContractDiscovery();checks.push('contract-only identified period supplies no effective financial month or paid physical discovery; actual worker claim/RPC rolled back');
+  const attendanceAnswer=JSON.stringify({v:1,action:'correct',value:{document_kind:'attendance',period,page:1,source_label:attendanceLabel}});
+  await identify(attendanceRequest,attendanceAnswer);
+  proofStage='identified_attendance_full_month';
+  const financialPeriod=await paidPeriodEvidence();expect(financialPeriod).toMatchObject({raw_period_count:0,paid_june_current:true});
+  expect(financialPeriod.effective_periods).toHaveLength(1);expect(financialPeriod.effective_periods[0]).toMatchObject({period,source_document_kind:'attendance'});
   expect(f.scope.periods).toEqual([]);
   checks.push('separate synthetic attendance source has an actual web full-month period answer; original purchase periods remain empty; contract alone supplies no financial month');
   async function replay(){const job=await current();return tx(worker,async c=>{
@@ -79,7 +118,7 @@ it.skipIf(process.env.TIVDOC_SOURCE_TRANSCRIPTION_DB_PROOF!=='1')('captures an o
    const review=attachSavedDocumentSourceTranscriptions(attachNonPayslipInventory(base,snapshot),snapshot);
    return {job,snapshot,review,composed:attachAutomaticNonPayslipEvidence(review,snapshot).input};
   });}
-  const initial=await replay(),opened=await tx(worker,c=>openSavedDocumentSourceTranscriptionRequests(c,initial.job,'2026-06',initial.review),true);
+  proofStage='ordinary_transcription';const initial=await replay(),opened=await tx(worker,c=>openSavedDocumentSourceTranscriptionRequests(c,initial.job,'2026-06',initial.review),true);
   expect(opened).toHaveLength(1);expect(await tx(worker,c=>openSavedDocumentSourceTranscriptionRequests(c,initial.job,'2026-06',initial.review))).toEqual(opened);
   const requestId=opened[0].requestId;
   const target=(await owner.query('select target from private.document_field_targets where request_id=$1',[requestId])).rows[0].target;
@@ -110,15 +149,83 @@ it.skipIf(process.env.TIVDOC_SOURCE_TRANSCRIPTION_DB_PROOF!=='1')('captures an o
   expect((await owner.query('select answer_text from private.case_request_answer_versions where request_id=$1 and revision=1',[requestId])).rows[0]).toEqual(original);
   expect((await owner.query('select content_sha256 from public.documents where id=$1',[f.documentId])).rows[0].content_sha256).toBe(f.hash);
   expect((await owner.query('select count(*)::integer n from private.case_extraction_checkpoints where case_id=$1',[f.caseId])).rows[0].n).toBe(0);
-  checks.push('new source-period answer stales field state/source URL/old edit/worker replay; original answer and source hash preserved; zero extraction checkpoints');passed=true;
+  checks.push('new source-period answer stales field state/source URL/old edit/worker replay; original answer and source hash preserved; zero extraction checkpoints');
+  // Exercise SQL211 as the actual authenticated worker, before any analysis
+  // execution. A contract has one permitted slot. Preserve the existing version
+  // using the same archive/CAS pattern as upload_commit, then replace only this
+  // synthetic fixture's current version. This does not prove the upload flow.
+  proofStage='replace_synthetic_contract_version';
+  const physicalId=f.documentId,physicalVersion=randomUUID(),physicalPdf=await PDFDocument.create();
+  for(let page=1;page<=4;page++)physicalPdf.addPage().drawText(`SYNTHETIC ONLY - physical contract page ${page}`,{size:9});
+  const physicalBytes=await physicalPdf.save(),physicalHash=createHash('sha256').update(physicalBytes).digest('hex');
+  const physicalPath=`cases/${f.caseId}/versions/${physicalVersion}.pdf`;
+  await owner.query('begin');try{
+   const prior=await owner.query("select d.id from public.documents d join public.cases c on c.id=d.case_id where d.id=$1 and d.case_id=$2 and d.version_id=$3 and d.content_sha256=$4 and d.document_type='contract' and d.slot='contract' and c.is_qa and c.first_name='Synthetic source kind SQL proof' for update of d",
+    [physicalId,f.caseId,f.versionId,f.hash]);expect(prior.rowCount).toBe(1);
+   const archived=await owner.query('insert into public.document_versions(version_id,document_id,case_id,storage_path,original_filename,mime_type,size,period_month) select version_id,id,case_id,storage_path,original_filename,mime_type,size,period_month from public.documents where id=$1 and case_id=$2 and version_id=$3 and content_sha256=$4 returning version_id',
+    [physicalId,f.caseId,f.versionId,f.hash]);expect(archived.rows).toEqual([{version_id:f.versionId}]);
+   const replaced=await owner.query("update public.documents set version_id=$5,storage_path=$6,original_filename='SYNTHETIC-PHYSICAL-CONTRACT.pdf',mime_type='application/pdf',size=$7,content_sha256=$8,period_month='2026-06-01',processing_status='uploaded',detected_type=null,classification_confidence=null,period_start=null,period_end=null where id=$1 and case_id=$2 and version_id=$3 and content_sha256=$4 returning version_id",
+    [physicalId,f.caseId,f.versionId,f.hash,physicalVersion,physicalPath,physicalBytes.length,physicalHash]);expect(replaced.rows).toEqual([{version_id:physicalVersion}]);
+   await owner.query('commit');
+  }catch(error){await owner.query('rollback');throw error;}
+  expect((await owner.query('select version_id,source_sha256,page_count from private.document_physical_page_receipts where case_id=$1 and document_id=$2',
+   [f.caseId,physicalId])).rows).toEqual([{version_id:f.versionId,source_sha256:f.hash,page_count:7}]);
+  stagedEvidence.push({stage:proofStage,document_id:physicalId,archived_version_id:f.versionId,current_version_id:physicalVersion,source_sha256:physicalHash});
+  // Removing the only financial source reading must deny discovery even though
+  // this current contract really has no physical receipt. Restore through the
+  // ordinary identified edit route; retain both original and unknown answers.
+  proofStage='absent_financial_period_negative';
+  await edit(attendanceRequest,JSON.stringify({v:1,action:'unknown'}),1);
+  expect(await paidPeriodEvidence()).toMatchObject({raw_period_count:0,effective_periods:[],paid_june_current:false});
+  await noContractDiscovery();
+  expect((await owner.query('select count(*)::integer n from private.document_physical_page_receipts where case_id=$1 and document_id=$2 and version_id=$3',
+   [f.caseId,physicalId,physicalVersion])).rows[0].n).toBe(0);
+  await edit(attendanceRequest,attendanceAnswer,2);
+  proofStage='restored_attendance_full_month';
+  const restored=await paidPeriodEvidence();expect(restored).toMatchObject({raw_period_count:0,paid_june_current:true});
+  expect(restored.effective_periods).toHaveLength(1);expect(restored.effective_periods[0]).toMatchObject({period,source_document_kind:'attendance'});
+  checks.push('unknown financial source period denies discovery of physically uninspected contract; restored authenticated attendance full month re-enables eligibility without altering original receipt');
+  const physicalJob=await current(),workerId='synthetic.saved.worker';
+  expect(physicalJob.processing_profile).toBe('qualified_ai_v1');
+  const lease=await tx(worker,c=>claimSavedDraftJob(c,{caseId:f.caseId,workerId,leaseMs:300000}),true);
+  if(lease.state!=='claimed')throw Error('SOURCE_PHYSICAL_PROOF_EXPECTED_CLAIM');physicalJobId=lease.jobId;
+  await expect(tx(worker,async()=>worker.query('select private.runtime_verified_actor()'))).rejects.toMatchObject({code:'42501'});
+  const pending=(actor=workerId,fence=lease.fencingToken)=>tx(worker,async()=>worker.query({name:'source_transcription_physical_proof_pending',
+   text:'select private.contract_transcription_physical_pages_pending($1::uuid,$2,$3,$4,$5,$6) value',
+   values:[f.caseId,physicalJob.revision,physicalJob.input_sha256,lease.jobId,actor,fence]}));
+  proofStage='exact_current_physical_pending';const actualPending=(await pending()).rows[0].value;
+  stagedEvidence.push({stage:proofStage,source_revision:physicalJob.revision,job_id:lease.jobId,pending:actualPending});
+  expect(actualPending).toEqual([{document_id:physicalId,version_id:physicalVersion,source_sha256:physicalHash,
+   byte_size:physicalBytes.length,mime_type:'application/pdf',storage_path:physicalPath}]);
+  await expect(pending('synthetic.foreign.worker')).rejects.toThrow('SOURCE_INTAKE_FORBIDDEN');
+  await expect(pending(workerId,lease.fencingToken+1)).rejects.toThrow('SAVED_JOB_FENCE');
+  proofStage='physical_facade';const beforeAdmissions=physicalAdmissions;
+  expect(await ensureSavedSourcePhysicalPages({job:physicalJob,jobId:lease.jobId,workerId,fencingToken:lease.fencingToken,
+   purpose:'contract_transcription',transactions:operation=>tx(worker,operation,true),storage:{async download(path){
+    expect(path).toBe(physicalPath);localSourceReads++;return {data:new Blob([Uint8Array.from(physicalBytes)]),error:null};
+   }}})).toEqual({recorded:1,unreadableVersions:[]});
+  expect(physicalAdmissions-beforeAdmissions).toBe(3);expect(localSourceReads).toBe(1);
+  expect((await owner.query('select page_count from private.document_physical_page_receipts where case_id=$1 and document_id=$2 and version_id=$3 and source_sha256=$4',
+   [f.caseId,physicalId,physicalVersion,physicalHash])).rows).toEqual([{page_count:4}]);
+  expect((await pending()).rows[0].value).toEqual([]);
+  expect((await owner.query('select answer_text from private.case_request_answer_versions where request_id=$1 and revision=1',[requestId])).rows[0]).toEqual(original);
+  expect((await owner.query('select version_id from public.document_versions where case_id=$1 and document_id=$2 and version_id=$3',[f.caseId,physicalId,f.versionId])).rows).toEqual([{version_id:f.versionId}]);
+  expect(sourcePins()).toEqual(testedSourceFiles);
+  checks.push('actual worker LOGIN cannot execute private actor helper (42501); SQL211 pending allows exact actor/job/fence and denies foreign actor/fence; physical facade rechecks scoped RPC before and after local synthetic PDF read and records four actual pages without provider or external Storage');
+  proofStage='complete';passed=true;
  }catch(error){primary=error;}finally{
   await Promise.allSettled([owner.query('rollback'),worker.query('rollback'),web.query('rollback')]);
+  if(fixture&&physicalJobId)try{
+   await owner.query('begin');await owner.query("select set_config('tivdoc.tenant_id',$1,true)",[fixture.tenant]);
+   await owner.query("update public.engine_durable_jobs set state='cancelled',cancellation_requested=true,lease_owner=null,lease_expires_at=null,revision=revision+1 where job_id=$1 and tenant_id=$2 and canonical_case_id=$3 and state in ('queued','leased','running','retry_wait')",
+    [physicalJobId,fixture.tenant,fixture.caseId]);await owner.query('commit');
+  }catch(error){cleanup.push(error);await owner.query('rollback').catch(e=>cleanup.push(e));}
   if(fixture)try{await revokeSourceKindFixture(owner,fixture);revoked=true;}catch(error){cleanup.push(error);}
   await Promise.allSettled([owner.end(),worker.end(),web.end()]);
   const describe=(e:unknown)=>e instanceof Error?{name:e.name,message:e.message.slice(0,1000)}:{message:String(e).slice(0,1000)};
-  try{const dir='../release-work/source-transcription-postgres';mkdirSync(dir,{recursive:true});writeFileSync(`${dir}/${runId}.private.json`,JSON.stringify({schema_version:'source-transcription-postgres-proof-v1',result:passed&&revoked&&!cleanup.length?'passed':'failed',head,checks,statement_names:[...names].sort(),last_statement:lastStatement,raw_row_types:rawRowTypes,
-   primary_failure:primary===undefined?null:describe(primary),cleanup_failures:cleanup.map(describe),case_id:fixture?.caseId??null,revoked,provider_calls:0,storage_calls:0,
-   retained_scope:'Only fresh labeled synthetic legacy QA case/contract and attendance sources/physical receipts/source-period and text-answer versions/input journals; original empty-period purchase receipt retained; session and enrollment revoked. No real source, provider output, extraction checkpoint, Findings or reports.',
+  try{const dir='../release-work/source-transcription-postgres';mkdirSync(dir,{recursive:true});writeFileSync(`${dir}/${runId}.private.json`,JSON.stringify({schema_version:'source-transcription-postgres-proof-v1',result:passed&&revoked&&!cleanup.length?'passed':'failed',head,working_tree_dirty:workingTreeDirty,tested_source_files:testedSourceFiles,checks,statement_names:[...names].sort(),last_statement:lastStatement,raw_row_types:rawRowTypes,last_stage:proofStage,staged_evidence:stagedEvidence,
+   primary_failure:primary===undefined?null:describe(primary),cleanup_failures:cleanup.map(describe),case_id:fixture?.caseId??null,revoked,provider_calls:0,storage_calls:0,local_source_reads:localSourceReads,physical_admissions:physicalAdmissions,
+   retained_scope:'Only fresh labeled synthetic legacy QA case, contract with archived original version and new physical-proof version, attendance source, immutable physical receipts/source-period and text-answer versions/input journals and cancelled physical-proof job; original empty-period purchase receipt retained; session and enrollment revoked. No real source, provider output, extraction checkpoint, Findings or reports.',
    limitation:'Synthetic local PDF and ordinary web identified answers prove source transcription/currentness only. Unsupported clause wording correctly remains a rule gap; no legal applicability or payment-link proof.'},null,2)+'\n',{flag:'wx',mode:0o600});}catch(error){cleanup.push(error);}
  }
  if(primary!==undefined)throw primary;if(cleanup.length)throw new AggregateError(cleanup,'SOURCE_TRANSCRIPTION_PROOF_CLEANUP_FAILED');

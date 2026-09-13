@@ -8,7 +8,7 @@ import {lockCurrentSource,sourceJobSchema,type SourceJob} from './source-dispatc
 import {readSavedOrders,savedOrderOrigin,savedOrderReceiptSha256,purchasedMonths} from './saved-order-scope';
 import {supportedReviewUpload} from '../documents/review-fulfillment';
 import {documentReadingTargetSchema,documentReadingTargetForCheckpoint} from '../reports/document-field-confirmation';
-import {reviewRequestsCoveredByFieldReadings,type ExistingFieldReadingRequest} from '../reports/review-field-coverage';
+import {reviewRequestsCoveredByFieldReadings,reviewRequestsCoveredByFieldReadingGroups,type ExistingFieldReadingRequest} from '../reports/review-field-coverage';
 import type {StoredCaseInputSnapshot} from '@/engine/case-analysis/contracts';
 import {openSavedReadingDependencies} from './saved-reading-dependencies';
 
@@ -75,6 +75,7 @@ export async function openSavedReviewRequests(context:PostgresTransactionContext
  const numeric=candidates.filter(r=>r.target.kind==='factual'&&r.target.answer_kind==='number'&&r.target.required_evidence_kind==='observed_reading'
   &&review.input.answer_bindings.some(b=>b.fact_key===r.target.fact_key));
  let covered:ReturnType<typeof reviewRequestsCoveredByFieldReadings>=[];
+ let coveredGroups:ReturnType<typeof reviewRequestsCoveredByFieldReadingGroups>=[];
  if(numeric.length){
   const targets=await context.client.query(statement('review_existing_field_targets',
    `select t.request_id,t.target,r.code,r.answered_at,r.expires_at,r.expired_at,c.result checkpoint
@@ -97,8 +98,9 @@ export async function openSavedReviewRequests(context:PostgresTransactionContext
     expired_at:row.expired_at==null?null:new Date(String(row.expired_at)).toISOString()}];
   });
   covered=reviewRequestsCoveredByFieldReadings({review,fieldRequests,nowMs:Date.now()});
+  coveredGroups=reviewRequestsCoveredByFieldReadingGroups({review,fieldRequests,nowMs:Date.now()});
  }
- const requests=candidates.filter(request=>!covered.some(match=>match.target_sha256===request.target.target_sha256));
+ const requests=candidates.filter(request=>![...covered,...coveredGroups].some(match=>match.target_sha256===request.target.target_sha256));
  // Fail before the first SQL insert if any question cannot be represented.
  for(const request of requests)savedReviewRequestQuestion(request.target);
  const opened:string[]=[];
@@ -109,7 +111,7 @@ export async function openSavedReviewRequests(context:PostgresTransactionContext
   if(saved.row_count!==1)throw Error('REVIEW_REQUEST_RECEIPT_MISSING');
   const id=z.uuid().nullable().parse(saved.rows[0]?.id);if(id!==null)opened.push(id);
  }
- return {opened_request_ids:opened,...(covered.length?{covered_by_field_requests:covered}:{}),skipped_document_targets:unsupported.map(r=>({
+ return {opened_request_ids:opened,...(covered.length?{covered_by_field_requests:covered}:{}),...(coveredGroups.length?{covered_by_field_request_groups:coveredGroups}:{}),skipped_document_targets:unsupported.map(r=>({
   target_sha256:r.target.target_sha256,reason:'unsupported_upload_document_kind' as const}))};
 }
 

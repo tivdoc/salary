@@ -16,6 +16,8 @@ import {resolvedMinimumWageSourceNeeds,matchesResolvedMinimumWageNeed} from '@/e
 
 export type ExistingFieldReadingRequest=Readonly<{request_id:string;code:string;target:DocumentReadingTarget;source_current:boolean;answered_at:string|null;answer_text?:string|null;expires_at:string;expired_at?:string|null}>;
 export type ReviewFieldCoverage=Readonly<{target_sha256:string;fact_key:string;field_request_id:string;reading_state?:'unresolved_answer'}&({candidate_id:string;source_scope?:string}|{component_id:string;cell:'quantity'|'rate'|'amount'|'percentage'}|{transcription_kind:'reported_work_hours'}|{transcription_kind:'balance_unit';candidate_id:string}|{structure_kind:'period_association';ref_kind:'field'|'component';ref_id:string})>;
+export type ReviewFieldReadingGroupCoverage=Readonly<{target_sha256:string;fact_key:string;field_requests:readonly Readonly<{
+ request_id:string;candidate_id:string;state:'pending'|'unresolved';}>[]}>;
 type ReplayedReview=ReturnType<typeof replayDocumentReview>;
 type ReviewCalculation=ReplayedReview['checks'][number]['calculation']['input'];
 /** replayDocumentReview already validates each witness and its operand binding.
@@ -264,6 +266,61 @@ export function reviewRequestsCoveredByFieldReadings(input:{review:unknown;field
  }
  if(new Set(result.map(r=>r.target_sha256)).size!==result.length)throw Error('REVIEW_FIELD_COVERAGE_AMBIGUOUS');
  // Do not deduplicate the immutable engine need inventory or its calculation.
+ return deepFreeze(result);
+}
+
+/** A scalar can retain several separately printed observations. Replace its
+ * generic question only with the complete set of exact reading actions. Equal
+ * numbers alone never establish a relationship or certify either observation. */
+export function reviewRequestsCoveredByFieldReadingGroups(input:{review:unknown;fieldRequests:readonly ExistingFieldReadingRequest[];nowMs:number}):readonly ReviewFieldReadingGroupCoverage[]{
+ const review=replayDocumentReview(input.review);if(!Number.isFinite(input.nowMs))throw Error('REVIEW_FIELD_COVERAGE_TIME');
+ const result:ReviewFieldReadingGroupCoverage[]=[];
+ for(const request of review.completions.customer_requests){
+  const target=request.target;
+  if(target.kind!=='factual'||target.answer_kind!=='number'||target.required_evidence_kind!=='observed_reading'
+   ||target.case_id!==review.case_id||target.source_pins.length!==1||canonicalSha256(target.period)!==canonicalSha256(review.period))continue;
+  const bindings=review.input.answer_bindings.filter(b=>b.fact_key===target.fact_key);
+  if(bindings.length!==1||request.dependent_check_ids.length!==1||request.dependent_check_ids[0]!==bindings[0].check_id)continue;
+  const check=review.input.checks.find(c=>c.check_id===bindings[0].check_id);
+  const operand=check&&documentReviewCalculationInputSchema.parse(check.calculation).operands.find(o=>o.id===bindings[0].operand_id);
+  if(!operand||operand.state!=='unknown'||operand.source.reading!=='provider_extraction'||operand.printed_value===null)continue;
+  const locator=parseDocumentReviewSourceLocator(operand.source.locator);
+  if(!locator||!('field'in locator)||locator.candidate_ids.length<2||new Set(locator.candidate_ids).size!==locator.candidate_ids.length
+   ||locator.candidate_sha256.length!==locator.candidate_ids.length||locator.raw_values.length!==locator.candidate_ids.length
+   ||!locator.candidate_ids.includes(operand.observation_id))continue;
+  const pin=target.source_pins[0],source=operand.source;
+  const document=review.documents.find(d=>d.case_id===review.case_id&&d.document_id===source.document_id&&d.version_id===source.version_id
+   &&d.file_sha256===source.file_sha256&&d.reading_sha256===source.reading_receipt_sha256);
+  if(!document||document.kind!=='payslip'||source.document_id!==source.version_id||pin.case_id!==review.case_id
+   ||pin.version_id!==source.version_id||pin.source_sha256!==source.file_sha256||![document.document_id,document.version_id].includes(pin.document_id)
+   ||document.period===null||canonicalSha256(document.period)!==canonicalSha256(review.period))continue;
+  const actual=operand.representation==='money_ils'?normalizeMoney(operand.printed_value)
+   :operand.representation==='decimal_quantity'?normalizeDecimal(operand.printed_value)
+    :operand.representation==='percent'?normalizePercentage(operand.printed_value):null;
+  if(actual===null)continue;
+  const matches=locator.candidate_ids.map((id,index)=>input.fieldRequests.filter(row=>{
+   if(!row.source_current||row.expired_at||!Number.isFinite(Date.parse(row.expires_at))||Date.parse(row.expires_at)<=input.nowMs
+    ||row.answered_at!==null&&!unresolvedAnswer(row.answer_text))return false;
+   const field=documentReadingTargetSchema.parse(row.target);
+   if(field.schema_version!=='document-field-confirmation-v1'||row.code!==`document_field:${field.target_sha256}`
+    ||field.case_id!==review.case_id||field.version_id!==source.version_id||field.source_sha256!==source.file_sha256
+    ||field.month!==review.period.from.slice(0,7)||field.month!==review.period.to.slice(0,7))return false;
+   const candidate=field.candidate;
+   if(candidate.candidate_id!==id||candidate.field!==locator.field||candidate.source.page!==source.page
+    ||canonicalSha256(candidate)!==locator.candidate_sha256[index]||candidate.raw_value!==locator.raw_values[index])return false;
+   const scalar=Object.fromEntries(Object.entries(candidate).filter(([key])=>key!=='normalized_value'));
+   const normalized=normalizePayslipFieldValue(rawCandidateFieldSchema.parse(scalar));
+   const value=normalized&&typeof normalized==='object'&&'amount'in normalized?normalized.amount:normalized;
+   return value!==null&&canonicalSha256(value)===canonicalSha256(actual);
+  }));
+  if(matches.some(rows=>rows.length!==1))continue;
+  const fields=matches.map(rows=>rows[0]),first=fields[0].target;
+  if(first.schema_version!=='document-field-confirmation-v1'||fields.some(row=>row.target.schema_version!=='document-field-confirmation-v1'
+   ||row.target.product_document_id!==first.product_document_id||row.target.policy_version!==first.policy_version
+   ||row.target.extraction_result_sha256!==first.extraction_result_sha256)||new Set(fields.map(row=>row.request_id)).size!==fields.length)continue;
+  result.push({target_sha256:target.target_sha256,fact_key:target.fact_key,field_requests:fields.map((row,index)=>({
+   request_id:row.request_id,candidate_id:locator.candidate_ids[index],state:row.answered_at===null?'pending':'unresolved'}))});
+ }
  return deepFreeze(result);
 }
 

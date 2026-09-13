@@ -12,6 +12,7 @@ import {PRODUCT_HTTP_HEADERS} from '@/server/product/routes/http-common';
 import {z} from 'zod';
 import {resolveCaseAccessDb} from '@/server/product/case-access/db';
 import {markReadingSource} from '@/server/product/reports/marked-reading-source';
+import {requestReadingCoverageIds} from '@/lib/request-reading-coverage';
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -93,7 +94,7 @@ export async function POST(request: Request, context: { params: Promise<{ token:
     }
     const remaining = await listCaseRequests(found.case_id,undefined,session.identity_id);
     return NextResponse.json(
-      { ok: true, open: remaining.filter((row) => row.answered_at === null && row.source_current !== false && !row.not_required_for_current_review && !row.covered_by_field_request_id && !(row.document_upload_state?.state==='satisfied'&&row.document_upload_state.information_satisfied) && Date.parse(row.expires_at)>Date.now()).length },
+      { ok: true, open: remaining.filter((row) => row.answered_at === null && row.source_current !== false && !row.not_required_for_current_review && requestReadingCoverageIds(row).length===0 && !(row.document_upload_state?.state==='satisfied'&&row.document_upload_state.information_satisfied) && Date.parse(row.expires_at)>Date.now()).length },
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch (error) {

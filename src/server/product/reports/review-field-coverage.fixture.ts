@@ -39,6 +39,21 @@ export function reviewFieldCoverageFixture(row=false){
  return {review,fieldRequest,checkpoint,candidate,input};
 }
 
+export function reviewMultipleFieldCoverageFixture(secondAmountMinor?:number){
+ const f=reviewFieldCoverageFixture(),second={...f.candidate,candidate_id:randomUUID(),source:{...f.candidate.source,text_fragment:'Second synthetic printed total'},
+  ...(secondAmountMinor===undefined?{}:{raw_value:(secondAmountMinor/100).toFixed(2),normalized_value:{currency:'ILS' as const,minor_units:secondAmountMinor}})};
+ const candidates=[f.candidate,second],extraction={...f.checkpoint.run.result.final_extraction,fields:[...f.checkpoint.run.result.final_extraction.fields,second]};
+ const result={final_extraction:extraction},checkpoint={...f.checkpoint,result_sha256:canonicalSha256(result),run:{result}},reading=canonicalSha256(extraction);
+ const calculation=documentReviewCalculationInputSchema.parse(f.input.checks[0].calculation);
+ const locator=JSON.stringify({schema_version:'document-review-source-locator-v2',field:f.candidate.field,
+  candidate_ids:candidates.map(c=>c.candidate_id),candidate_sha256:candidates.map(c=>canonicalSha256(c)),raw_values:candidates.map(c=>c.raw_value)});
+ const input=documentReviewInputSchema.parse({...f.input,documents:f.input.documents.map(d=>({...d,reading_sha256:reading})),
+  checks:[{...f.input.checks[0],calculation:{...calculation,operands:calculation.operands.map(o=>({...o,source:{...o.source,reading_receipt_sha256:reading,locator}}))}}]});
+ const fields=candidates.map(candidate=>{const target=documentFieldTarget({checkpoint,policyVersion:f.fieldRequest.target.policy_version,candidateId:candidate.candidate_id});
+  return {...f.fieldRequest,request_id:randomUUID(),target,code:`document_field:${target.target_sha256}`};});
+ return {...f,input,review:runDocumentReview(input,randomUUID()),checkpoint,candidates,fields};
+}
+
 export function reviewRowCellCoverageFixture(){
  const f=reviewFieldCoverageFixture(true),source={...f.candidate.source,text_fragment:'רכיב סינתטי'},component=normalizedAdditionalComponentSchema.parse({
   component_id:randomUUID(),source_label:'רכיב סינתטי',normalized_label:'synthetic_bonus',semantic_kind:'bonus',

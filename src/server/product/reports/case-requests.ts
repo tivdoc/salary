@@ -20,7 +20,7 @@ import {documentReadingTargetSchema} from './document-field-confirmation';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import {documentFieldVerificationDisplay} from './reading-verification';
 import {privateDocumentReviewReports,privateDocumentReviewArtifact} from './private-document-review';
-import {reviewRequestsCoveredByFieldReadings,reviewFieldReadingCheckLabels,reviewFieldRequestsNotRequired,reviewHistoricalRequestProjection,REVIEW_DEFERRABLE_SCALAR_FIELDS} from './review-field-coverage';
+import {reviewRequestsCoveredByFieldReadings,reviewRequestsCoveredByFieldReadingGroups,reviewFieldReadingCheckLabels,reviewFieldRequestsNotRequired,reviewHistoricalRequestProjection,REVIEW_DEFERRABLE_SCALAR_FIELDS} from './review-field-coverage';
 import {validateSavedReadingAnswer} from './validate-reading-answer';
 import {reviewSharedPersonalRequestProjection} from './review-shared-personal-coverage';
 import {projectSourceIntakeUploadContext,sourceIntakeUploadContextSchema,type SourceIntakeUploadState} from '../documents/source-intake-upload';
@@ -51,7 +51,7 @@ type SourceIntakeProjection=Readonly<{source_intake_upload_state?:SourceIntakeUp
 
 const conflictSourceSchema=z.object({conflict_reason:z.enum(['conflicting_observations','provider_reported_conflict']),
  source_observations:z.array(z.object({candidate_id:z.uuid(),raw_value:z.string().max(1000).nullable(),page:z.number().int().positive().max(100),source_label:z.string().max(1000).nullable()}).strict()).max(12)}).strict();
-export type StoredRequest = ThreadRequest & SourceIntakeProjection & Readonly<{ id: string; covered_by_field_request_id?:string; covered_by_confirmed_reading?:true; covered_by_unresolved_reading?:true; replacement_review_request_id?:string; not_required_for_current_review?:true; answer_text: string | null; answer_revision?: number; draft_revision?: number; draft_text?: string | null; statement_month?: string | null; source_current?: boolean; document_upload_state?:DocumentUploadState; reading_display?:DocumentReadingDisplay; hours_conflict_source?:z.infer<typeof conflictSourceSchema> }>;
+export type StoredRequest = ThreadRequest & SourceIntakeProjection & Readonly<{ id: string; covered_by_field_request_id?:string; covered_by_field_request_ids?:readonly string[]; covered_by_confirmed_reading?:true; covered_by_unresolved_reading?:true; replacement_review_request_id?:string; not_required_for_current_review?:true; answer_text: string | null; answer_revision?: number; draft_revision?: number; draft_text?: string | null; statement_month?: string | null; source_current?: boolean; document_upload_state?:DocumentUploadState; reading_display?:DocumentReadingDisplay; hours_conflict_source?:z.infer<typeof conflictSourceSchema> }>;
 
 export function documentRequestSatisfied(request:StoredRequest):boolean{
  return request.source_current===true&&request.source_intake_upload_state?.state==='satisfied'&&request.source_intake_upload_state.information_satisfied===true
@@ -156,6 +156,7 @@ export async function listCaseRequests(caseId: string, db?: CaseAccessDb | null,
    ||uploadStates.some(s=>!documentReviews.some(r=>r.id===s.request_id)||reviewStates.find(r=>r.request_id===s.request_id)?.source_current!==s.source_current)))throw Error('REQUEST_FIELD_STATE_UNAVAILABLE');
   const states=[...fields,...juneStates,...transcriptionStates,...hoursStates,...conflictStates,...reviewStates,...intakeStates],allBound=[...bound,...june,...transcriptions,...hours,...conflicts,...reviews,...intakeDocuments];
   if (identityId && allBound.length && (states.length !== allBound.length || new Set(states.map(s=>s.request_id)).size !== states.length || states.some(s=>typeof s.source_current!=='boolean'||!allBound.some(r=>r.id===s.request_id)))) throw new Error('REQUEST_FIELD_STATE_UNAVAILABLE');
+  const coveredGroups=new Map<string,readonly string[]>();
   const covered=new Map<string,string>(),notRequired=new Set<string>(),alreadyRead=new Set<string>(),unresolvedRead=new Set<string>(),replacementReviews=new Map<string,string>();
   // Two bounded protected lookups per case, only when both question families
   // can overlap. No artifact, stale artifact or no exact match means no hiding.
@@ -196,6 +197,10 @@ export async function listCaseRequests(caseId: string, db?: CaseAccessDb | null,
       else if(match.state==='period_required'){covered.set(match.request_id,match.field_request_id);if(match.reading_state==='unresolved_answer')unresolvedRead.add(match.request_id);}
       else{covered.set(match.request_id,match.field_request_id);alreadyRead.add(match.request_id);}
      }
+     for(const match of fieldOverlap?reviewRequestsCoveredByFieldReadingGroups({review:artifact.bundle.document_review,fieldRequests,nowMs:Date.now()}):[]){
+      const state=reviewStates.find(r=>r.source_current&&r.target?.target_sha256===match.target_sha256);
+      if(state&&reviews.some(r=>r.id===state.request_id))coveredGroups.set(state.request_id,match.field_requests.map(r=>r.request_id));
+     }
      for(const match of fieldOverlap?reviewRequestsCoveredByFieldReadings({review:artifact.bundle.document_review,fieldRequests,nowMs:Date.now()}):[]){
       const state=reviewStates.find(r=>r.source_current&&r.target?.target_sha256===match.target_sha256);
       if(state&&reviews.some(r=>r.id===state.request_id)){covered.set(state.request_id,match.field_request_id);if(match.reading_state==='unresolved_answer')unresolvedRead.add(state.request_id);}
@@ -213,7 +218,7 @@ export async function listCaseRequests(caseId: string, db?: CaseAccessDb | null,
     const document_upload_state:DocumentUploadState|undefined=upload?{state:upload.state,information_satisfied:upload.information_satisfied,analysis_run_id:upload.analysis_run_id,reason:upload.reason}:undefined;
     const source=conflict&&!(conflict.source_current===false&&conflict.conflict_reason===null)
       ?conflictSourceSchema.parse({conflict_reason:conflict.conflict_reason,source_observations:conflict.source_observations}):undefined;
-    return {...toRequest(row),...intakeProjection,...(unresolvedRead.has(row.id)?{covered_by_unresolved_reading:true as const}:{}),...(replacementReviews.has(row.id)?{replacement_review_request_id:replacementReviews.get(row.id)}:{}),...(alreadyRead.has(row.id)?{covered_by_confirmed_reading:true as const}:{}),...(notRequired.has(row.id)?{not_required_for_current_review:true as const}:{}),...(displays.has(row.id)?{question:displays.get(row.id)!.question}:{}),...(covered.has(row.id)?{covered_by_field_request_id:covered.get(row.id)}:{}),...(state?{source_current:state.source_current}:{}),...(document_upload_state?{document_upload_state}:{}),...(displays.has(row.id)?{reading_display:displays.get(row.id)}:{}),...(source?{hours_conflict_source:source}:{}),answer_text:revision?.latest_answer ?? row.answer_text,answer_revision:revision?.answer_revision ?? 0,draft_revision:revision?.draft_revision ?? 0,draft_text:revision?.draft_text ?? null};
+    return {...toRequest(row),...intakeProjection,...(coveredGroups.has(row.id)?{covered_by_field_request_ids:coveredGroups.get(row.id)}:{}),...(unresolvedRead.has(row.id)?{covered_by_unresolved_reading:true as const}:{}),...(replacementReviews.has(row.id)?{replacement_review_request_id:replacementReviews.get(row.id)}:{}),...(alreadyRead.has(row.id)?{covered_by_confirmed_reading:true as const}:{}),...(notRequired.has(row.id)?{not_required_for_current_review:true as const}:{}),...(displays.has(row.id)?{question:displays.get(row.id)!.question}:{}),...(covered.has(row.id)?{covered_by_field_request_id:covered.get(row.id)}:{}),...(state?{source_current:state.source_current}:{}),...(document_upload_state?{document_upload_state}:{}),...(displays.has(row.id)?{reading_display:displays.get(row.id)}:{}),...(source?{hours_conflict_source:source}:{}),answer_text:revision?.latest_answer ?? row.answer_text,answer_revision:revision?.answer_revision ?? 0,draft_revision:revision?.draft_revision ?? 0,draft_text:revision?.draft_text ?? null};
   });
 }
 

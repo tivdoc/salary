@@ -3,9 +3,9 @@ import {randomUUID} from 'node:crypto';
 import {buildSyntheticCaseFixture} from '@/engine/case-analysis/synthetic-fixtures';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import {runDocumentReview,applyDocumentReviewAnswer} from '@/engine/document-review/service';
-import {reviewRequestsCoveredByFieldReadings,reviewFieldReadingCheckLabels,reviewFieldRequestsNotRequired,reviewHistoricalRequestProjection,type ExistingFieldReadingRequest} from './review-field-coverage';
+import {reviewRequestsCoveredByFieldReadings,reviewRequestsCoveredByFieldReadingGroups,reviewFieldReadingCheckLabels,reviewFieldRequestsNotRequired,reviewHistoricalRequestProjection,type ExistingFieldReadingRequest} from './review-field-coverage';
 import {documentFieldTarget} from './document-field-confirmation';
-import {reviewFieldCoverageFixture,reviewRowCellCoverageFixture,reviewSourceScopeCoverageFixture,reviewSourceTranscriptionFixture,reviewUnusedFieldFixture,reviewStructurallyBlockedPensionFixture} from './review-field-coverage.fixture';
+import {reviewFieldCoverageFixture,reviewMultipleFieldCoverageFixture,reviewRowCellCoverageFixture,reviewSourceScopeCoverageFixture,reviewSourceTranscriptionFixture,reviewUnusedFieldFixture,reviewStructurallyBlockedPensionFixture} from './review-field-coverage.fixture';
 import {documentRowCellTarget} from './document-row-cell-confirmation';
 import {documentReviewCalculationInputSchema} from '@/engine/document-review/calculations';
 import {parseReviewCompletionInput,generateReviewCompletions} from '@/engine/document-review/completions';
@@ -18,6 +18,46 @@ import {documentSourceTranscriptionTarget,documentSourceTranscriptionTargetSchem
 import {documentEvidenceSourceTranscriptionTarget} from './document-evidence-source-transcription';
 vi.mock('server-only',()=>({}));
 const nowMs=Date.parse('2026-09-11T00:00:00Z');
+it('replaces a multi-observation generic scalar with every exact field action without confirming either',()=>{
+ const f=reviewMultipleFieldCoverageFixture(),before=canonicalSha256(f.review);
+ expect(reviewRequestsCoveredByFieldReadings({review:f.review,fieldRequests:f.fields,nowMs})).toEqual([]);
+ expect(reviewRequestsCoveredByFieldReadingGroups({review:f.review,fieldRequests:f.fields,nowMs})).toEqual([{
+  target_sha256:f.review.completions.customer_requests[0].target.target_sha256,fact_key:'source.cell',
+  field_requests:f.fields.map((r,i)=>({request_id:r.request_id,candidate_id:f.candidates[i].candidate_id,state:'pending'}))}]);
+ expect(f.review.checks[0].calculation.state).toBe('blocked');expect(canonicalSha256(f.review)).toBe(before);
+});
+it.each(['missing','stale','foreign','expired','duplicate','changed_hash','changed_period','other_checkpoint','conflict']as const)(
+ 'does not hide the generic multi-observation need when one contributor is %s',kind=>{
+  const f=reviewMultipleFieldCoverageFixture();let fields:ExistingFieldReadingRequest[]=structuredClone(f.fields),review=f.review;
+  if(kind==='missing')fields=fields.slice(0,1);
+  if(kind==='stale')fields[1]={...fields[1],source_current:false};
+  if(kind==='expired')fields[1]={...fields[1],expires_at:new Date(nowMs-1).toISOString()};
+  if(kind==='duplicate')fields.push({...fields[1],request_id:randomUUID()});
+  if(['foreign','changed_hash','changed_period','other_checkpoint'].includes(kind)){
+   const old=fields[1].target;if(old.schema_version!=='document-field-confirmation-v1')throw Error('SYNTHETIC_SCALAR');
+   const {target_sha256:_,...body}=old;void _;
+   const changed={...body,...(kind==='foreign'?{case_id:randomUUID()}:kind==='changed_hash'?{candidate:{...body.candidate,confidence:.91}}
+    :kind==='changed_period'?{month:'2025-02'}:{extraction_result_sha256:'b'.repeat(64)})};
+   const target={...changed,target_sha256:canonicalSha256(changed)};fields[1]={...fields[1],target,code:`document_field:${target.target_sha256}`};
+  }
+  if(kind==='conflict'){
+   const calculation=documentReviewCalculationInputSchema.parse(f.input.checks[0].calculation);
+   review=runDocumentReview({...f.input,checks:[{...f.input.checks[0],calculation:{...calculation,
+    operands:calculation.operands.map((o,i)=>i===0?{...o,state:'conflict'}:o)}}]},randomUUID());
+  }
+  expect(reviewRequestsCoveredByFieldReadingGroups({review,fieldRequests:fields,nowMs})).toEqual([]);
+ });
+it.each(['unknown','unreadable']as const)('retains individual %s states for the complete field group',action=>{
+ const f=reviewMultipleFieldCoverageFixture(),fields=f.fields.map((r,i)=>i===0?{...r,answered_at:'2026-09-10T00:00:00Z',
+  answer_text:JSON.stringify({schema_version:'document-field-answer-v2',action})}:r);
+ const [group]=reviewRequestsCoveredByFieldReadingGroups({review:f.review,fieldRequests:fields,nowMs});
+ expect(group.field_requests.map(r=>r.state)).toEqual(['unresolved','pending']);
+ expect(group.field_requests.map(r=>r.request_id)).toEqual(fields.map(r=>r.request_id));
+});
+it('keeps the generic need when exact authenticated candidates disagree, even before conflict classification',()=>{
+ const f=reviewMultipleFieldCoverageFixture(12345);
+ expect(reviewRequestsCoveredByFieldReadingGroups({review:f.review,fieldRequests:f.fields,nowMs})).toEqual([]);
+});
 it.each(['pending','correct','unknown']as const)('keeps a clause transcription outside numeric operand coverage: %s',action=>{
  const f=reviewRowCellCoverageFixture(),old=f.fieldRequest.target;
  const target=documentEvidenceSourceTranscriptionTarget({source:{case_id:old.case_id,product_document_id:old.product_document_id,version_id:old.version_id,

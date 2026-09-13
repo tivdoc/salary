@@ -33,6 +33,16 @@ it('rejects foreign Origin and foreign case before accepting a reading',async()=
 it('uses session identity and scoped case, ignoring forged body identity fields',async()=>{
  expect((await POST(post(),context())).status).toBe(200);expect(state.answer).toHaveBeenCalledExactlyOnceWith({caseId:'case-a',identityId:'owner',requestId,answer:'כן, בדקתי במסמך והערך נכון'});
 });
+it('returns the same actionable count for plural reading coverage without treating any reading as answered',async()=>{
+ const field={id:requestId,answered_at:null,source_current:true,expires_at:'2099-01-01T00:00:00Z'};
+ const other={...field,id:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'};
+ const generic={...field,id:'cccccccc-cccc-4ccc-8ccc-cccccccccccc',covered_by_field_request_ids:[field.id,other.id]};
+ state.list.mockResolvedValue([field,other,generic]);
+ const response=await POST(post(),context());expect(await response.json()).toEqual({ok:true,open:2});
+ expect(field.answered_at).toBeNull();expect(other.answered_at).toBeNull();
+ state.list.mockResolvedValue([field,other,{...generic,covered_by_field_request_ids:[]}]);
+ expect(await (await POST(post(),context())).json()).toEqual({ok:true,open:3});
+});
 it.each(['REQUEST_FIELD_SOURCE_CHANGED','JUNE_COLLECTION_SOURCE_OR_SCOPE_CHANGED'])('reports a stale source as a recoverable conflict: %s',async code=>{
  state.answer.mockRejectedValue(Error('CASE_ACCESS_DB_RPC_FAILED:case_request_answer_identified:'+code));
  const response=await POST(post(),context());expect(response.status).toBe(409);expect((await response.json()).code).toBe('request_edit_conflict');

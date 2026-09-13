@@ -50,12 +50,13 @@ export default async function CaseAccessPage({ params }: { params: Promise<{ tok
   }
 
   if (!/^TV-[A-Z0-9]{8}$/u.test(token)) notFound();
-  const session = await resolveIdentitySession(await readCaseSessionCookie());
+  const sessionToken = await readCaseSessionCookie();
+  const session = await resolveIdentitySession(sessionToken);
   if (session) {
     const cases = await listIdentityCases(session.identity_id);
     const item = cases.find((candidate) => candidate.public_id === token);
     if (!item) notFound();
-    const overview = await loadCaseOverview(item, session.identity_id);
+    const overview = await loadCaseOverview(item, session.identity_id, sessionToken);
     // Read only after authenticated case membership. The protected receipt RPC
     // is independent of the optional DEV financial-artifact preview.
     // A legacy receipt is separate evidence; never mutate the original case's

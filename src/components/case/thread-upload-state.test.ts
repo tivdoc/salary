@@ -51,3 +51,16 @@ it('preserves blank-cell history and links its single current source question',(
  const html=render({...row,answer_kind:'text',not_required_for_current_review:true,replacement_review_request_id:'33333333-3333-4333-8333-333333333333'});
  expect(html).toContain('תאי המקור ריקים');expect(html).toContain('מעבר לשאלה על מקור נוסף לשורה');expect(html).not.toContain('<textarea');
 });
+
+it('links every covered observation without replacing the generic request with another answer or a confirmed value',()=>{
+ const ids=['33333333-3333-4333-8333-333333333333','44444444-4444-4444-8444-444444444444'];
+ const request={...row,answer_kind:'text' as const,question:'סיכום עם שתי תצפיות מקור',covered_by_field_request_ids:ids};
+ const html=render(request);
+ for(const id of ids)expect(html).toContain(`href="#request-${id}"`);
+ expect(html).toContain('אימות תצפית 1');expect(html).toContain('אימות תצפית 2');
+ expect(html).toContain('לא נבחר ערך');expect(html).not.toContain('<textarea');
+ expect(html).not.toContain('הקריאה כבר נבדקה ונכללה בדוח העדכני');expect(request.answered_at).toBeNull();
+ const history=render({...request,answered_at:'2026-09-10T00:00:00Z',answer_text:'100'});
+ expect(history).toContain('התשובה המספרית נשמרה כהצהרה');
+ for(const id of ids)expect(history).toContain(`href="#request-${id}"`);
+});
