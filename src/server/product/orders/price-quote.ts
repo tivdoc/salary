@@ -23,11 +23,14 @@ const historicalPriceQuoteSchema=z.object({
  created_at:z.iso.datetime(),expires_at:z.iso.datetime(),sha256:hash,
 }).strict();
 const releasePriceQuoteSchema=historicalPriceQuoteSchema.extend({schema_version:z.literal('tivdoc-price-quote-v2'),
- purchase_topics_version:z.literal(PURCHASE_TOPICS_VERSION),purchased_topics:releasePurchaseTopicsSchema}).strict();
+ purchase_topics_version:z.literal(PURCHASE_TOPICS_VERSION),purchased_topics:releasePurchaseTopicsSchema,checked_topics:releasePurchaseTopicsSchema,
+ basis_schema_version:z.literal('tivdoc-release-pricing-basis-v1').optional()}).strict();
 export const priceQuoteSchema=z.discriminatedUnion('schema_version',[historicalPriceQuoteSchema,releasePriceQuoteSchema]).superRefine((quote,ctx)=>{
  const fail=(message:string)=>ctx.addIssue({code:'custom',message});
  const {sha256,...payload}=quote;
  if(canonicalSha256(payload)!==sha256)fail('QUOTE_HASH_MISMATCH');
+ if(quote.schema_version==='tivdoc-price-quote-v2'&&!quote.basis_schema_version
+  &&quote.checked_topics.some(t=>!((PROJECTION_TOPICS as readonly string[]).includes(t))))fail('QUOTE_BASIS_VERSION_REQUIRED');
  const tier=quote.pricing_policy.tiers.findLast(t=>quote.basis_minor>=t.minimum_basis_minor);
  if(!tier||tier.total_minor!==quote.total_minor||quote.pricing_version!==quote.pricing_policy.version)fail('QUOTE_POLICY_MISMATCH');
  if(quote.credit_minor>Math.min(quote.initial_credit_cap_minor,quote.total_minor)

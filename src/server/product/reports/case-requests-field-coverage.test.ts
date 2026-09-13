@@ -2,7 +2,7 @@ import {beforeEach,expect,it,vi} from 'vitest';
 import {randomUUID} from 'node:crypto';
 import {reviewFieldCoverageFixture} from './review-field-coverage.fixture';
 import {savedReviewRequestQuestion} from '../processing/saved-review-requests';
-import {documentFieldQuestion} from './document-field-confirmation';
+import {documentFieldQuestion,documentFieldTarget} from './document-field-confirmation';
 import {listCaseRequests} from './case-requests';
 import type {CaseAccessDb} from '../case-access/db';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
@@ -45,6 +45,25 @@ it.each(['no_field','field_stale','declaration_target'] as const)('does no artif
  if(change==='declaration_target')f.responses.case_request_review_states=[{request_id:f.numeric.id,source_current:false,target:null}];
  expect((await f.run()).find(r=>r.id===f.numeric.id)).not.toHaveProperty('covered_by_field_request_id');
  expect(artifactPort.list).not.toHaveBeenCalled();expect(artifactPort.artifact).not.toHaveBeenCalled();
+});
+it.each(['subtotal','missing_review','stale_target','grand_total','value_mismatch'] as const)('uses only current exact subtotal targets to request protected semantic evidence: %s',state=>{
+ const f=fixture(),candidate={...f.candidate,field:'total_deductions' as const,raw_value:'120.00',normalized_value:{currency:'ILS' as const,minor_units:12000},
+  source:{...f.candidate.source,text_fragment:state==='grand_total'?'סך ניכויים: 120.00':state==='value_mismatch'?'ניכויי חובה - מסים: 121.00':'ניכויי חובה - מסים: 120.00'}};
+ const result={...f.checkpoint.run.result,final_extraction:{...f.checkpoint.run.result.final_extraction,
+  fields:f.checkpoint.run.result.final_extraction.fields.map(c=>c.candidate_id===candidate.candidate_id?candidate:c)}};
+ const target=documentFieldTarget({checkpoint:{...f.checkpoint,result_sha256:canonicalSha256(result),run:{result}},policyVersion:'synthetic-field-coverage',candidateId:candidate.candidate_id});
+ f.responses.case_request_list=[{...f.field,...documentFieldQuestion(target)}];f.responses.case_request_review_states=[];
+ f.responses.case_request_field_reading_targets=[{request_id:f.field.id,target}];
+ if(state==='stale_target')f.responses.case_request_field_states=[{request_id:f.field.id,source_current:false}];
+ if(state==='missing_review')artifactPort.artifact.mockResolvedValue(null);
+ return f.run().then(rows=>{
+  const lookup=state==='subtotal'||state==='missing_review';expect(artifactPort.list).toHaveBeenCalledTimes(lookup?1:0);
+  expect(artifactPort.artifact).toHaveBeenCalledTimes(lookup?1:0);
+  // Label recognition is never enough to hide an action. This old review has
+  // no current scope derivation; original answer/currentness remains visible.
+  expect(rows[0]).not.toHaveProperty('not_required_for_current_review');expect(rows[0].answered_at).toBeNull();
+  expect(rows[0]).not.toHaveProperty('target');expect(rows[0]).not.toHaveProperty('source_semantic_derivations');
+ });
 });
 it.each(['confirmed','unknown','not_identified']as const)('checks current evidence even when every specific reading has an answer: %s',async state=>{
  const f=fixture(),old=documentReviewCalculationInputSchema.parse(f.input.checks[0].calculation),completion=parseReviewCompletionInput(f.input.completion_input),fact='source.check.quantity';

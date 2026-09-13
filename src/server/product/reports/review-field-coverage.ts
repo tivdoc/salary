@@ -1,4 +1,5 @@
 import {z} from 'zod';
+import {isExplicitMandatorySubtotalCandidate} from '@/engine/extraction/deduction-source-scope';
 import {canonicalSha256,deepFreeze} from '@/engine/rule-runtime/canonical';
 import {candidateSourceSchema,rawCandidateFieldSchema} from '@/engine/extraction/contracts';
 import {normalizedAdditionalComponentSchema} from '@/engine/extraction/payslip';
@@ -15,7 +16,7 @@ import {parseDocumentFieldAnswerV3} from './document-source-structure';
 import {resolvedMinimumWageSourceNeeds,matchesResolvedMinimumWageNeed} from '@/engine/entitlement-review/resolved-minimum-wage-needs';
 
 export type ExistingFieldReadingRequest=Readonly<{request_id:string;code:string;target:DocumentReadingTarget;source_current:boolean;answered_at:string|null;answer_text?:string|null;expires_at:string;expired_at?:string|null}>;
-export type ReviewFieldCoverage=Readonly<{target_sha256:string;fact_key:string;field_request_id:string;reading_state?:'unresolved_answer'}&({candidate_id:string;source_scope?:string}|{component_id:string;cell:'quantity'|'rate'|'amount'|'percentage'}|{transcription_kind:'reported_work_hours'}|{transcription_kind:'balance_unit';candidate_id:string}|{structure_kind:'period_association';ref_kind:'field'|'component';ref_id:string})>;
+export type ReviewFieldCoverage=Readonly<{target_sha256:string;fact_key:string;field_request_id:string;reading_state?:'unresolved_answer'}&({candidate_id:string;source_scope?:string}|{component_id:string;cell:'quantity'|'rate'|'amount'|'percentage'}|{transcription_kind:'reported_work_hours'|'grand_total'}|{transcription_kind:'balance_unit';candidate_id:string}|{structure_kind:'period_association';ref_kind:'field'|'component';ref_id:string})>;
 export type ReviewFieldReadingGroupCoverage=Readonly<{target_sha256:string;fact_key:string;field_requests:readonly Readonly<{
  request_id:string;candidate_id:string;state:'pending'|'unresolved';}>[]}>;
 type ReplayedReview=ReturnType<typeof replayDocumentReview>;
@@ -142,7 +143,7 @@ function coversOperand(operand:DocumentReviewOperand,target:DocumentReadingTarge
  const rawFor=(raw:string|null)=>effectiveRaw??raw;
  if(target.schema_version==='document-source-transcription-v1'){
   const subject=target.subject,locator=parseDocumentReviewSourceLocator(operand.source.locator);
-  return subject.kind==='reported_work_hours'&&operand.id==='reported.hours'
+  return (subject.kind==='reported_work_hours'&&operand.id==='reported.hours'||subject.kind==='grand_total'&&operand.id==='deductions')
    &&(phase==='identified'?operand.source.reading==='identified_document_reading'&&operand.state==='observed'
     :operand.source.reading==='provider_extraction'&&['missing','unknown','unreadable','conflict'].includes(operand.state))&&operand.source.document_id===target.version_id
    &&operand.source.version_id===target.version_id&&operand.source.file_sha256===target.source_sha256&&operand.source.page===subject.page
@@ -257,8 +258,8 @@ export function reviewRequestsCoveredByFieldReadings(input:{review:unknown;field
    &&target.source_pins.length===1&&target.source_pins[0].case_id===row.target.case_id&&target.source_pins[0].version_id===row.target.version_id
    &&target.source_pins[0].source_sha256===row.target.source_sha256&&coversOperand(operand,row.target));
   if(matches.length!==1)continue;
-  const match=matches[0];if(match.target.schema_version==='obligation-payment-link-v1'||match.target.schema_version==='obligation-payment-choice-v1'||match.target.schema_version==='document-source-period-intake-v1'||match.target.schema_version==='document-evidence-source-transcription-v1'||match.target.schema_version==='document-evidence-source-transcription-v2'||match.target.schema_version==='document-evidence-reading-v1'||match.target.schema_version==='document-travel-tariff-transcription-v1'||'proposed_value'in match.target||match.target.schema_version==='document-source-transcription-v1'&&match.target.subject.kind!=='reported_work_hours')continue;
-  const subject=match.target.schema_version==='document-source-transcription-v1'?{transcription_kind:'reported_work_hours' as const}
+  const match=matches[0];if(match.target.schema_version==='obligation-payment-link-v1'||match.target.schema_version==='obligation-payment-choice-v1'||match.target.schema_version==='document-source-period-intake-v1'||match.target.schema_version==='document-evidence-source-transcription-v1'||match.target.schema_version==='document-evidence-source-transcription-v2'||match.target.schema_version==='document-evidence-reading-v1'||match.target.schema_version==='document-travel-tariff-transcription-v1'||'proposed_value'in match.target||match.target.schema_version==='document-source-transcription-v1'&&match.target.subject.kind==='balance_unit')continue;
+  const subject=match.target.schema_version==='document-source-transcription-v1'?{transcription_kind:match.target.subject.kind==='grand_total'?'grand_total' as const:'reported_work_hours' as const}
    :match.target.schema_version==='document-field-confirmation-v1'?{candidate_id:match.target.candidate.candidate_id}
    :match.target.schema_version==='document-row-cell-confirmation-v1'?{component_id:match.target.original_component.component_id,cell:match.target.cell}
     :{candidate_id:match.target.original_observation.candidate.candidate_id,source_scope:match.target.original_observation.scope};
@@ -341,6 +342,15 @@ export function reviewFieldRequestsNotRequired(input:{review:unknown;fieldReques
   if(!request.source_current||request.answered_at!==null||request.expired_at||Date.parse(request.expires_at)<=input.nowMs)return [];
   const target=documentReadingTargetSchema.parse(request.target);
   if(target.case_id!==review.case_id||request.code!==`document_field:${target.target_sha256}`)throw Error('REVIEW_FIELD_COVERAGE_TARGET');
+  if(target.schema_version==='document-field-confirmation-v1'&&isExplicitMandatorySubtotalCandidate(target.candidate)){
+   const document=review.input.documents.find(d=>d.version_id===target.version_id&&d.file_sha256===target.source_sha256);
+   const derivation=review.input.source_semantic_derivations?.find(d=>d.case_id===target.case_id&&d.version_id===target.version_id
+    &&d.source_sha256===target.source_sha256&&d.checkpoint_result_sha256===target.extraction_result_sha256&&d.reading_sha256===document?.reading_sha256);
+   if(document?.kind==='payslip'&&target.month===review.period.from.slice(0,7)&&target.month===review.period.to.slice(0,7)
+    &&derivation?.excluded_candidates.some(c=>c.candidate_id===target.candidate.candidate_id&&c.candidate_sha256===canonicalSha256(target.candidate)
+     &&c.page===target.candidate.source.page))return [{field_request_id:request.request_id,reason:'no_current_check_dependency' as const}];
+   return [];
+  }
   if(target.schema_version==='document-source-transcription-v1'&&target.subject.kind==='balance_unit'){
    if(target.month!==review.period.from.slice(0,7)||target.month!==review.period.to.slice(0,7))return [];
    const old=target.subject.original_candidate;

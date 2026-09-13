@@ -19,6 +19,8 @@ export const documentReviewSourceLocatorSchema=z.union([
  z.object({...base,scope:z.string().min(1),candidate_ids:ids,scope_observation_sha256:hashes,raw_values:raw}).strict(),
  z.object({...base,field:z.string().min(1),candidate_ids:ids,candidate_sha256:hashes,raw_values:raw}).strict(),
  z.object({...base,transcription_kind:z.literal('reported_work_hours'),page:z.number().int().min(1).max(100),meaning:z.literal('document_reported_total_hours'),target_sha256:sha.optional()}).strict(),
+ z.object({...base,transcription_kind:z.literal('grand_total'),page:z.literal(1),meaning:z.literal('document_total_deductions'),target_sha256:sha.optional(),
+  label:z.string().min(1).max(100).optional(),locator:z.string().min(1).max(160).optional()}).strict(),
 ]).superRefine((value,ctx)=>{
  if('transcription_kind' in value)return;
  const keys='component_ids' in value?value.component_ids:value.candidate_ids;
@@ -64,7 +66,7 @@ export function documentReviewReadingDependencies(input:{review:DocumentReviewRe
  if(!document||extraction.document_id!==document.document_id||document.reading_sha256!==canonicalSha256(extraction))throw Error('REVIEW_DEPENDENCY_EXTRACTION_BINDING');
  const rows=new Map<string,{component_id:string;cell:'quantity'|'rate'|'amount'|'percentage';check_ids:string[]}>();
  const scopes=new Map<string,{candidate_id:string;scope:string;check_ids:string[]}>(),fields=new Map<string,{candidate_id:string;check_ids:string[]}>();
- const transcriptions=new Map<string,{subject:{kind:'reported_work_hours';page:number}|{kind:'balance_unit';candidateId:string};check_ids:string[]}>();
+ const transcriptions=new Map<string,{subject:{kind:'reported_work_hours';page:number}|{kind:'balance_unit';candidateId:string}|{kind:'grand_total';page:1};check_ids:string[]}>();
  const structures=new Map<string,{subject:SourceStructureSubject;selector:SourceStructureSelector;check_ids:string[];period_witness?:SourceStructurePeriodWitness}>();
  const unmapped:{check_id:string;operand_id:string;reason:'locator_unavailable'|'source_changed'|'blank_source'|'period_target_unsupported'}[]=[];
  const identifiedPeriods=input.review.input.source_structure_period_policy===IDENTIFIED_PERIOD_STRUCTURE_POLICY;
@@ -138,7 +140,8 @@ export function documentReviewReadingDependencies(input:{review:DocumentReviewRe
    if(!locator){unmapped.push({check_id:check.check_id,operand_id:operand.id,reason:'locator_unavailable'});continue;}
    if('transcription_kind' in locator){
     if(locator.page!==operand.source.page||locator.page>(document.page_count??0)){unmapped.push({check_id:check.check_id,operand_id:operand.id,reason:'source_changed'});continue;}
-    const key=`reported_work_hours:${locator.page}`,entry=transcriptions.get(key)??{subject:{kind:'reported_work_hours' as const,page:locator.page},check_ids:[]};
+    const subject=locator.transcription_kind==='grand_total'?{kind:'grand_total' as const,page:locator.page}:{kind:'reported_work_hours' as const,page:locator.page};
+    const key=`${locator.transcription_kind}:${locator.page}`,entry=transcriptions.get(key)??{subject,check_ids:[]};
     if(!entry.check_ids.includes(check.check_id))entry.check_ids.push(check.check_id);transcriptions.set(key,entry);continue;
    }
    const ids='component_ids' in locator?locator.component_ids:locator.candidate_ids;

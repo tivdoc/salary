@@ -43,3 +43,17 @@ it('preserves the separate scalar reading parser for ordinary document fields',(
  const answer=JSON.stringify({schema_version:'document-field-answer-v2',action:'confirm'});
  expect(validate({...obligationRequest,field_crop:'payroll.amount'},answer)).toBe(answer);
 });
+it('retains versioned grand-total transcription bytes for the later exact-target validator',()=>{
+ const request={...obligationRequest,field_crop:'source_transcription.grand_total'};
+ const answer=JSON.stringify({schema_version:'document-field-answer-v2',action:'correct',corrected_raw_value:JSON.stringify({
+  schema_version:'grand-total-source-value-v1',amount:'20.00',label:'סך הניכויים',locator:'שורת סך בטבלה הסינתטית'})});
+ expect(validate(request,answer)).toBe(answer);
+ for(const action of ['unknown','unreadable']){
+  const wire=JSON.stringify({schema_version:'document-field-answer-v2',action});expect(validate(request,wire)).toBe(wire);
+  expect(()=>validate(request,JSON.stringify({action}))).toThrow('REQUEST_ANSWER_INVALID');
+ }
+ for(const field_crop of ['obligation.payment_link','source_transcription.financial_clause'])
+  expect(()=>validate({...request,field_crop},answer)).toThrow('REQUEST_ANSWER_INVALID');
+ expect(()=>validate({...request,code:'other'},answer)).toThrow('REQUEST_ANSWER_INVALID');
+ expect(()=>validate({...request,answer_kind:'number'},answer)).toThrow('REQUEST_ANSWER_INVALID');
+});

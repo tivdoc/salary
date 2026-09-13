@@ -15,7 +15,12 @@ import {SUPABASE_ROOT_2021_CA} from '../case-access/supabase-ca';
 import {seedSourceKindFixture,revokeSourceKindFixture} from './fixtures/source-kind-postgres';
 import {sourceJobSchema,type SourceJob} from './source-dispatch';
 import {savedLegacySourceIntake,legacySourceIntakeRequests} from './saved-legacy-source-intake';
-import {SavedCaseSnapshot} from './saved-snapshot';
+import {SavedCaseSnapshot,SAVED_EXTRACTION_POLICY} from './saved-snapshot';
+import {saveExtractionCheckpoint} from './extraction-checkpoint';
+import {buildSyntheticCaseFixture} from '@/engine/case-analysis/synthetic-fixtures';
+import {normalizedPayslipExtractionSchema} from '@/engine/extraction/payslip';
+import {payslipMachineExtractionSha256} from '@/engine/extraction/reading-resolution';
+import {documentSourceTranscriptionTarget,documentSourceTranscriptionQuestion} from '../reports/document-source-transcription';
 import {readSavedOrders,savedOrderOrigin,savedOrderReceiptSha256} from './saved-order-scope';
 import {attachSavedDocumentSourceTranscriptions,openSavedDocumentSourceTranscriptionRequests} from './saved-document-source-transcription';
 import {claimSavedDraftJob} from './saved-job-runtime';
@@ -24,7 +29,7 @@ vi.mock('server-only',()=>({}));
 
 /** Opt-in, actual named PG statements and web/worker login roles. Only new
  * synthetic audit rows; no external storage/provider, migration, or reports. */
-it.skipIf(process.env.TIVDOC_SOURCE_TRANSCRIPTION_DB_PROOF!=='1')('captures an ordinary identified contract transcription without any OCR checkpoint',async()=>{
+it.skipIf(process.env.TIVDOC_SOURCE_TRANSCRIPTION_DB_PROOF!=='1')('captures identified contract and missing grand-total readings with actual source-role fences',async()=>{
  if(process.env.VERCEL||process.env.VERCEL_ENV||process.env.NODE_ENV!=='test')throw Error('SOURCE_TRANSCRIPTION_DB_BOUNDARY');
  const {readDevEnvFile}=await import('../../../../scripts/supabase-dev-guard/dev-credential.mts'),env=readDevEnvFile();
  const client=(key:string)=>{const u=new URL(env.get(key)!);if(u.hostname!=='aws-0-eu-central-1.pooler.supabase.com'||u.pathname!=='/tivdoc_release_replay_20260907'||!u.username.endsWith('.cpzrbidxftzqcfeqqusu'))throw Error('EXACT_ISOLATED_DEV_REQUIRED');
@@ -36,11 +41,16 @@ it.skipIf(process.env.TIVDOC_SOURCE_TRANSCRIPTION_DB_PROOF!=='1')('captures an o
   'src/server/product/processing/saved-document-source-transcription.postgres.test.ts','src/server/product/processing/saved-admission.ts',
   'src/server/product/processing/saved-document-source-transcription.ts','src/engine/document-review/coverage.ts',
   'src/server/platform/persistence/postgres/runtime/node-pg-driver.ts',
-  'supabase/migrations/20260914021000_contract_physical_effective_legacy_period.sql'];
+  'supabase/migrations/20260914021000_contract_physical_effective_legacy_period.sql',
+  'supabase/migrations/20260914023000_grand_total_source_transcription.sql',
+  'supabase/migrations/20260914024000_grand_total_answer_validation.sql',
+  'src/server/product/reports/document-source-transcription.ts','src/server/product/processing/saved-field-readings.ts',
+  'src/engine/extraction/deduction-source-scope.ts'];
  const sourcePins=()=>sourceFiles.map(path=>({path,utf8_lf_sha256:createHash('sha256').update(readFileSync(path,'utf8').replace(/\r\n/g,'\n'),'utf8').digest('hex')}));
  const testedSourceFiles=sourcePins();
  const printed='SYNTHETIC ONLY - June 2026 contract. An award is discretionary; no fixed payment is promised.';
- let fixture:Awaited<ReturnType<typeof seedSourceKindFixture>>|undefined,primary:unknown,passed=false,revoked=false,lastStatement='',physicalJobId:string|undefined;
+ let fixture:Awaited<ReturnType<typeof seedSourceKindFixture>>|undefined,primary:unknown,passed=false,revoked=false,lastStatement='';
+ const physicalJobIds:string[]=[];
  let localSourceReads=0,physicalAdmissions=0,proofStage='connect';
  const stagedEvidence:Record<string,unknown>[]=[];
  const rawRowTypes:Record<string,Record<string,string>>={};
@@ -207,7 +217,7 @@ it.skipIf(process.env.TIVDOC_SOURCE_TRANSCRIPTION_DB_PROOF!=='1')('captures an o
   const physicalJob=await current(),workerId='synthetic.saved.worker';
   expect(physicalJob.processing_profile).toBe('qualified_ai_v1');
   const lease=await tx(worker,c=>claimSavedDraftJob(c,{caseId:f.caseId,workerId,leaseMs:300000}),true);
-  if(lease.state!=='claimed')throw Error('SOURCE_PHYSICAL_PROOF_EXPECTED_CLAIM');physicalJobId=lease.jobId;
+  if(lease.state!=='claimed')throw Error('SOURCE_PHYSICAL_PROOF_EXPECTED_CLAIM');physicalJobIds.push(lease.jobId);
   await expect(tx(worker,async()=>worker.query('select private.runtime_verified_actor()'))).rejects.toMatchObject({code:'42501'});
   const pending=(actor=workerId,fence=lease.fencingToken)=>tx(worker,async()=>worker.query({name:'source_transcription_physical_proof_pending',
    text:'select private.contract_transcription_physical_pages_pending($1::uuid,$2,$3,$4,$5,$6) value',
@@ -232,21 +242,122 @@ it.skipIf(process.env.TIVDOC_SOURCE_TRANSCRIPTION_DB_PROOF!=='1')('captures an o
   expect((await owner.query(purchaseReceiptSql,[f.paymentId,f.caseId])).rows[0]).toEqual(originalPurchaseReceipt);
   expect(sourcePins()).toEqual(testedSourceFiles);
   checks.push('actual worker LOGIN cannot execute private actor helper (42501); SQL211 pending allows exact actor/job/fence and denies foreign actor/fence; physical facade rechecks scoped RPC before and after local synthetic PDF read and records four actual pages without provider or external Storage');
+  // Separate synthetic payslip source; keep the original contract, attendance,
+  // purchase receipt and all historical answers. No real extraction is edited.
+  proofStage='grand_total_synthetic_source';
+  const totalDocument=randomUUID(),totalVersion=randomUUID(),totalPdf=await PDFDocument.create();
+  totalPdf.addPage().drawText('SYNTHETIC ONLY - June 2026. Mandatory deductions 120.00; Total deductions 160.00.',{size:9});
+  const totalBytes=await totalPdf.save(),totalHash=createHash('sha256').update(totalBytes).digest('hex'),totalPath=`cases/${f.caseId}/versions/${totalVersion}.pdf`;
+  await owner.query("insert into public.documents(id,case_id,version_id,document_type,slot,storage_path,original_filename,mime_type,size,content_sha256,period_month) values($1,$2,$3,'payslip','payslip-01',$4,'SYNTHETIC-GRAND-TOTAL.pdf','application/pdf',$5,$6,'2026-06-01')",
+   [totalDocument,f.caseId,totalVersion,totalPath,totalBytes.length,totalHash]);
+  await owner.query('select private.capture_case_input($1,$2)',[f.caseId,'synthetic_grand_total_physical_fixture']);
+  const totalJob=await current(),totalLease=await tx(worker,c=>claimSavedDraftJob(c,{caseId:f.caseId,workerId,leaseMs:300000}),true);
+  if(totalLease.state!=='claimed')throw Error('GRAND_TOTAL_EXPECTED_CLAIM');physicalJobIds.push(totalLease.jobId);
+  const seed=buildSyntheticCaseFixture({fixture_id:`synthetic-grand-total-${runId}`,mode:'real'}).stored.extractions[0];
+  const fieldSource={document_id:totalVersion,page:1},subtotalId=randomUUID();
+  const machine=normalizedPayslipExtractionSchema.parse({...seed,document_id:totalVersion,quality_metrics:{...seed.quality_metrics,page_count:1},additional_components:[],
+   fields:[{candidate_id:randomUUID(),field:'salary_period',raw_value:'June 2026',normalized_value:{year:2026,month:6,start_date:period.from,end_date:period.to},confidence:.99,
+    source:{...fieldSource,text_fragment:'SYNTHETIC ONLY - June 2026'},extraction_method:'fixture',warning_flags:[]},
+   {candidate_id:subtotalId,field:'total_deductions',raw_value:'120.00',normalized_value:{currency:'ILS',minor_units:12000},confidence:.94,
+    source:{...fieldSource,text_fragment:'mandatory deductions: 120.00'},extraction_method:'fixture',warning_flags:[]}]});
+  const totalResult={final_extraction:machine,first_pass:{normalized_extraction:structuredClone(machine)}};
+  const totalCheckpoint={schema_version:'tivdoc-saved-extraction-v1',case_id:f.caseId,product_document_id:totalDocument,version_id:totalVersion,input_sha256:totalHash,
+   expected_month:'2026-06',period_mismatch:false,requires_confirmation:false,result_sha256:canonicalSha256(totalResult),run:{result:totalResult}} as Parameters<typeof saveExtractionCheckpoint>[2];
+  const totalPending=()=>tx(worker,async()=> (await worker.query({name:'source_transcription_physical_proof_pending',
+   text:'select private.contract_transcription_physical_pages_pending($1::uuid,$2,$3,$4,$5,$6) value',
+   values:[f.caseId,totalJob.revision,totalJob.input_sha256,totalLease.jobId,workerId,totalLease.fencingToken]})).rows[0].value);
+  // A genuine total in either pass must suppress physical discovery for this
+  // purpose. This counterexample transaction rolls back its checkpoint.
+  proofStage='grand_total_present_negative';
+  await tx(worker,async c=>{
+   const grand={...machine.fields[1],candidate_id:randomUUID(),source:{...fieldSource,text_fragment:'total deductions: 120.00'}};
+   const result={...totalResult,first_pass:{normalized_extraction:{...machine,fields:[...machine.fields,grand]}}};
+   await saveExtractionCheckpoint(c,totalJob,{...totalCheckpoint,result_sha256:canonicalSha256(result),run:{result}} as Parameters<typeof saveExtractionCheckpoint>[2]);
+   expect((await worker.query('select private.contract_transcription_physical_pages_pending($1::uuid,$2,$3,$4,$5,$6) value',
+    [f.caseId,totalJob.revision,totalJob.input_sha256,totalLease.jobId,workerId,totalLease.fencingToken])).rows[0].value).toEqual([]);
+  });
+  await tx(worker,c=>saveExtractionCheckpoint(c,totalJob,totalCheckpoint),true);
+  const checkpointRowsSql='select revision,result::text result_bytes,result_sha256 from private.case_extraction_checkpoints where case_id=$1 and version_id=$2 order by revision';
+  const originalTotalRows=(await owner.query(checkpointRowsSql,[f.caseId,totalVersion])).rows;
+  expect(originalTotalRows).toHaveLength(1);
+  expect(await totalPending()).toEqual([{document_id:totalDocument,version_id:totalVersion,source_sha256:totalHash,byte_size:totalBytes.length,mime_type:'application/pdf',storage_path:totalPath}]);
+  proofStage='grand_total_physical_facade';const totalAdmissions=physicalAdmissions;
+  expect(await ensureSavedSourcePhysicalPages({job:totalJob,jobId:totalLease.jobId,workerId,fencingToken:totalLease.fencingToken,
+   purpose:'contract_transcription',transactions:operation=>tx(worker,operation,true),storage:{async download(path){
+    expect(path).toBe(totalPath);localSourceReads++;return {data:new Blob([Uint8Array.from(totalBytes)]),error:null};
+   }}})).toEqual({recorded:1,unreadableVersions:[]});
+  expect(physicalAdmissions-totalAdmissions).toBe(3);expect(await totalPending()).toEqual([]);
+  expect((await owner.query('select page_count from private.document_physical_page_receipts where case_id=$1 and document_id=$2 and version_id=$3 and source_sha256=$4',
+   [f.caseId,totalDocument,totalVersion,totalHash])).rows).toEqual([{page_count:1}]);
+  const totalTarget=documentSourceTranscriptionTarget({checkpoint:totalCheckpoint,policyVersion:SAVED_EXTRACTION_POLICY,subject:{kind:'grand_total',page:1}}),totalQuestion=documentSourceTranscriptionQuestion(totalTarget);
+  const openTotal=async(job:SourceJob,target=totalTarget)=>tx(worker,async()=> (await worker.query({name:'source_transcription_grand_total_open',
+   text:'select private.document_field_request_open($1::uuid,$2,$3,$4::jsonb,$5) id',
+   values:[f.caseId,job.revision,job.input_sha256,JSON.stringify(target),totalQuestion.question]})).rows[0].id as string,true);
+  proofStage='grand_total_ordinary_request';const totalRequest=await openTotal(totalJob);
+  expect(await openTotal(totalJob)).toBe(totalRequest);
+  const originalTotalTarget=(await owner.query(targetReceiptSql,[totalRequest])).rows[0];
+  const {target_sha256:ignoredTargetHash,...foreignBody}={...totalTarget,source_sha256:'b'.repeat(64)};void ignoredTargetHash;
+  await expect(openTotal(totalJob,{...foreignBody,target_sha256:canonicalSha256(foreignBody)})).rejects.toThrow('REQUEST_FIELD_SOURCE_CHANGED');
+  const totalAnswer=JSON.stringify({schema_version:'document-field-answer-v2',action:'correct',corrected_raw_value:JSON.stringify({schema_version:'grand-total-source-value-v1',
+   amount:'160.00',label:'total deductions',locator:'Synthetic one-page totals line'})});
+  await expect(identify(totalRequest,totalAnswer,randomUUID())).rejects.toThrow('REQUEST_FIELD_FORBIDDEN');
+  await expect(identify(totalRequest,JSON.stringify({schema_version:'document-field-answer-v2',action:'confirm'}))).rejects.toThrow('REQUEST_ANSWER_INVALID');
+  await identify(totalRequest,JSON.stringify({schema_version:'document-field-answer-v2',action:'unknown'}));
+  const replayTotal=async()=>{
+   const job=await current();return tx(worker,async c=>{
+    await saveExtractionCheckpoint(c,job,totalCheckpoint);
+    return {job,snapshot:await new SavedCaseSnapshot(c,job,'2026-06').read()};
+   },true);
+  };
+  const unknownTotal=await replayTotal();expect(unknownTotal.snapshot.extractions.find(e=>e.document_id===totalVersion)?.customer_source_transcriptions??[]).toEqual([]);
+  await expect(tx(worker,c=>saveExtractionCheckpoint(c,totalJob,totalCheckpoint))).rejects.toThrow('ANALYSIS_INPUT_SUPERSEDED');
+  await edit(totalRequest,totalAnswer,1);
+  proofStage='grand_total_identified_correction';const correctedTotal=await replayTotal(),totalExtraction=correctedTotal.snapshot.extractions.find(e=>e.document_id===totalVersion)!;
+  expect(totalExtraction.customer_source_transcriptions).toHaveLength(1);
+  expect(totalExtraction.customer_source_transcriptions?.[0]).toMatchObject({request_id:totalRequest,answer_revision:2,identity_id:f.identityId,
+   subject:{kind:'grand_total'},transcription:{normalized_value:{kind:'grand_total',amount:{currency:'ILS',minor_units:16000}}}});
+  expect(totalExtraction.fields).toEqual(machine.fields);expect(payslipMachineExtractionSha256(totalExtraction)).toBe(canonicalSha256(machine));
+  expect(await openTotal(correctedTotal.job)).toBe(totalRequest);
+  expect((await replayTotal()).snapshot.extraction_snapshot_sha256).toBe(correctedTotal.snapshot.extraction_snapshot_sha256);
+  expect((await owner.query(targetReceiptSql,[totalRequest])).rows[0]).toEqual(originalTotalTarget);
+  expect((await owner.query(checkpointRowsSql,[f.caseId,totalVersion])).rows[0]).toEqual(originalTotalRows[0]);
+  expect((await owner.query(purchaseReceiptSql,[f.paymentId,f.caseId])).rows[0]).toEqual(originalPurchaseReceipt);
+  stagedEvidence.push({stage:proofStage,document_id:totalDocument,version_id:totalVersion,checkpoint_result_sha256:totalCheckpoint.result_sha256,
+   request_id:totalRequest,physical_pages:1,original_machine_sha256:canonicalSha256(machine),identified_reading_count:1});
+  proofStage='grand_total_replaced_version_negative';const replacementVersion=randomUUID();
+  await owner.query('begin');try{
+   expect((await owner.query("select d.id from public.documents d join public.cases c on c.id=d.case_id where d.id=$1 and d.case_id=$2 and d.version_id=$3 and d.content_sha256=$4 and d.slot='payslip-01' and c.is_qa and c.first_name='Synthetic source kind SQL proof' for update of d",
+    [totalDocument,f.caseId,totalVersion,totalHash])).rowCount).toBe(1);
+   await owner.query('insert into public.document_versions(version_id,document_id,case_id,storage_path,original_filename,mime_type,size,period_month) select version_id,id,case_id,storage_path,original_filename,mime_type,size,period_month from public.documents where id=$1 and case_id=$2 and version_id=$3 and content_sha256=$4',
+    [totalDocument,f.caseId,totalVersion,totalHash]);
+   expect((await owner.query("update public.documents set version_id=$5,storage_path=$6,processing_status='uploaded' where id=$1 and case_id=$2 and version_id=$3 and content_sha256=$4 returning version_id",
+    [totalDocument,f.caseId,totalVersion,totalHash,replacementVersion,`cases/${f.caseId}/versions/${replacementVersion}.pdf`])).rows).toEqual([{version_id:replacementVersion}]);
+   await owner.query('commit');
+  }catch(error){await owner.query('rollback');throw error;}
+  const replacedStates=await tx(web,async()=> (await web.query('select * from public.case_request_field_states($1,$2)',[f.caseId,f.identityId])).rows);
+  expect(replacedStates.find(s=>s.request_id===totalRequest)?.source_current).toBe(false);
+  expect((await tx(web,async()=>web.query('select public.case_request_document_source($1,$2,$3) value',[f.caseId,f.identityId,totalRequest]))).rows[0].value).toBeNull();
+  await expect(edit(totalRequest,totalAnswer,2)).rejects.toThrow(/REQUEST_ANSWER_INVALID|REQUEST_FIELD_SOURCE_CHANGED/);
+  expect((await owner.query(targetReceiptSql,[totalRequest])).rows[0]).toEqual(originalTotalTarget);
+  expect((await owner.query(checkpointRowsSql,[f.caseId,totalVersion])).rows[0]).toEqual(originalTotalRows[0]);
+  checks.push('217 actual worker finds missing-grand-total payslip despite completed contract discovery; first-pass true-total counterexample omitted; physical facade certifies actual one-page synthetic bytes; actual web unknown/correction creates one separate reading; retry/stale-head/foreign identity and source-hash guards hold; original subtotal/checkpoint/target/purchase receipt unchanged');
+  checks.push('replacing synthetic payslip version through archive/CAS leaves original target/checkpoint intact and makes old web field state, source URL and correction unavailable');
+  expect(sourcePins()).toEqual(testedSourceFiles);
   proofStage='complete';passed=true;
  }catch(error){primary=error;}finally{
   await Promise.allSettled([owner.query('rollback'),worker.query('rollback'),web.query('rollback')]);
-  if(fixture&&physicalJobId)try{
+  if(fixture&&physicalJobIds.length)try{
    await owner.query('begin');await owner.query("select set_config('tivdoc.tenant_id',$1,true)",[fixture.tenant]);
-   await owner.query("update public.engine_durable_jobs set state='cancelled',cancellation_requested=true,lease_owner=null,lease_expires_at=null,revision=revision+1 where job_id=$1 and tenant_id=$2 and canonical_case_id=$3 and state in ('queued','leased','running','retry_wait')",
-    [physicalJobId,fixture.tenant,fixture.caseId]);await owner.query('commit');
+   await owner.query("update public.engine_durable_jobs set state='cancelled',cancellation_requested=true,lease_owner=null,lease_expires_at=null,revision=revision+1 where job_id=any($1::text[]) and tenant_id=$2 and canonical_case_id=$3 and state in ('queued','leased','running','retry_wait')",
+    [physicalJobIds,fixture.tenant,fixture.caseId]);await owner.query('commit');
   }catch(error){cleanup.push(error);await owner.query('rollback').catch(e=>cleanup.push(e));}
   if(fixture)try{await revokeSourceKindFixture(owner,fixture);revoked=true;}catch(error){cleanup.push(error);}
   await Promise.allSettled([owner.end(),worker.end(),web.end()]);
   const describe=(e:unknown)=>e instanceof Error?{name:e.name,message:e.message.slice(0,1000)}:{message:String(e).slice(0,1000)};
   try{const dir='../release-work/source-transcription-postgres';mkdirSync(dir,{recursive:true});writeFileSync(`${dir}/${runId}.private.json`,JSON.stringify({schema_version:'source-transcription-postgres-proof-v1',result:passed&&revoked&&!cleanup.length?'passed':'failed',head,working_tree_dirty:workingTreeDirty,tested_source_files:testedSourceFiles,checks,statement_names:[...names].sort(),last_statement:lastStatement,raw_row_types:rawRowTypes,last_stage:proofStage,staged_evidence:stagedEvidence,
    primary_failure:primary===undefined?null:describe(primary),cleanup_failures:cleanup.map(describe),case_id:fixture?.caseId??null,revoked,provider_calls:0,storage_calls:0,local_source_reads:localSourceReads,physical_admissions:physicalAdmissions,
-   retained_scope:'Only fresh labeled synthetic legacy QA case, contract with archived original version and new physical-proof version, attendance source, immutable physical receipts/source-period and text-answer versions/input journals and cancelled physical-proof job; original empty-period purchase receipt retained; session and enrollment revoked. No real source, provider output, extraction checkpoint, Findings or reports.',
-   limitation:'Synthetic local PDF and ordinary web identified answers prove source transcription/currentness only. Unsupported clause wording correctly remains a rule gap; no legal applicability or payment-link proof.'},null,2)+'\n',{flag:'wx',mode:0o600});}catch(error){cleanup.push(error);}
+   retained_scope:'Fresh labeled synthetic legacy QA case, contract and payslip with archived versions, attendance source, physical receipts, identified source-period/text/grand-total answer versions and source journals; original empty-period purchase receipt retained. Synthetic normalized payslip checkpoints explicitly have no provider receipt. All claimed physical jobs cancelled; session and enrollment revoked. No real customer source, provider output, Findings or reports.',
+   limitation:'Local synthetic PDF bytes and ordinary web/worker roles prove physical/source-transcription mechanics and currentness. No hosted Storage or provider request, legal applicability, REAL authority, calculation/report publication or payment-link proof.'},null,2)+'\n',{flag:'wx',mode:0o600});}catch(error){cleanup.push(error);}
  }
  if(primary!==undefined)throw primary;if(cleanup.length)throw new AggregateError(cleanup,'SOURCE_TRANSCRIPTION_PROOF_CLEANUP_FAILED');
 },180000);

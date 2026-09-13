@@ -1,24 +1,21 @@
-import type { Metadata } from "next";
+// Retained pre-notification presentation; no retroactive acceptance claim.
+
 import Link from "next/link";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
-import { guardStableAppEntrypoint } from "@/server/platform/capabilities/stable-next-entrypoint";
-import {termsVersionLabel,resolveTermsPresentationVersion,RETAINED_TERMS_VERSION,REPORT_NOTIFICATION_NOTICE} from "@/lib/legal-terms";
-import RetainedPrivacy20260907 from "@/components/legal/retained-privacy-2026-09-07";
 
-export const metadata: Metadata = { alternates: { canonical: "/privacy" }, title: "מדיניות פרטיות | Tivdoc" };
 
-export default async function PrivacyPage({searchParams}: {searchParams?:Promise<{version?:string|string[]}>}={}) {
-  await guardStableAppEntrypoint("CEP-008");
-  const version=resolveTermsPresentationVersion((await searchParams)?.version);
-  if(version===RETAINED_TERMS_VERSION)return <RetainedPrivacy20260907 />;
-  if(version===null)return <><SiteHeader /><main id="main-content" className="legal-page"><div className="legal-shell"><h1>נוסח מדיניות הפרטיות המבוקש אינו זמין כאן.</h1><p>לא מוצגת מדיניות חדשה במקום הגרסה שנשמרה בהזמנה. אפשר לפנות לתמיכה מתוך התיק לבירור הגרסה.</p></div></main><SiteFooter /></>;
+
+
+export default function RetainedPrivacy20260907() {
+
   return (
     <>
       <SiteHeader />
       <main id="main-content" className="legal-page">
         <div className="legal-shell">
-          <p className="mono legal-page__label">מדיניות פרטיות · עודכן ביום {termsVersionLabel()}</p>
+          <p className="mono legal-page__label">מדיניות פרטיות · עודכן ביום 7.9.2026</p>
+          <p role="note">עותק של הנוסח שסומן בגרסה זו ונשמר לפני העדכון. אין בכך אימות שזה הנוסח שהוצג בכל רכישה היסטורית.</p>
           <h1>הפרטים והמסמכים שלך משמשים לבדיקה.</h1>
           <p className="legal-page__lead">
             מדיניות זו מסבירה איזה מידע נאסף בשירות Tivdoc, למה הוא נדרש, עם מי הוא
@@ -59,14 +56,12 @@ export default async function PrivacyPage({searchParams}: {searchParams?:Promise
             <h2>למה המידע משמש?</h2>
             <p>
               המידע משמש לפתיחת תיק בדיקה; קליטת המסמכים; ביצוע בדיקה ראשונית של
-              השכר והזכויות; יצירת קשר כאשר חסר מידע; הודעה על זמינות דוח בהתאם לתנאי ההזמנה שנשמרו; טיפול בתשלום, בביטול או בהחזר;
+              השכר והזכויות; יצירת קשר כאשר חסר מידע; טיפול בתשלום, בביטול או בהחזר;
               אבטחת השירות, מניעת הונאה ותקלות; עמידה בחובות דין; ושיפור השירות.
               מידע מתלושים, חוזים או מתשובות חופשיות אינו משמש לפרסום ואינו נשלח
               למעסיק ללא הוראה מפורשת ממך.
             </p>
           </section>
-
-          <section><h2>הודעות שירות על הדוח</h2><p>{REPORT_NOTIFICATION_NOTICE}</p><p>עדכון מדיניות זו אינו יוצר הסכמה חדשה עבור הזמנה שנשמרה תחת גרסה קודמת.</p></section>
 
           <section>
             <h2>ספקים וקבלת מידע</h2>

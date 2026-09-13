@@ -7,6 +7,8 @@ import {rawCandidateFieldSchema} from './contracts.ts';
 import {normalizedCandidateFieldSchema,normalizedAdditionalComponentSchema,normalizedPayslipExtractionSchema,type NormalizedCandidateField,type NormalizedPayslipExtraction} from './payslip.ts';
 import {normalizePayslipFieldValue,normalizeMoney,normalizeDecimal,normalizePercentage} from './normalization.ts';
 import type {CustomerDocumentReading,CustomerDocumentRowCellReading,CustomerDocumentScopeReading,CustomerSourceTranscription,SourceTranscriptionSubject,RowReadingCell} from './customer-reading.ts';
+import {grandTotalTranscriptionValueSchema} from './customer-reading.ts';
+import {isExplicitMandatorySubtotalCandidate} from './deduction-source-scope.ts';
 
 type Row=NormalizedPayslipExtraction['additional_components'][number];
 type ScopeObservation=NonNullable<NormalizedPayslipExtraction['source_scope_observations']>[number];
@@ -84,6 +86,14 @@ export function hasPayslipReadingAnnotations(extraction:NormalizedPayslipExtract
 /** Decimal reported totals remain distinct from paid regular hours. Balance
  * answers resolve only the unit, never replace the original printed number. */
 export function normalizeSourceTranscriptionValue(subject:SourceTranscriptionSubject,raw:string){
+ if(subject.kind==='grand_total'){
+  let candidate;try{candidate=grandTotalTranscriptionValueSchema.parse(JSON.parse(raw));}catch{return null;}
+  const label=candidate.label.normalize('NFKC').replace(/["'״׳.]/gu,'').replace(/\s+/gu,' ').trim().toLowerCase();
+  if(!/^(?:סך (?:כל )?(?:ה)?ניכויים|סהכ (?:ה)?ניכויים|total deductions)$/u.test(label))return null;
+  const amount=normalizeMoney(candidate.amount);
+  if(!amount||amount.currency!=='ILS'||amount.minor_units<0)return null;
+  return {kind:'grand_total' as const,meaning:subject.meaning,page:subject.page,amount,label:candidate.label,locator:candidate.locator};
+ }
  if(subject.kind==='reported_work_hours'){
   // This subject fixes the unit as hours; the generic decimal parser also
   // accepts day suffixes, which must not silently become hours here.
@@ -173,7 +183,7 @@ export function materializeValidatedPayslipReadings(input:{document:unknown;extr
   if(hasPayslipReadingAnnotations(firstPass)||firstPass.document_id!==document.document_id)throw new TypeError('DOCUMENT_SOURCE_TRANSCRIPTION_CONTEXT_INVALID');
   const subjects=new Set<string>();
   for(const reading of customer_source_transcriptions){
-   const periods=original.fields.filter(f=>f.field==='salary_period'),subject=reading.subject,key=subject.kind==='reported_work_hours'?'reported_work_hours':`balance_unit:${subject.original_candidate.candidate_id}`;
+   const periods=original.fields.filter(f=>f.field==='salary_period'),subject=reading.subject,key=subject.kind==='balance_unit'?`balance_unit:${subject.original_candidate.candidate_id}`:subject.kind;
    if(reading.case_id!==document.case_id||reading.document_id!==document.document_id||reading.source_sha256!==document.content_sha256
     ||reading.normalized_extraction_sha256!==canonicalSha256(machine)||reading.extraction_result_sha256!==source_reading_context.checkpoint_result_sha256
     ||subjects.has(key)||requests.has(reading.request_id)||targets.has(reading.target_sha256)||!periods.length
@@ -181,6 +191,9 @@ export function materializeValidatedPayslipReadings(input:{document:unknown;extr
    if(subject.kind==='reported_work_hours'){
     if(subject.page>original.quality_metrics.page_count||subject.page>firstPass.quality_metrics.page_count
      ||[...(original.source_scope_observations??[]),...(firstPass.source_scope_observations??[])].some(o=>o.scope==='attendance_total'))throw new TypeError('DOCUMENT_SOURCE_TRANSCRIPTION_PRESENT_SOURCE');
+   }else if(subject.kind==='grand_total'){
+    if(subject.first_pass_extraction_sha256!==canonicalSha256(firstPass)||original.quality_metrics.page_count!==1||firstPass.quality_metrics.page_count!==1
+     ||[...machine.fields,...firstPass.fields].some(f=>f.field==='total_deductions'&&!isExplicitMandatorySubtotalCandidate(f)))throw new TypeError('DOCUMENT_SOURCE_TRANSCRIPTION_PRESENT_SOURCE');
    }else{
     const field=subject.original_candidate,found=firstPass.fields.filter(f=>f.candidate_id===field.candidate_id);
     if(subject.first_pass_extraction_sha256!==canonicalSha256(firstPass)||found.length!==1||canonicalSha256(found[0])!==canonicalSha256(field)

@@ -12,8 +12,8 @@ import {readSavedOrders,purchasedMonths,savedOrderLegalTopics,savedOrderReceiptS
 import {savedAiReleaseBaseKey,resolveSavedDocumentReviewKey} from '../processing/document-review-key';
 import {savedCaseTenant} from '../processing/saved-admission';
 import {AI_RELEASE_REPORT_TEMPLATE} from '../reports/ai-release-report';
-import {pricingBasisSchema,type PricingBasis} from './pricing';
-import type {SavedPricingBasisReader} from './quote-ledger';
+import {pricingBasisSchema,releasePricingBasisSchema,RELEASE_PRICING_BASIS_VERSION,type SavedReleasePricingBasis} from './pricing';
+import type {SavedReleasePricingBasisReader} from './quote-ledger';
 
 const sha=z.string().regex(/^[a-f0-9]{64}$/u);
 const findingRow=z.object({id:z.uuid(),finding_receipt_sha256:sha,calculation_payload:z.unknown(),
@@ -25,15 +25,21 @@ type Candidate=Extract<DocumentReviewCalculationInput['operation'],{kind:'candid
 const same=(a:unknown,b:unknown)=>canonicalSha256(a)===canonicalSha256(b);
 /** Software coverage only; no implication that the customer's data is missing. */
 export function savedReleasePricingUnsupportedTopics(topics:readonly string[]){
- return topics.filter(topic=>!['minimum_wage','working_time','travel','pension'].includes(topic));
+ return topics.filter(topic=>!['minimum_wage','working_time','travel','pension','convalescence','vacation','rest_day','contract','bonuses'].includes(topic));
 }
 
 // Explicit economic identity, independent of generated check IDs and numbers.
 // The same wage month cannot be counted twice under two minimum-wage methods.
 function economicIdentity(check:Check){
- if(check.topic==='working_time'&&check.rule_id==='il.review.working-time.required-versus-allocated')return `workday:${check.period.from}`;
+ if((check.topic==='working_time'||check.topic==='rest_day')&&check.rule_id==='il.review.working-time.required-versus-allocated')return `workday:${check.period.from}`;
  if(check.topic==='minimum_wage'&&/^il\.review\.minimum-wage\.(published_hourly_182|monthly_exact_div182|full_monthly)\.components\.\d+$/u.test(check.rule_id))return 'ordinary_wage';
  if(check.topic==='travel'&&/^il\.review\.travel\.(general_order_floor\.)?[a-z_]+\.(expected|comparison)$/u.test(check.rule_id))return 'travel_reimbursement';
+ if(check.topic==='convalescence'&&/^il\.review\.convalescence\.2026\.calendar-fraction\.[1-9]\d*\.(expected|comparison)$/u.test(check.rule_id))return 'convalescence_payment';
+ if(check.topic==='vacation'&&/^il\.review\.vacation\.pay\.(expected|comparison)$/u.test(check.rule_id))return 'vacation_payment';
+ if(check.topic==='contract'||check.topic==='bonuses'){
+  const scope=new RegExp(`^il\\.review\\.${check.topic}\\.(fixed|linear)\\.(expected|comparison)\\.([a-f0-9]{16})$`,'u').exec(check.rule_id)?.[3];
+  if(scope)return `obligation:${scope}`;
+ }
  if(check.topic==='pension'){
   const share=/^il\.review\.pension\.(employee|employer|severance)\.(expected|comparison)(\.floor)?$/u.exec(check.rule_id)?.[1];
   if(share)return `pension_${share}`;
@@ -69,8 +75,8 @@ function recordedOperands(op:Candidate,input:DocumentReviewCalculationInput){
  * of legal debt or actual remittance. `high` denotes an exact admitted amount;
  * `employer_owes` is the historical pricing contract's positive-gap direction.
  * Neither changes qualified_ai_report / verified_debt:false in saved results.
- * This bounded map covers minimum wage, source-allocated workdays, travel and separate pension
- * shares. Other monetary families, conditional results, missing comparisons,
+ * This bounded map covers minimum wage, source-allocated workdays/rest days, travel, separate pension
+ * shares, due convalescence payments, actual leave pay and a single positive explicit obligation. Other monetary families, conditional results, missing comparisons,
  * offsets and ambiguous allocations remain amount_unknown (null), never zero.
  * Expected/comparison twins share ONE economic identity. Distinct identities
  * must also have disjoint recorded observations AND source locations. Common
@@ -79,11 +85,16 @@ function recordedOperands(op:Candidate,input:DocumentReviewCalculationInput){
  * minimum-wage gaps therefore require a cross-topic economic allocation that
  * the current source model does not provide; different cells cannot prove it.
  * Zero minimum-wage comparison plus positive workday gaps is non-additive only
- * in its zero component and may be priced. No rest-day family is silently added.
+ * in its zero component and may be priced. Rest-day coverage must be independently purchased and fully calculated.
+ * Positive leave-pay and ordinary/workday wage gaps likewise require an
+ * economic allocation before addition. Vacation quota/prorated calendar days
+ * remain checked noncash outputs; they are never priced or converted to money.
+ * Convalescence must already have a due date in this month and a complete
+ * source-allocated payment comparison; accrued entitlement alone is insufficient.
  * Only the actually checked month is priced; no extrapolation or debt total.
  */
 export function mapSavedReleasePricingBasis(input:{result:AiReleaseRuntimeResult;identityId:string;analysisVersion:string;
- factsSha256:string;findings:readonly FindingRow[];onUnavailable?:(reason:string)=>void}):PricingBasis|null{
+ factsSha256:string;findings:readonly FindingRow[];onUnavailable?:(reason:string)=>void}):SavedReleasePricingBasis|null{
  const r=input.result;assertAiReleaseRuntimeResult(r);
  const unavailable=(reason:string)=>{input.onUnavailable?.(reason);return null;};
  const rows=input.findings.map(row=>findingRow.parse(row));
@@ -104,14 +115,27 @@ export function mapSavedReleasePricingBasis(input:{result:AiReleaseRuntimeResult
  }
  const checks=families.flatMap(f=>f.checks),groups=new Map<string,Check[]>();
  const positive=(topic:string)=>checks.some(c=>c.topic===topic&&c.difference?.kind==='money'&&c.difference.minor_units>0);
- if(positive('minimum_wage')&&positive('working_time'))return unavailable('pricing_cross_topic_allocation_unavailable');
+ if(positive('minimum_wage')&&(positive('working_time')||positive('rest_day')))return unavailable('pricing_cross_topic_allocation_unavailable');
+ if(positive('vacation')&&(positive('minimum_wage')||positive('working_time')||positive('rest_day')))return unavailable('pricing_cross_topic_allocation_unavailable');
+ // A source-specific obligation is not proof that another positive award is
+ // economically independent. Admit a single positive obligation only; complete
+ // zero comparisons still prove checked scope, without adding any money.
+ if(positive('contract')||positive('bonuses')){
+  const positiveComparisons=checks.filter(c=>c.recorded?.kind==='money'&&c.difference?.kind==='money'&&c.difference.minor_units>0);
+  if(positiveComparisons.length!==1)return unavailable('pricing_cross_topic_allocation_unavailable');
+ }
  for(const check of checks){
-  const key=economicIdentity(check);if(!key)return unavailable('pricing_adapter_unsupported_rule_branch');
   if(check.state!=='calculated'||check.blockers.length)return unavailable('pricing_comparison_incomplete');
+  // Only these factory-issued, resolved calendar-day outputs are noncommercial.
+  // Missing/conditional annual evidence was rejected at the family boundary.
+  if(check.topic==='vacation'&&/^il\.review\.vacation\.annual\.(quota|prorated)$/u.test(check.rule_id)
+   &&check.expected?.kind==='integer'&&check.expected.unit==='calendar_days'&&check.recorded===null&&check.difference===null)continue;
+  const key=economicIdentity(check);if(!key)return unavailable('pricing_adapter_unsupported_rule_branch');
   groups.set(key,[...(groups.get(key)??[]),check]);
  }
- const components:PricingBasis['components']=[],used=new Set<string>();
+ const components:z.infer<typeof releasePricingBasisSchema>['components']=[],used=new Set<string>();
  for(const [economic_key,group] of groups){
+  if(economic_key.startsWith('obligation:')&&group.length!==2)return unavailable('pricing_comparison_alternatives');
   const comparisons=group.filter(c=>c.recorded?.kind==='money'&&c.difference?.kind==='money');
   if(comparisons.length!==1)return unavailable(comparisons.length?'pricing_comparison_alternatives':'pricing_recorded_comparison_missing');
   const c=comparisons[0],calculation=r.review.checks.find(check=>check.check_id===c.check_id)?.calculation;
@@ -124,11 +148,11 @@ export function mapSavedReleasePricingBasis(input:{result:AiReleaseRuntimeResult
   // supplies precisely that expected value; it never contributes an amount.
   if(group.some(other=>!same(other.expected,c.expected)||!same(other.period,c.period)))return null;
   const month=c.period.from.slice(0,7),end=new Date(Date.UTC(Number(month.slice(0,4)),Number(month.slice(5,7)),0)).toISOString().slice(0,10);
-  if(c.topic==='working_time'){
+  if(c.topic==='working_time'||c.topic==='rest_day'){
    if(c.period.from<r.current_scope.period.from||c.period.to>r.current_scope.period.to||c.period.to.slice(0,7)!==month)return unavailable('pricing_workday_outside_checked_month');
   }else if(c.period.from!==`${month}-01`||c.period.to!==end||!same(c.period,r.current_scope.period))return null;
   const recorded=recordedOperands(op,calculation.input);if(!recorded.length||recorded.some(o=>!o))return unavailable('pricing_adapter_unsupported_payment_expression');
-  const banded=c.topic==='working_time'&&op.comparison.recorded_basis==='document_allocation';
+  const banded=(c.topic==='working_time'||c.topic==='rest_day')&&op.comparison.recorded_basis==='document_allocation';
   if(banded&&!recorded.some(o=>o?.quantity_unit==='hours'))return unavailable('pricing_payment_allocation_missing');
   const evidence_ids:string[]=[];
   for(const operand of recorded){
@@ -142,13 +166,14 @@ export function mapSavedReleasePricingBasis(input:{result:AiReleaseRuntimeResult
    evidence_ids.push(s.version_id);
   }
   const row=rows.find(row=>row.finding_receipt_sha256===c.sha256);if(!row)throw Error('PRICING_COMPARISON_FINDING_MISSING');
-  if(c.topic!=='minimum_wage'&&c.topic!=='working_time'&&c.topic!=='travel'&&c.topic!=='pension')return null;
+  if(c.topic!=='minimum_wage'&&c.topic!=='working_time'&&c.topic!=='travel'&&c.topic!=='pension'&&c.topic!=='convalescence'&&c.topic!=='vacation'&&c.topic!=='rest_day'&&c.topic!=='contract'&&c.topic!=='bonuses')return null;
   components.push({finding_id:row.id,economic_key,month,topic:c.topic,kind:c.topic==='pension'?'fund_deposit':'wage_gap',
    direction:c.difference.minor_units===0?'none':'employer_owes',certainty:'high',active:true,basis_complete:true,
    amount:c.difference.minor_units,range:null,evidence_ids:[...new Set(evidence_ids)],rule_versions:[`${c.rule_id}@${c.rule_version}:${c.rule_sha256}`],alternative_group:null});
  }
  if(!components.length)return null;
- return pricingBasisSchema.parse({case_id:r.case_id,identity_id:input.identityId,analysis_version:input.analysisVersion,input_sha256:r.current_scope.input_sha256,
+ const versioned=components.some(c=>['rest_day','contract','bonuses'].includes(c.topic));
+ return (versioned?releasePricingBasisSchema:pricingBasisSchema).parse({...(versioned?{schema_version:RELEASE_PRICING_BASIS_VERSION}:{}),case_id:r.case_id,identity_id:input.identityId,analysis_version:input.analysisVersion,input_sha256:r.current_scope.input_sha256,
   checked_months:[...new Set(components.map(c=>c.month))].sort(),checked_topics:[...new Set(components.map(c=>c.topic))].sort(),components});
 }
 
@@ -158,7 +183,7 @@ export function mapSavedReleasePricingBasis(input:{result:AiReleaseRuntimeResult
  * active purchase, current source readings, completed analysis and report bytes.
  * No supplied amount, AI finding label, old run or owner/QA profile is a fallback.
  * Caller owns the transaction and must roll back on any thrown guard failure. */
-export function createSavedReleasePricingBasisReader(candidate:SourceJob,onUnavailable?:(reason:string)=>void):SavedPricingBasisReader{
+export function createSavedReleasePricingBasisReader(candidate:SourceJob,onUnavailable?:(reason:string)=>void):SavedReleasePricingBasisReader{
  const job=sourceJobSchema.parse(candidate);
  return async(context,source)=>{
   if(source.caseId!==job.case_id||source.inputSha256!==job.input_sha256)throw Error('PRICING_SOURCE_SCOPE');

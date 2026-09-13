@@ -19,6 +19,41 @@ it('does not choose current versus retro rows from amounts, order or identical f
  expect(explicitSourceScope('net_salary','לתשלום',{...context,hasVoluntaryDeduction:false})).toBeNull();
  expect(explicitSourceScope('regular_hours','שעות רגילות',context)).toBeNull();
 });
+it.each(['ניכויי חובה','סה״כ ניכויי חובה','ניכויי חובה-מסים','ניכויי חובה - מסים','ניכויי חובה־מסים','ניכויי חובה – מסים','סה״כ ניכויי חובה - מסים','mandatory deductions'])(
+ 'keeps the exact subtotal heading %s out of grand totals even without an extracted fund section',label=>{
+  expect(explicitSourceScope('total_deductions',label,{hasSalaryNet:false,hasVoluntaryDeduction:false,hasSeparateEmployeeFunds:false})).toBe('mandatory_deduction_subtotal');
+ });
+it.each(['סך ניכויים','סה״כ ניכויים','total deductions','ניכויי חובה ורשות','ניכויי חובה וקופות גמל','מסים','ניכויי חובה משוערים'])(
+ 'does not broaden the bounded mandatory-subtotal label grammar: %s',label=>{
+  expect(explicitSourceScope('total_deductions',label,context)).toBeNull();
+ });
+it('retains two separately printed subtotal observations and never manufactures an unextracted grand total',()=>{
+ const f=buildSyntheticCaseFixture({fixture_id:'mandatory-subtotal-no-funds',mode:'real'}),e=f.stored.extractions[0];
+ const {normalized_value,...money}=e.fields.find(field=>field.field==='gross_salary')!;void normalized_value;
+ const original={...money,field:'total_deductions' as const};
+ const labels=['סה״כ ניכויי חובה','ניכויי חובה-מסים'];
+ const fields=labels.map((label,i)=>({...original,candidate_id:`00000000-0000-4000-8000-00000000000${i+1}`,raw_value:'120.00',confidence:0.94,
+  source:{...original.source,text_fragment:label+': 120.00'},warning_flags:['ocr_ambiguous']}));
+ const raw=extractionResultSchema.parse({...e,fields,additional_components:[]});
+ const before=structuredClone(raw),labelMap=new Map(fields.map((field,i)=>[field.candidate_id,labels[i]]));
+ const result=classifyOpenAiV2SourceScopes(raw,labelMap,{hasSeparateEmployeeFunds:false});
+ expect(result.fields).toEqual([]);expect(result.source_scope_observations).toEqual(fields.map((candidate,i)=>({
+  policy_version:'payslip-explicit-source-scope-v1',scope:'mandatory_deduction_subtotal',source_label:labels[i],candidate})));
+ expect(normalizePayslipExtraction(result).fields).toEqual([]);
+ expect(normalizePayslipExtraction(result).source_scope_observations).toEqual(result.source_scope_observations);
+ expect(raw).toEqual(before);
+});
+it('preserves a separately printed grand total without adding its subtotal again',()=>{
+ const f=buildSyntheticCaseFixture({fixture_id:'mandatory-and-grand-total',mode:'real'}),e=f.stored.extractions[0];
+ const {normalized_value,...money}=e.fields.find(field=>field.field==='gross_salary')!;void normalized_value;
+ const original={...money,field:'total_deductions' as const};
+ const subtotal={...original,candidate_id:'00000000-0000-4000-8000-000000000001',raw_value:'120.00',source:{...original.source,text_fragment:'ניכויי חובה-מסים: 120.00'}};
+ const grand={...original,candidate_id:'00000000-0000-4000-8000-000000000002',raw_value:'200.00',source:{...original.source,page:2,text_fragment:'סך ניכויים: 200.00'}};
+ const raw=extractionResultSchema.parse({...e,quality_metrics:{...e.quality_metrics,page_count:2},fields:[subtotal,grand],additional_components:[]});
+ const result=classifyOpenAiV2SourceScopes(raw,new Map([[subtotal.candidate_id,'ניכויי חובה-מסים'],[grand.candidate_id,'סך ניכויים']]),{hasSeparateEmployeeFunds:false});
+ expect(result.fields).toEqual([grand]);expect(result.source_scope_observations?.[0].candidate).toEqual(subtotal);
+ expect(normalizePayslipExtraction(result).fields[0]).toMatchObject({candidate_id:grand.candidate_id,normalized_value:{currency:'ILS',minor_units:20000}});
+});
 it('retains every excluded original through normal normalization with no warning/value/confidence rewriting',()=>{
  const f=buildSyntheticCaseFixture({fixture_id:'source-scope-audit',mode:'real'}),normalized=f.stored.extractions[0];
  const raw=extractionResultSchema.parse({...normalized,fields:normalized.fields.map(({normalized_value,...field})=>{void normalized_value;return field;}),additional_components:[]});

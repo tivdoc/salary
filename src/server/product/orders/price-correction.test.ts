@@ -1,5 +1,5 @@
 import {it,expect,vi} from 'vitest';
-import {createPriceQuote,type PricingBasis} from './pricing';
+import {createPriceQuote,createReleasePriceQuote,releasePricingBasisSchema,RELEASE_PRICING_BASIS_VERSION,type PricingBasis} from './pricing';
 import {priceQuoteSchema} from './price-quote';
 import {requestSavedPriceCorrection} from './price-correction';
 import type {PostgresTransactionContext} from '@/server/platform/persistence/postgres/contracts';
@@ -37,4 +37,17 @@ it.each(['hash','foreign','source','ack'] as const)('refuses a changed %s bounda
 });
 it('does not accept an HTTP-provided amount or basis in its request contract',async()=>{
  const s=setup();await expect(requestSavedPriceCorrection(s.context,{...request,amount:1} as typeof request,async()=>basis())).rejects.toThrow();expect(s.query).not.toHaveBeenCalled();
+});
+
+it.each(['rest_day','contract','bonuses'] as const)('corrects the exact saved %s versioned scope through the existing refund RPC',async topic=>{
+ const s=setup();
+ const release=(amount:number,inputSha='b'.repeat(64))=>releasePricingBasisSchema.parse({...basis(amount),schema_version:RELEASE_PRICING_BASIS_VERSION,input_sha256:inputSha,checked_topics:[topic],components:basis(amount).components.map(c=>({...c,topic}))});
+ const quote=priceQuoteSchema.parse(createReleasePriceQuote({basis:release(2000000,'a'.repeat(64)),caseId,identityId,from:'2020-01',to:'2020-01',topics:[topic],credit:{order_id:id,case_id:caseId,identity_id:identityId,verified:true,paid_minor:999,already_consumed:false},now:new Date('2026-09-08T00:00:00.000Z')}));
+ s.saved.quote=quote;s.saved.quote_sha256=quote.sha256;
+ expect(await requestSavedPriceCorrection(s.context,request,async()=>release(500000))).toEqual({...s.receipt,replayed:false});
+ const call=s.query.mock.calls[1][0];expect(JSON.parse(String(call.values[5]))).toMatchObject({schema_version:RELEASE_PRICING_BASIS_VERSION,checked_topics:[topic]});expect(call.values.slice(-2)).toEqual([500000,15000]);
+});
+it('does not upgrade an old saved quote to a new basis version during correction',async()=>{
+ const s=setup(),b=releasePricingBasisSchema.parse({...basis(),schema_version:RELEASE_PRICING_BASIS_VERSION});
+ expect(await requestSavedPriceCorrection(s.context,request,async()=>b)).toEqual({state:'amount_unknown',reason:'invalid_saved_basis'});expect(s.query).toHaveBeenCalledTimes(1);
 });

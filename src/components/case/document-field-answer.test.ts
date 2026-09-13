@@ -55,11 +55,21 @@ it('preserves the historical scalar two-step form and literal source value',()=>
  expect(html).not.toContain('אישור הערך בתא ושמירה');expect(html).toContain('<bdi>96.1</bdi>');
 });
 
-function transcription(kind:'reported_work_hours'|'balance_unit',draft=false):StoredRequest{
+function transcription(kind:'reported_work_hours'|'balance_unit'|'grand_total',draft=false):StoredRequest{
  const {row_context:ignored,dependent_checks:ignoredChecks,...source}=rows[0].reading_display!;void ignored;void ignoredChecks;
  return {...rows[0],question:'העתקת מידע מהמקור הסינתטי',draft_text:draft?JSON.stringify({schema_version:'document-field-answer-v2',action:'correct',corrected_raw_value:kind==='balance_unit'?'hours':'97.5'}):null,
   reading_display:{...source,field:'source_transcription.'+kind,raw_value:kind==='balance_unit'?'7.25':null,transcription_context:{kind}}};
 }
+it('renders grand-total amount, printed label and locator independently, retaining drafts without showing encoded data',()=>{
+ const value={schema_version:'grand-total-source-value-v1',amount:'20.00',label:'סך הניכויים',locator:'טבלה סינתטית תחתונה, שורת סך'};
+ const request={...transcription('grand_total'),draft_text:JSON.stringify({schema_version:'document-field-answer-v2',action:'correct',corrected_raw_value:JSON.stringify(value)})};
+ const html=render([request]);expect(html.match(/<input/g)).toHaveLength(3);
+ expect(html).toContain('value="20.00"');expect(html).toContain('סך הניכויים');expect(html).toContain(value.locator);
+ expect(html).not.toContain('grand-total-source-value-v1');expect(html).not.toContain('זה הערך בתא');expect(html).toContain('ללא חיבור של סיכומי מסים');
+ const stale=renderToStaticMarkup(createElement(DocumentFieldAnswer,{request:{...request,source_current:false},publicId:'TV-SYNTH001',onAnswered:()=>{}}));expect(stale.match(/disabled=""/g)?.length).toBeGreaterThanOrEqual(6);
+ const history=render([{...request,draft_text:null,answered_at:'2026-09-10T00:00:00Z',answer_text:request.draft_text}]);
+ expect(history).toContain('20.00');expect(history).toContain(value.locator);expect(history).not.toContain('grand-total-source-value-v1');
+});
 it.each(['reported_work_hours','balance_unit']as const)('offers only three actions for missing %s without a confirm action or invented value',kind=>{
  const html=render([transcription(kind)]);
  expect(html.match(/option-button/g)).toHaveLength(3);expect(html.match(/view=marked/g)).toHaveLength(1);

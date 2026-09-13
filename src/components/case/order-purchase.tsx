@@ -1,10 +1,14 @@
 "use client";
 import {useState} from 'react';
 import Link from 'next/link';
+import {termsVersionHref,privacyVersionHref,hasReportNotificationTerms,REPORT_NOTIFICATION_NOTICE} from '@/lib/legal-terms';
 import type {ProductOrder} from '@/server/product/orders/contracts';
 import type {CustomerReleaseQuote,CustomerSavedReleaseQuoteResult} from '@/server/product/orders/service';
 const names:Record<string,string>={minimum_wage:'שכר מינימום',working_time:'שעות עבודה',pension:'פנסיה',travel:'נסיעות',convalescence:'הבראה',vacation:'חופשה',sick_leave:'מחלה',rest_day:'יום מנוחה',bonuses:'בונוסים',contract:'חוזה'};
 export function orderPurchaseTopicLabels(topics:readonly string[]){return topics.map(topic=>names[topic]??topic).join(', ');}
+export function OrderTermsDisclosure({version}:{version:string}){
+ return <><p>גרסת התנאים השמורה בהזמנה: <bdi>{version}</bdi>.</p>{hasReportNotificationTerms(version)?<p>{REPORT_NOTIFICATION_NOTICE}</p>:null}</>;
+}
 export function SavedQuoteSummary({quote,orderReady,publicId}:{quote:CustomerReleaseQuote;orderReady:boolean;publicId?:string}){
  return <div aria-label="הצעת מחיר שמורה"><p>תקופת ההצעה: <bdi>{quote.from} – {quote.to}</bdi>. הנושאים: {orderPurchaseTopicLabels(quote.topics)}.</p>
   <p>מחיר כולל: <bdi>{(quote.total_minor/100).toFixed(2)} ₪</bdi>; זיכוי התשלום הראשוני: <bdi>{(quote.credit_minor/100).toFixed(2)} ₪</bdi>; יתרה לתשלום: <bdi>{(quote.balance_minor/100).toFixed(2)} ₪</bdi>.</p>
@@ -47,7 +51,8 @@ export function OrderPurchase({publicId,initial=false}:{publicId?:string;initial
  {quote?<SavedQuoteSummary quote={quote} orderReady={order!==null} publicId={publicId}/>:null}
  {!order?<button className="button button--primary" disabled={busy||!initial&&!publicId} onClick={()=>send('quote')}>{busy?'בודקים זמינות…':initial?'הצגת מחיר וכיסוי':'הצגת ההצעה השמורה'}</button>:<>
  <p>תקופה: <bdi>{order.period_from.slice(0,7)} – {order.period_to.slice(0,7)}</bdi></p><p>מחיר ההזמנה: <strong><bdi>{(order.amount_minor/100).toFixed(2)} ₪</bdi></strong></p><p>הנושאים הכלולים: {orderPurchaseTopicLabels(order.topics)}. נושאים אחרים אינם כלולים בהזמנה.</p><p>{order.offer.human_review_required?'הזמנה זו כוללת בדיקה אנושית לפי תנאיה השמורים.': 'בדיקת AI לפי הכיסוי שנרכש.'} זמן השירות שנשמר בהזמנה: {servicePromise(order.offer)}שעות עסקים: א׳–ה׳ 09:00–17:00, שעון ישראל, ללא חגים. זמן המתנה להשלמה שחוסמת את ההזמנה אינו נספר.</p>
- <label><input type="checkbox" checked={accepted} disabled={busy} onChange={e=>setAccepted(e.target.checked)}/> קראתי את <Link href="/terms" target="_blank">תנאי השימוש</Link> ו<Link href="/privacy" target="_blank">הפרטיות</Link>, ואני מאשר את התקופה, הכיסוי והמחיר המוצגים.</label><button className="button button--primary" disabled={busy||!accepted} onClick={()=>send('checkout')}>{busy?'פותחים תשלום…':'מעבר לתשלום מאובטח'}</button></>}
+ <OrderTermsDisclosure version={order.terms_version}/>
+ <label><input type="checkbox" checked={accepted} disabled={busy} onChange={e=>setAccepted(e.target.checked)}/> קראתי את <Link href={termsVersionHref(order.terms_version)} target="_blank" rel="noreferrer">תנאי השימוש</Link> ו<Link href={privacyVersionHref(order.terms_version)} target="_blank" rel="noreferrer">הפרטיות</Link> בגרסה שנשמרה בהזמנה, ואני מאשר את התקופה, הכיסוי והמחיר המוצגים.</label><button className="button button--primary" disabled={busy||!accepted} onClick={()=>send('checkout')}>{busy?'פותחים תשלום…':'מעבר לתשלום מאובטח'}</button></>}
  {error?<p role="alert">{error} {!initial&&publicId?<Link href={`/case/${publicId}/thread`}>בירור בתיק</Link>:null}</p>:null}<p>חזרה מסליקה אינה אישור תשלום. ההזמנה מתעדכנת לאחר אימות הספק.</p></section>;
 }
 export function RefundRequest({publicId,order}:{publicId:string;order:ProductOrder}){

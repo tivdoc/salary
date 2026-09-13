@@ -55,7 +55,8 @@ export function aiControlPrivatePath(value,repo=ROOT){
 export function parseAiControlArgs(args){
  const [command,...rest]=args;
  const allowed={inspect:[], 'config-validate':['configuration'], 'config-store':['configuration','credentials','apply'],
-  enroll:['request','credentials','apply'],revoke:['request','credentials','apply'],status:['case','credentials']};
+  enroll:['request','credentials','apply'],revoke:['request','credentials','apply'],status:['case','credentials'],
+  'notification-policy-validate':['policy'],'notification-policy-register':['policy','credentials','apply']};
  assert(Object.hasOwn(allowed,command),'AI_CONTROL_USAGE');const options={command,apply:false};const seen=new Set();
  for(let i=0;i<rest.length;i++){
   const key=rest[i].startsWith('--')?rest[i].slice(2):'';
@@ -144,6 +145,22 @@ export async function runAiReleaseControl(args,ports){
  assertLocalAiControl(ports.env??process.env);const options=parseAiControlArgs(args);
  const base={schema_version:'ai-release-control-result-v1',command:options.command,applied:false};
  if(options.command==='inspect')return {...base,...await ports.inspect(),runtime_admission_evaluated:false};
+ // Separate operator policy registration never takes the owner/QA enrollment
+ // path. No case permission or terms acceptance is manufactured by this CLI.
+ if(options.policy){
+  const policy=await ports.verifyNotificationPolicy(await ports.readJson(options.policy));
+  const summary={policy_sha256:policy.sha256,plan_sha256:policy.plan_sha256,policy_state:policy.state,
+   predecessor_policy_sha256:policy.predecessor_policy_sha256,authorization_evaluated:false};
+  if(options.command==='notification-policy-validate')return {...base,...summary,integrity_valid:true};
+  return ports.database(options.credentials,options.apply,async db=>{
+   const identity=(await db.query(AI_CONTROL_SQL.identity)).rows[0];
+   assert(identity?.session_user===AI_CONTROL_TARGET.role&&identity.current_user===AI_CONTROL_TARGET.role&&identity.database===AI_CONTROL_TARGET.database,'AI_CONTROL_DATABASE_IDENTITY');
+   if(!options.apply)return {...base,...summary,registration_checked:false};
+   const receipt=await ports.registerNotificationPolicy(db,policy);
+   assert(receipt?.policy_sha256===policy.sha256&&receipt.predecessor_policy_sha256===policy.predecessor_policy_sha256,'AI_CONTROL_NOTIFICATION_POLICY_ACK');
+   return {...base,...summary,applied:true,registration_checked:true};
+  });
+ }
  let config=null,request=null;
  if(options.configuration)config=await ports.verifyConfiguration(await ports.readJson(options.configuration));
  if(options.request)request=parseAiControlRequest(await ports.readJson(options.request));
@@ -205,6 +222,8 @@ export async function loadAiControlHelpers(){
  const {build}=await import('esbuild');
  const compiled=await build({stdin:{contents:`export {verifyAiReleaseConfiguration,verifyOwnerEngineeringConfiguration} from './src/server/product/processing/ai-release-configuration';
  export {getCompiledAiReleaseBuild} from './src/server/product/processing/ai-release-build';
+ export {realServiceNotificationPolicySchema} from './src/server/product/processing/real-service-notification-policy';
+ export {registerRealServiceNotificationPolicy} from './src/server/product/processing/real-service-notification-policy-registration';
  export {SUPABASE_ROOT_2021_CA} from './src/server/product/case-access/supabase-ca';`,resolveDir:ROOT,loader:'ts'},
   absWorkingDir:ROOT,bundle:true,platform:'node',format:'cjs',target:'node22',packages:'external',write:false,logLevel:'silent',
   plugins:[{name:'server-only-local',setup(b){b.onResolve({filter:/^server-only$/},()=>({path:'server-only',namespace:'empty'}));b.onLoad({filter:/.*/,namespace:'empty'},()=>({contents:''}));}}]});
@@ -214,7 +233,7 @@ export async function loadAiControlHelpers(){
 
 export function safeAiControlError(error){
  const message=error instanceof Error?error.message:'';
- return /^(?:AI_CONTROL_|AI_CONFIGURATION_|AI_BUILD_|AI_RELEASE_)[A-Z0-9_]+$/u.test(message)?message:'AI_CONTROL_FAILED';
+ return /^(?:AI_CONTROL_|AI_CONFIGURATION_|AI_BUILD_|AI_RELEASE_|REAL_NOTIFICATION_POLICY_)[A-Z0-9_]+$/u.test(message)?message:'AI_CONTROL_FAILED';
 }
 async function main(){
  assertLocalAiControl();const args=process.argv.slice(2);parseAiControlArgs(args);
@@ -228,6 +247,9 @@ async function main(){
   inspect:async()=>{const current=await getBuild();return {build_manifest_sha256:current.manifest.sha256,source_graph_sha256:current.manifest.source_graph_sha256,
    source_files:current.manifest.files.length,trusted_families:current.trusted_generator_pins.map(p=>p.family_id)};},
   verifyConfiguration:async candidate=>{const h=await getHelpers();return (candidate?.schema_version==='tivdoc-owner-engineering-configuration-v1'?h.verifyOwnerEngineeringConfiguration:h.verifyAiReleaseConfiguration)(candidate,await getBuild()).configuration;},
+  verifyNotificationPolicy:async candidate=>(await getHelpers()).realServiceNotificationPolicySchema.parse(candidate),
+  registerNotificationPolicy:async(db,policy)=>(await getHelpers()).registerRealServiceNotificationPolicy({transaction_id:'operator-policy-registration',
+   client:{query:async statement=>{const result=await db.query(statement.text,statement.values);return {rows:result.rows,row_count:result.rowCount};}}},policy,policy.predecessor_policy_sha256),
   database:async(credentials,apply,operation)=>{
    const file=aiControlPrivatePath(credentials);assert(statSync(file).isFile()&&statSync(file).size<=1024*1024,'AI_CONTROL_FILE_SIZE');
    const helper=await getHelpers(),url=aiControlCredentialUrl(readFileSync(file,'utf8')),{default:pg}=await import('pg');

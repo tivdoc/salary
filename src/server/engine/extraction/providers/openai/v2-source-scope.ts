@@ -15,7 +15,10 @@ export function explicitSourceScope(field:PayslipFieldKey,label:string,context:{
  if(/(?:^|[^\p{L}\p{N}])(?:הפרש(?:ים|י)?|רטרו|retroactive|prior period)(?=$|[^\p{L}\p{N}])/u.test(key))return 'retroactive';
  if(pension&&/(?:קרן השתלמות|קהש|study fund)/u.test(key))return 'study_fund';
  if(field==='total_deductions'&&/^(?:ניכויי רשות|סהכ ניכויי רשות|מקדמה|מקדמות|advance|voluntary deductions)$/u.test(key))return 'voluntary_deduction';
- if(field==='total_deductions'&&context.hasSeparateEmployeeFunds&&/^(?:ניכויי חובה|סהכ ניכויי חובה|mandatory deductions)$/u.test(key))return 'mandatory_deduction_subtotal';
+ // A heading limited to mandatory/tax deductions is not a grand-total
+ // heading. Missing fund rows cannot broaden its printed scope. Preserve the
+ // observation even if it is the only deductions amount the provider read.
+ if(field==='total_deductions'&&/^(?:(?:סהכ )?ניכויי חובה(?:\s*[-־–]\s*מסים)?|mandatory deductions)$/u.test(key))return 'mandatory_deduction_subtotal';
  if(field==='net_salary'&&context.hasSalaryNet&&context.hasVoluntaryDeduction&&/^(?:לתשלום|נטו לתשלום|payable|final payable)$/u.test(key))return 'final_payable';
  if(field==='regular_hours'&&/^(?:שעות עבודה|שע בחברה|סהכ שעות|סהכ שעות עבודה|total hours|attendance hours)$/u.test(key))return 'attendance_total';
  if(field==='severance_contribution'&&/(?:לא חויב מס|פטור ממס|tax exempt)/u.test(key))return 'tax_exemption_reference';

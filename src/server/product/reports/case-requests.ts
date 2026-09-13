@@ -18,6 +18,7 @@ import {reviewCompletionTargetSchema,type ReviewCompletionTarget} from '@/engine
 import type {DocumentReadingDisplay} from '@/lib/document-reading-display';
 import {documentReadingTargetSchema} from './document-field-confirmation';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
+import {isExplicitMandatorySubtotalCandidate} from '@/engine/extraction/deduction-source-scope';
 import {documentFieldVerificationDisplay} from './reading-verification';
 import {privateDocumentReviewReports,privateDocumentReviewArtifact} from './private-document-review';
 import {realAiServiceCustomerRequestReview} from './real-ai-service-customer';
@@ -102,10 +103,11 @@ export async function listCaseRequests(caseId: string, db?: CaseAccessDb | null,
   const june=rows.filter(row=>row.code.startsWith('minimum_wage_june2026:'));
   const fields = identityId && bound.length ? await store.rpc<{request_id:string;source_current:boolean}>('case_request_field_states',{target_case:caseId,target_identity:identityId}) : [];
   const fieldTargets=identityId&&bound.length?await store.rpc<{request_id:string;target:unknown}>('case_request_field_reading_targets',{target_case:caseId,target_identity:identityId}):[];
-  const displays=new Map<string,DocumentReadingDisplay>();
+  const displays=new Map<string,DocumentReadingDisplay>(),subtotalTargets=new Set<string>();
   for(const entry of fieldTargets){
    const target=documentReadingTargetSchema.parse(entry.target),request=bound.find(r=>r.id===entry.request_id);
    if(!request||target.case_id!==caseId||request.code!==`document_field:${target.target_sha256}`||displays.has(entry.request_id))throw Error('REQUEST_FIELD_STATE_UNAVAILABLE');
+   if(target.schema_version==='document-field-confirmation-v1'&&isExplicitMandatorySubtotalCandidate(target.candidate))subtotalTargets.add(entry.request_id);
    const display=documentFieldVerificationDisplay(target);
    displays.set(entry.request_id,{question:display.question,field:display.field,raw_value:display.raw_value,
     page:display.source.page,text_fragment:display.source.text_fragment,bounding_box:display.source.bounding_box,
@@ -165,7 +167,10 @@ export async function listCaseRequests(caseId: string, db?: CaseAccessDb | null,
    &&r.target.required_evidence_kind==='customer_declaration'&&/^entitlement\.(minimum_wage|pension|travel|convalescence|vacation|work\.personal)\./u.test(r.target.fact_key));
   const minimumSourceOverlap=reviewStates.some(r=>r.source_current&&r.target?.kind==='factual'&&r.target.answer_kind==='text'
    &&r.target.required_evidence_kind==='observed_reading'&&r.target.source_pins.length===1&&/^entitlement\.minimum_wage\.[a-f0-9]{28}$/u.test(r.target.fact_key));
-  const fieldOverlap=(reviewStates.some(r=>r.source_current&&r.target?.kind==='factual'&&r.target.answer_kind==='number'&&r.target.required_evidence_kind==='observed_reading')
+  // A label only triggers the protected lookup. Deferral still requires an
+  // exact semantic derivation in the authenticated current review below.
+  const subtotalOverlap=bound.some(r=>subtotalTargets.has(r.id)&&r.answered_at===null&&fields.some(f=>f.request_id===r.id&&f.source_current));
+  const fieldOverlap=(subtotalOverlap||reviewStates.some(r=>r.source_current&&r.target?.kind==='factual'&&r.target.answer_kind==='number'&&r.target.required_evidence_kind==='observed_reading')
    ||[...displays.values()].some(display=>display.row_context||display.transcription_context||display.structure_context||display.field.startsWith('source_scope.')||REVIEW_DEFERRABLE_SCALAR_FIELDS.some(field=>field===display.field)))
    &&fieldTargets.some(t=>bound.some(r=>r.id===t.request_id&&(r.answered_at===null||reviewStates.some(s=>s.source_current)))&&fields.some(f=>f.request_id===t.request_id&&f.source_current));
   if(identityId&&(fieldOverlap||minimumSourceOverlap||sharedPersonalCandidates.length>1)){

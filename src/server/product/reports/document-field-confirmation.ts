@@ -134,5 +134,6 @@ export function documentReadingTargetForCheckpoint(input:{target:unknown;current
  if(target.schema_version==='document-field-confirmation-v1')return documentFieldTarget({...base,candidateId:target.candidate.candidate_id});
  if(target.schema_version==='document-row-cell-confirmation-v1')return documentRowCellTarget({...base,componentId:target.original_component.component_id,cell:target.cell});
  if(target.schema_version==='document-source-scope-confirmation-v1')return documentSourceScopeTarget({...base,candidateId:target.original_observation.candidate.candidate_id});
- return documentSourceTranscriptionTarget({...base,subject:target.subject.kind==='reported_work_hours'?{kind:'reported_work_hours',page:target.subject.page}:{kind:'balance_unit',candidateId:target.subject.original_candidate.candidate_id}});
+ return documentSourceTranscriptionTarget({...base,subject:target.subject.kind==='balance_unit'?{kind:'balance_unit',candidateId:target.subject.original_candidate.candidate_id}
+  :target.subject.kind==='grand_total'?{kind:'grand_total',page:1}:{kind:'reported_work_hours',page:target.subject.page}});
 }

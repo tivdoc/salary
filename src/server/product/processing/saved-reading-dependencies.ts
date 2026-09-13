@@ -15,11 +15,15 @@ import {documentReadingTargetSchema,documentReadingTargetForCheckpoint,documentF
 import {SAVED_EXTRACTION_POLICY} from './saved-snapshot';
 import type {SourceJob} from './source-dispatch';
 import {savedSourcePeriodReadings} from './saved-field-readings';
+import {sourceIntakeDocumentSchema} from '../reports/document-source-period-intake';
+const physicalContextSchema=z.object({caseId:z.uuid(),revision:z.number().int().positive(),inputSha256:z.string().regex(/^[a-f0-9]{64}$/u),
+ currentDocuments:z.array(sourceIntakeDocumentSchema)});
 
 /** Only cells used by a blocked purchased check become reading requests.
  * Existing scalar requests retain their exact v1 targets and history. */
 export async function openSavedReadingDependencies(context:PostgresTransactionContext,job:SourceJob,review:DocumentReviewResult,snapshot:StoredCaseInputSnapshot){
  const opened:string[]=[];
+ let physicalContext:z.infer<typeof physicalContextSchema>|undefined;
  for(const extraction of snapshot.extractions){
   if(!review.documents.some(d=>d.document_id===extraction.document_id))continue;
   const dependencies=documentReviewReadingDependencies({review,document_id:extraction.document_id,extraction});
@@ -34,6 +38,24 @@ export async function openSavedReadingDependencies(context:PostgresTransactionCo
   const checkpoint=rows.rows[0].result;
   const saved=z.object({result_sha256:z.string(),run:z.object({result:z.object({final_extraction:normalizedPayslipExtractionSchema}).passthrough()})}).parse(checkpoint);
   if(saved.result_sha256!==rows.rows[0].result_sha256||canonicalSha256(saved.run.result)!==saved.result_sha256)throw Error('REVIEW_DEPENDENCY_CHECKPOINT_HASH');
+  let grandTotalAvailable=false;
+  if(dependencies.source_transcriptions.some(dep=>dep.subject.kind==='grand_total')){
+   if(!physicalContext){
+    const physical=await context.client.query(statement('review_dependency_physical_context',
+     'select private.legacy_source_intake_context($1::uuid,$2,$3) context',[job.case_id,job.revision,job.input_sha256]));
+    if(physical.row_count!==1)throw Error('REVIEW_DEPENDENCY_PHYSICAL_CONTEXT');
+    physicalContext=physicalContextSchema.parse(physical.rows[0]?.context);
+    if(physicalContext.caseId!==job.case_id||physicalContext.revision!==job.revision||physicalContext.inputSha256!==job.input_sha256
+     ||new Set(physicalContext.currentDocuments.map(d=>d.version_id)).size!==physicalContext.currentDocuments.length)throw Error('REVIEW_DEPENDENCY_PHYSICAL_CONTEXT');
+   }
+   const pin=z.object({product_document_id:z.uuid(),version_id:z.uuid(),input_sha256:z.string()}).parse(checkpoint);
+   const document=physicalContext.currentDocuments.find(d=>d.version_id===pin.version_id);
+   if(!document||document.id!==pin.product_document_id||document.sha256!==pin.input_sha256)throw Error('REVIEW_DEPENDENCY_PHYSICAL_SOURCE_CHANGED');
+   // Keep the blocked source-reading need when the independent physical count
+   // is absent or unsupported. Never turn provider page metadata into a receipt
+   // or fail the already calculated independent checks by attempting this write.
+   grandTotalAvailable=document.type==='payslip'&&document.page_count===1;
+  }
   const existing=await context.client.query(statement('review_dependency_existing_targets',
    `select t.target from private.document_field_targets t join public.case_requests r on r.id=t.request_id and r.case_id=t.case_id
     where t.case_id=$1::uuid and t.target->>'version_id'=$2 and r.expired_at is null and r.expires_at>clock_timestamp()`,[job.case_id,extraction.document_id]));
@@ -60,7 +82,7 @@ export async function openSavedReadingDependencies(context:PostgresTransactionCo
   const targets=[...rowsToOpen.map(dep=>({target:documentRowCellTarget({checkpoint,policyVersion:SAVED_EXTRACTION_POLICY,componentId:dep.component_id,cell:dep.cell}),checkIds:dep.check_ids})),
    ...dependencies.scalar_fields.filter(dep=>!scalarIds.has(dep.candidate_id)&&saved.run.result.final_extraction.fields.some(f=>f.candidate_id===dep.candidate_id&&f.normalized_value!==null)).map(dep=>({target:documentFieldTarget({checkpoint,policyVersion:SAVED_EXTRACTION_POLICY,candidateId:dep.candidate_id}),checkIds:dep.check_ids})),
    ...dependencies.scope_fields.map(dep=>({target:documentSourceScopeTarget({checkpoint,policyVersion:SAVED_EXTRACTION_POLICY,candidateId:dep.candidate_id}),checkIds:dep.check_ids})),
-   ...dependencies.source_transcriptions.map(dep=>({target:documentSourceTranscriptionTarget({checkpoint,policyVersion:SAVED_EXTRACTION_POLICY,subject:dep.subject}),checkIds:dep.check_ids})),
+   ...dependencies.source_transcriptions.filter(dep=>dep.subject.kind!=='grand_total'||grandTotalAvailable).map(dep=>({target:documentSourceTranscriptionTarget({checkpoint,policyVersion:SAVED_EXTRACTION_POLICY,subject:dep.subject}),checkIds:dep.check_ids})),
    ...structureTargets];
   for(const {target,checkIds} of targets){
    const question=target.schema_version==='document-field-confirmation-v1'?documentFieldQuestion(target):target.schema_version==='document-row-cell-confirmation-v1'?documentRowCellQuestion(target)

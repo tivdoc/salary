@@ -84,7 +84,7 @@ export function reviewSourceScopeCoverageFixture(){
   fieldRequest:{...f.fieldRequest,target,code:`document_field:${target.target_sha256}`}};
 }
 
-export function reviewSourceTranscriptionFixture(kind:'reported_work_hours'|'balance_unit'='reported_work_hours'){
+export function reviewSourceTranscriptionFixture(kind:'reported_work_hours'|'balance_unit'|'grand_total'='reported_work_hours'){
  const f=reviewFieldCoverageFixture(),original=f.checkpoint.run.result.final_extraction;
  const candidate=normalizedCandidateFieldSchema.parse({...f.candidate,candidate_id:randomUUID(),field:'vacation_balance',raw_value:'7.25',normalized_value:null});
  const extraction={...original,fields:original.fields.filter(c=>c.field!=='vacation_balance')};
@@ -92,7 +92,7 @@ export function reviewSourceTranscriptionFixture(kind:'reported_work_hours'|'bal
  const result={final_extraction:extraction,first_pass:{normalized_extraction:first}};
  const checkpoint={...f.checkpoint,result_sha256:canonicalSha256(result),run:{result}};
  const target=documentSourceTranscriptionTarget({checkpoint,policyVersion:'synthetic-transcription-ui-v1',
-  subject:kind==='reported_work_hours'?{kind,page:1}:{kind,candidateId:candidate.candidate_id}});
+  subject:kind==='balance_unit'?{kind,candidateId:candidate.candidate_id}:{kind,page:1}});
  return {...f,checkpoint,retainedCandidate:candidate,fieldRequest:{...f.fieldRequest,target,code:`document_field:${target.target_sha256}`}};
 }
 

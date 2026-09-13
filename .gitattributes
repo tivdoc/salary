@@ -14,3 +14,6 @@ docs/release-evidence/sol-canonical-20260910/** -text
 /supabase/migrations/20260914018000_real_service_canonical_case_planner.sql -text
 /supabase/migrations/20260914020000_real_service_candidate_null_guards.sql -text
 /supabase/migrations/20260914021000_contract_physical_effective_legacy_period.sql -text
+/supabase/migrations/20260914022000_real_service_transactional_notification_policy.sql -text
+/supabase/migrations/20260914023000_grand_total_source_transcription.sql -text
+/supabase/migrations/20260914024000_grand_total_answer_validation.sql -text

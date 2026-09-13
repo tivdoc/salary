@@ -95,7 +95,10 @@ const MIGRATION_ROOT = path.resolve(process.cwd(), "supabase", "migrations");
 //in four existing definitions while asserting unchanged ACLs; no new definer.
 //215 redefines only contract physical discovery to reuse authenticated legacy
 //period evidence. Actual DEV before/after checks retain its worker-only ACL.
-const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 457;
+//217 replaces the existing source-current and physical-discovery boundaries.
+// Copies of their installed historical bodies retain closed internal ACLs.
+//218 replaces the existing answer validator without granting a new boundary.
+const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 460;
 
 // Case-insensitive on purpose. pg_get_functiondef emits CREATE OR REPLACE
 // FUNCTION and SET search_path TO '' in upper case, and a migration written
@@ -510,6 +513,44 @@ describe("security definer search_path contract", () => {
     const definitions=await securityDefinerDefinitions();
     expect(definitions.filter(d=>d.file==='20260914021000_contract_physical_effective_legacy_period.sql').map(d=>d.name))
       .toEqual(['private.contract_transcription_physical_pages_pending']);
+  });
+
+  it('adds notification policy registration without a new public or runtime authority surface',async()=>{
+    const file='20260914022000_real_service_transactional_notification_policy.sql';
+    const sql=await readFile(path.join(MIGRATION_ROOT,file),'utf8');
+    expect((await securityDefinerDefinitions()).filter(d=>d.file===file)).toEqual([]);
+    expect([...sql.matchAll(/grant execute on function ([^;]+) to ([^;]+);/gu)].map(m=>[m[1],m[2]]))
+      .toEqual([['private.real_ai_service_notification_policy_register(jsonb,text)','tivdoc_dev_migrator']]);
+    // Dynamic replacement retains the installed definer OID/ACL/search_path.
+    // Actual LOGIN refusal + rollback/upgrade receipts validate the live surface.
+    expect(sql).toContain("REAL_NOTIFICATION_POLICY_PREPARE_HOOK_MISSING");
+    expect(sql).toContain("REAL_NOTIFICATION_POLICY_MANUAL_CONVERSION_FORBIDDEN");
+    expect(sql).toContain("REAL_NOTIFICATION_POLICY_NO_RESURRECTION");
+    expect(sql).not.toMatch(/insert into private\.real_ai_service_evidence_artifacts/iu);
+  });
+
+  it('keeps grand-total source reading on the existing source and worker boundaries',async()=>{
+    const file='20260914023000_grand_total_source_transcription.sql';
+    const sql=await readFile(path.join(MIGRATION_ROOT,file),'utf8');
+    expect((await securityDefinerDefinitions()).filter(d=>d.file===file).map(d=>d.name).sort())
+      .toEqual(['private.contract_transcription_physical_pages_pending','private.document_field_current']);
+    expect([...sql.matchAll(/grant execute on function ([^;]+);/gu)]).toEqual([]);
+    expect(sql).toContain("(target->'subject')-array[");
+    expect(sql).toContain("contracts:=private.contract_transcription_physical_pages_contracts_v1(");
+    expect(sql).toContain("p.source_sha256=d.content_sha256");
+    expect(sql).not.toMatch(/insert into private\.case_extraction_checkpoints/iu);
+  });
+
+  it('guards grand-total answer and trigger writes without changing historical targets or privileges',async()=>{
+    const file='20260914024000_grand_total_answer_validation.sql';
+    const sql=await readFile(path.join(MIGRATION_ROOT,file),'utf8');
+    expect((await securityDefinerDefinitions()).filter(d=>d.file===file).map(d=>d.name))
+      .toEqual(['private.document_field_request_answer_valid']);
+    expect(sql).not.toMatch(/grant\s+(?:execute|all)|alter\s+function[\s\S]*?owner\s+to/iu);
+    expect(sql).toContain("private.document_field_current(target_case,t) and private.grand_total_answer_valid_v1(t,answer)");
+    expect(sql).toContain("GRAND_TOTAL_ANSWER_TRIGGER_BASE_REQUIRED");
+    expect(sql).toContain("private.document_field_request_answer_valid_before_grand_total_v1(target_case,target_request,answer)");
+    expect(sql).not.toMatch(/(?:insert into|update)\s+(?:public\.case_requests|private\.case_request_answer_versions)/iu);
   });
 
   it("retains the request opener boundary in the month-reading migration",async()=>{

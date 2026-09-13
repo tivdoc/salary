@@ -9,6 +9,7 @@ import type {SourceJob} from './source-dispatch';
 import {readSavedOrders,purchasedMonths} from './saved-order-scope';
 import {SAVED_EXTRACTION_POLICY} from './saved-snapshot';
 import {hasHoursConflictObservations} from '@/engine/extraction/hours-conflict';
+import {isExplicitMandatorySubtotalCandidate} from '@/engine/extraction/deduction-source-scope';
 
 /** Runs after the checkpoint is committed/selected and under the same admitted
  * case lock. Opening a question never confirms a value or changes the journal;
@@ -39,6 +40,10 @@ export async function openSavedDocumentFieldRequests(context:PostgresTransaction
  const hoursConflict=month==='2026-06'&&topics.includes('minimum_wage')&&hasHoursConflictObservations(extraction);
  const validation=validatePayslipGate0(extraction,{reference_year:Number(saved.expected_month.slice(0,4))});
  const candidates=extraction.fields.filter(candidate=>{
+  // The versioned retained-source scope policy excludes a printed mandatory
+  // subtotal from grand-total questions. Original checkpoint/receipt bytes and
+  // existing questions remain intact; this is not a numeric confidence change.
+  if(isExplicitMandatorySubtotalCandidate(candidate))return false;
   if(sourceReviewOnly&&!sourcePrerequisites.has(candidate.field))return false;
   if(hoursConflict&&candidate.field==='regular_hours')return false;
   if(!allowed.has(candidate.field as keyof typeof confirmationFieldLabels)||candidate.normalized_value===null)return false;

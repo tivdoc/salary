@@ -3,14 +3,14 @@ import {z} from 'zod';
 import {statement,type PostgresTransactionContext} from '@/server/platform/persistence/postgres/contracts';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import {priceQuoteSchema} from './price-quote';
-import {pricingBasisSchema,quoteCorrectionRefund} from './pricing';
-import type {PricingBasis} from './pricing';
+import {correctionPricingBasisSchema,quoteCorrectionRefund} from './pricing';
+import type {SavedReleasePricingBasis} from './pricing';
 import type {PriceQuote} from './price-quote';
 
 const hash=z.string().regex(/^[a-f0-9]{64}$/u);
 const requestSchema=z.object({id:z.uuid(),caseId:z.uuid(),identityId:z.uuid(),orderId:z.uuid()}).strict();
 const receiptSchema=z.object({id:z.uuid(),order_id:z.uuid(),state:z.literal('requested'),cumulative_refund_minor:z.number().int().positive().safe(),requested_at:z.iso.datetime({offset:true})}).strict();
-export type SavedCorrectedPricingBasisReader=(context:PostgresTransactionContext,source:{caseId:string;identityId:string;inputSha256:string;checkedMonths:PriceQuote['checked_months'];checkedTopics:PriceQuote['checked_topics']})=>Promise<PricingBasis|null>;
+export type SavedCorrectedPricingBasisReader=(context:PostgresTransactionContext,source:{caseId:string;identityId:string;inputSha256:string;checkedMonths:PriceQuote['checked_months'];checkedTopics:PriceQuote['checked_topics']})=>Promise<SavedReleasePricingBasis|null>;
 
 /** One verified worker transaction. The reader must load canonical corrected
  * evidence for the ORIGINAL checked scope. No HTTP amount or default reader.
@@ -27,9 +27,11 @@ export async function requestSavedPriceCorrection(context:PostgresTransactionCon
  }
  const quote=priceQuoteSchema.parse(saved.quote);
  if(quote.sha256!==saved.quote_sha256||quote.case_id!==input.caseId||quote.identity_id!==input.identityId)throw new Error('PRICE_CORRECTION_QUOTE_MISMATCH');
- const raw=await readBasis(context,{caseId:input.caseId,identityId:input.identityId,inputSha256:saved.input_sha256,checkedMonths:[...quote.checked_months],checkedTopics:[...quote.checked_topics]});
+ const checkedTopics:PriceQuote['checked_topics']=quote.schema_version==='tivdoc-price-quote-v1'
+  ?[...quote.checked_topics]:[...quote.checked_topics];
+ const raw=await readBasis(context,{caseId:input.caseId,identityId:input.identityId,inputSha256:saved.input_sha256,checkedMonths:[...quote.checked_months],checkedTopics});
  if(raw===null)return {state:'amount_unknown' as const,reason:'trusted_monetary_basis_unavailable'};
- const parsed=pricingBasisSchema.safeParse(raw);
+ const parsed=correctionPricingBasisSchema(quote).safeParse(raw);
  if(!parsed.success)return {state:'amount_unknown' as const,reason:'invalid_saved_basis'};
  const basis=parsed.data;
  if(basis.input_sha256!==saved.input_sha256)throw new Error('PRICE_CORRECTION_SOURCE_CHANGED');

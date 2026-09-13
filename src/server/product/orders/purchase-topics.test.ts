@@ -2,7 +2,7 @@ import {it,expect,vi} from 'vitest';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import type {PostgresTransactionContext} from '@/server/platform/persistence/postgres/contracts';
 import type {PricingBasis} from './pricing';
-import {createPriceQuote} from './pricing';
+import {releasePricingBasisSchema,RELEASE_PRICING_BASIS_VERSION,createPriceQuote} from './pricing';
 import {priceQuoteSchema,requireFreshPriceQuote} from './price-quote';
 import {createReleasePriceQuote,issueSavedPriceQuote,issueSavedReleasePriceQuote,type SavedPricingBasisReader} from './quote-ledger';
 import {acceptSavedPriceQuote,quotedFullOffer} from './quoted-order';
@@ -100,4 +100,13 @@ it('requires the same pinned version and topics in the paid journal and current 
  const context:PostgresTransactionContext={transaction_id:'synthetic-order-pin',client:{async query(){return {rows:[{orders:[order],current_orders:[current]}],row_count:1};}}};
  const job={schema_version:'saved-case-work-v1' as const,case_id:caseId,revision:1,input_sha256:'a'.repeat(64),mode:'draft' as const};
  expect(await readSavedOrders(context,job)).toEqual([order]);current={...order,topics:['pension']};await expect(readSavedOrders(context,job)).rejects.toThrow('SAVED_ORDER_ENTITLEMENT_REQUIRED');
+});
+
+it.each(['rest_day','contract','bonuses'] as const)('persists and replays a versioned %s basis with the same existing ledger',async topic=>{
+ const f=fixture(),basis=releasePricingBasisSchema.parse({...f.basis,schema_version:RELEASE_PRICING_BASIS_VERSION,checked_topics:[topic],components:f.basis.components.map(c=>({...c,topic}))});
+ const read=vi.fn(async()=>basis);
+ const first=await issueSavedReleasePriceQuote(f.context,f.request,read),bytes=JSON.stringify(f.saved);
+ expect(first).toMatchObject({state:'quoted',quote:{schema_version:'tivdoc-price-quote-v2',basis_schema_version:RELEASE_PRICING_BASIS_VERSION,checked_topics:[topic],purchased_topics:RELEASE_PURCHASE_TOPICS}});
+ expect(await issueSavedReleasePriceQuote(f.context,f.request,read)).toEqual({...first,replayed:true});expect(read).toHaveBeenCalledOnce();expect(JSON.stringify(f.saved)).toBe(bytes);
+ await acceptSavedPriceQuote(f.context,{quoteId,caseId,identityId});expect(f.offers[0]).toMatchObject({version:'tivdoc-order-offer-v3',topic_order:RELEASE_PURCHASE_TOPICS,amount_minor:8901});
 });

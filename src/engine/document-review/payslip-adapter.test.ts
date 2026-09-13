@@ -14,6 +14,7 @@ import {customerSourceTranscriptionSchema,sourceTranscriptionSubjectSchema,type 
 import {documentReviewReadingDependencies,parseDocumentReviewSourceLocator,deferredDocumentReviewRowPriceOperands} from './source-dependencies.ts';
 import {parseReviewCompletionInput} from './completions.ts';
 import type {DocumentReviewCalculationInput} from './calculations.ts';
+import {reviewFieldRequestsNotRequired} from '../../server/product/reports/review-field-coverage.ts';
 
 type Mutable<T>={-readonly [K in keyof T]:T[K]};
 function fixture(){
@@ -55,6 +56,53 @@ function financialFixture(){
  };
  return {...f,cells,proof,confirm:()=>f.identify(cells,true)};
 }
+it('uses an identified printed grand total after excluding two immutable subtotals, never reclassifying corrected numbers',()=>{
+ const f=fixture(),gross=f.money('gross_salary','100.00'),net=f.money('net_salary','80.00'),secondGross=f.money('gross_salary','100.00'),secondNet=f.money('net_salary','80.00');
+ const subtotals=['ניכויי חובה','ניכויי חובה-מסים'].map(label=>{const c=f.money('total_deductions','8.00');c.source.text_fragment=`${label}: 8.00`;return c;});
+ const machine=payslipMachineExtraction(f.e),before=canonicalSha256(machine),checkpointResult={final_extraction:machine,first_pass:{normalized_extraction:machine}},resultSha=canonicalSha256(checkpointResult);
+ const retained={case_id:f.d.case_id,document_id:f.d.document_id,source_sha256:f.d.content_sha256,checkpoint_result_sha256:resultSha,
+  checkpoint_result:checkpointResult,final_extraction_sha256:before,first_pass:machine};
+ const checkpoint={schema_version:'tivdoc-saved-extraction-v1',case_id:f.d.case_id,product_document_id:randomUUID(),version_id:f.d.document_id,input_sha256:f.d.content_sha256,
+  expected_month:'2026-06',period_mismatch:false,result_sha256:resultSha,run:{result:checkpointResult}};
+ const oldRequests=subtotals.map(c=>{const target=documentFieldTarget({checkpoint,policyVersion:'synthetic-grand-total',candidateId:c.candidate_id});return {
+  request_id:randomUUID(),code:`document_field:${target.target_sha256}`,target,source_current:true,answered_at:null,expires_at:'2026-08-01T00:00:00Z'};});
+ f.identify([f.p,gross,net,secondGross,secondNet,...subtotals],true);
+ const subtotalReading=f.e.customer_readings!.find(r=>r.candidate_id===subtotals[0].candidate_id)!;
+ subtotalReading.correction={schema_version:'document-field-correction-v1',raw_value:'9.00',normalized_value:{currency:'ILS',minor_units:900},verification_sha256:'c'.repeat(64)};
+ const build=()=>f.build(undefined,{review_policy:PAYSLIP_REVIEW_POLICY,retained_unresolved_fields:[retained]},['minimum_wage']);
+ const initial=runDocumentReview(documentReviewInputSchema.parse(build()),'synthetic.grand.total.before');
+ expect(initial.input.source_semantic_derivations?.[0].excluded_candidates).toHaveLength(2);
+ expect(initial.checks.find(c=>c.check_id.endsWith('.gross.net'))?.calculation.state).toBe('blocked');
+ expect(documentReviewReadingDependencies({review:initial,document_id:f.d.document_id,extraction:f.e}).source_transcriptions)
+  .toContainEqual({subject:{kind:'grand_total',page:1},check_ids:['document.0.gross.net']});
+ expect(reviewFieldRequestsNotRequired({review:initial,fieldRequests:oldRequests,nowMs:Date.parse('2026-07-04T00:00:00Z')})).toHaveLength(2);
+ const foreign=oldRequests.map(r=>({...r,target:{...r.target,extraction_result_sha256:'f'.repeat(64)}}));
+ // Rehashed, well-formed foreign checkpoint still cannot borrow this derivation.
+ for(const r of foreign){const {target_sha256:ignored,...body}=r.target;void ignored;r.target.target_sha256=canonicalSha256(body);r.code=`document_field:${r.target.target_sha256}`;}
+ expect(reviewFieldRequestsNotRequired({review:initial,fieldRequests:foreign,nowMs:Date.parse('2026-07-04T00:00:00Z')})).toEqual([]);
+ const subject:SourceTranscriptionSubject={kind:'grand_total',page:1,meaning:'document_total_deductions',first_pass_extraction_sha256:before};
+ const raw=JSON.stringify({schema_version:'grand-total-source-value-v1',amount:'20.00',label:'סך הניכויים',locator:'טבלה סינתטית, שורת סך'});
+ f.e.source_reading_context={checkpoint_result_sha256:resultSha,first_pass:machine};
+ f.e.customer_source_transcriptions=[customerSourceTranscriptionSchema.parse({schema_version:'document-source-transcription-reading-v1',actor_kind:'customer',case_id:f.d.case_id,document_id:f.d.document_id,
+  source_sha256:f.d.content_sha256,normalized_extraction_sha256:before,extraction_result_sha256:resultSha,target_sha256:'e'.repeat(64),subject,month:'2026-06',request_id:randomUUID(),answer_revision:1,identity_id:randomUUID(),confirmed_at:'2026-07-03T12:00:00Z',
+  transcription:{raw_value:raw,normalized_value:normalizeSourceTranscriptionValue(subject,raw)!,verification_sha256:'f'.repeat(64)}})];
+ const review=runDocumentReview(documentReviewInputSchema.parse(build()),'synthetic.grand.total.after');
+ expect(review.checks.find(c=>c.check_id.endsWith('.gross.net'))?.calculation.input.operands.map(o=>({id:o.id,state:o.state,value:o.printed_value}))).toEqual([
+  {id:'gross',state:'observed',value:'100.00'},{id:'deductions',state:'observed',value:'20.00'},{id:'net',state:'observed',value:'80.00'}]);
+ expect(review.checks.find(c=>c.check_id.endsWith('.gross.net'))?.calculation).toMatchObject({state:'calculated',expected:{minor_units:8000},difference:{minor_units:0}});
+ expect(review.legal_debt_total).toBeNull();expect(payslipMachineExtractionSha256(f.e)).toBe(before);
+ expect(canonicalSha256(checkpointResult)).toBe(resultSha);expect(f.e.fields.filter(c=>c.field==='total_deductions')).toEqual(subtotals);
+ expect(parseReviewCompletionInput(review.input.completion_input).documents.every(d=>d.review==='partial'&&!d.review_completed_fact_keys?.includes(PAYSLIP_FINANCIAL_SOURCE_FACT))).toBe(true);
+ const readings=structuredClone(f.e.customer_readings!),transcriptions=structuredClone(f.e.customer_source_transcriptions);
+ const blocked=()=>expect(runDocumentReview(build(),'synthetic.grand.total.negative').checks.find(c=>c.check_id.endsWith('.gross.net'))?.calculation.state).toBe('blocked');
+ f.e.customer_readings=readings.filter(r=>r.candidate_id!==secondGross.candidate_id);blocked();
+ f.e.customer_readings=structuredClone(readings);
+ f.e.customer_readings.find(r=>r.candidate_id===secondGross.candidate_id)!.correction={schema_version:'document-field-correction-v1',raw_value:'101.00',normalized_value:{currency:'ILS',minor_units:10100},verification_sha256:'c'.repeat(64)};blocked();
+ f.e.customer_readings=structuredClone(readings);
+ for(const reading of f.e.customer_readings.filter(r=>r.candidate_id===gross.candidate_id||r.candidate_id===secondGross.candidate_id))
+  reading.correction={schema_version:'document-field-correction-v1',raw_value:'250000.00',normalized_value:{currency:'ILS',minor_units:25000000},verification_sha256:'c'.repeat(64)};
+ blocked();f.e.customer_readings=readings;f.e.customer_source_transcriptions=[];blocked();f.e.customer_source_transcriptions=transcriptions;
+});
 function populatedEarningsFixture(){
  const f=fixture();f.e.earnings_components_complete=true;
  const rows=[f.row('hourly_base','3','30.00','90.00'),f.row('travel','2','5.00','10.00'),f.row('bonus','1','7.00','7.00')];

@@ -11,6 +11,7 @@ import {normalizedCandidateFieldSchema,type NormalizedPayslipExtraction} from '.
 import {customerSourceTranscriptionSchema} from '../extraction/customer-reading.ts';
 import {entitlementEvidenceSchema,entitlementCompositionSchema} from '../entitlement-review/contracts.ts';
 import {canonicalSha256} from '../rule-runtime/canonical.ts';
+import {deductionScopeDerivationSchema} from '../extraction/deduction-source-scope.ts';
 
 export const DOCUMENT_REVIEW_POLICY='document-review-product-v1' as const;
 export const DOCUMENT_REVIEW_COVERAGE_POLICY='document-review-coverage-v1' as const;
@@ -71,6 +72,9 @@ export const documentReviewInputSchema=z.object({
  entitlement_composition:entitlementCompositionSchema.optional(),
  period_projection:reviewPeriodProjectionSchema.optional(),
  source_observation_inventory:z.array(reviewSourceObservationInventorySchema).max(64).optional(),
+ // Adapter-generated scope decisions retain original machine/checkpoint hashes;
+ // the ordinary immutable input_snapshot stage captures this separate receipt.
+ source_semantic_derivations:z.array(deductionScopeDerivationSchema).min(1).max(64).optional(),
  coverage_gaps:z.array(z.object({check_id:z.string().min(1),topic:reviewTopicSchema,kind:z.enum(['missing_source','missing_fact','missing_rule','missing_applicability','ownership']),detail:z.string().min(1),next_step:z.string().min(1),source_pins:z.array(reviewSourcePinSchema).min(1).max(32).optional()}).strict()).max(100).default([]),
  documents:z.array(reviewDocumentSchema).min(1).max(64),checks:z.array(reviewCheckSchema).max(400),
  // The planner validates its own source-bound contract; it is included in the
@@ -108,6 +112,15 @@ export const documentReviewInputSchema=z.object({
   if(pin.case_id!==input.case_id||!input.documents.some(d=>d.case_id===pin.case_id&&d.version_id===pin.version_id
    &&d.file_sha256===pin.source_sha256&&(d.document_id===pin.document_id||d.document_id===pin.version_id)))
    ctx.addIssue({code:'custom',path:['coverage_gaps',index,'source_pins'],message:'REVIEW_GAP_SOURCE_MISMATCH'});
+ }
+ const semanticDocuments=new Set<string>();
+ for(const [index,derivation] of (input.source_semantic_derivations??[]).entries()){
+  const document=input.documents.find(d=>d.document_id===derivation.document_id&&d.version_id===derivation.version_id);
+  if(!input.coverage_policy||derivation.case_id!==input.case_id||!document||document.file_sha256!==derivation.source_sha256
+   ||document.reading_sha256!==derivation.reading_sha256||semanticDocuments.has(derivation.document_id)
+   ||derivation.excluded_candidates.some(c=>c.page>(document.page_count??0)))
+   ctx.addIssue({code:'custom',path:['source_semantic_derivations',index],message:'REVIEW_SEMANTIC_DERIVATION_BINDING'});
+  semanticDocuments.add(derivation.document_id);
  }
 });
 export type DocumentReviewInput=z.infer<typeof documentReviewInputSchema>;

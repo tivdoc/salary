@@ -1,5 +1,7 @@
 import {describe,expect,it} from 'vitest';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
+import {RELEASE_PURCHASE_TOPICS} from './purchase-topics';
+import {createReleasePriceQuote,releasePricingBasisSchema,RELEASE_PRICING_BASIS_VERSION,priceSavedReleaseBasis} from './pricing';
 import {priceQuoteSchema} from './price-quote';
 import {priceSavedBasis,createPriceQuote,pricingRefundDifference,quoteCorrectionRefund,type PricingBasis} from './pricing';
 const caseId='11111111-1111-4111-8111-111111111111',identityId='22222222-2222-4222-8222-222222222222';
@@ -53,5 +55,55 @@ describe('correction uses the original quoted policy and checked scope',()=>{
   if(kind==='inactive')corrected.components[0].active=false;
   if(kind==='tampered_quote'&&quote.state==='eligible')quote.balance_minor=1;
   const result=quoteCorrectionRefund(quote,corrected);expect(result.state).toBe('amount_unknown');expect(result).not.toHaveProperty('refund_minor');
+ });
+});
+
+describe('release-only nine-topic basis version',()=>{
+ it('retains the historical v1 and v2 canonical fingerprints without a new basis marker',()=>{
+  const original=priceQuoteSchema.parse(createPriceQuote(quoteInput()));
+  const release=priceQuoteSchema.parse(createReleasePriceQuote({...quoteInput(),topics:RELEASE_PURCHASE_TOPICS}));
+  expect(original.sha256).toBe('6a37c682e9b98d7433246dfa74566f385db1ceb1d2adae7d8110661c7a5702fa');
+  expect(release.sha256).toBe('bea359f89c13af9e52e0789f7b556c7a3b86ecff109feed530c6982acf94990a');
+  expect(release).not.toHaveProperty('basis_schema_version');
+ });
+ function releaseBasis(topic:'rest_day'|'contract'|'bonuses',amount=50000){
+  const old=basis(amount);return releasePricingBasisSchema.parse({...old,schema_version:RELEASE_PRICING_BASIS_VERSION,checked_topics:[topic],components:old.components.map(c=>({...c,topic}))});
+ }
+ it.each(['rest_day','contract','bonuses'] as const)('pins a checked %s comparison independently of nine purchased topics',topic=>{
+  const b=releaseBasis(topic),q=createReleasePriceQuote({...quoteInput(),basis:b,topics:RELEASE_PURCHASE_TOPICS});
+  expect(q).toMatchObject({schema_version:'tivdoc-price-quote-v2',basis_schema_version:RELEASE_PRICING_BASIS_VERSION,basis_sha256:canonicalSha256(b),checked_topics:[topic],purchased_topics:RELEASE_PURCHASE_TOPICS,total_minor:9900,balance_minor:8901});
+  expect(priceSavedBasis(b).state).toBe('amount_unknown');
+  expect(()=>createPriceQuote({...quoteInput(),basis:b as unknown as PricingBasis})).toThrow();
+ });
+ it('validates all nine actually checked topics without adding priced components for purchased-only coverage',()=>{
+  const b=releaseBasis('contract');b.checked_topics=[...RELEASE_PURCHASE_TOPICS];
+  expect(createReleasePriceQuote({...quoteInput(),basis:b,topics:RELEASE_PURCHASE_TOPICS})).toMatchObject({checked_topics:RELEASE_PURCHASE_TOPICS,basis_minor:50000});
+  expect(releasePricingBasisSchema.safeParse({...b,checked_topics:['sick_leave']}).success).toBe(false);
+  expect(releasePricingBasisSchema.safeParse({...b,schema_version:'future'}).success).toBe(false);
+ });
+ it.each(['unknown','incomplete','alternative','outside_scope','conflicting_duplicate'] as const)('refuses %s in the new basis with the same commercial guards',defect=>{
+  const b=releaseBasis('contract');
+  if(defect==='unknown')b.components[0].amount=null;
+  if(defect==='incomplete')b.components[0].basis_complete=false;
+  if(defect==='alternative')b.components[0].alternative_group='unresolved';
+  if(defect==='outside_scope')b.components[0].topic='bonuses';
+  if(defect==='conflicting_duplicate')b.components.push({...b.components[0],finding_id:'66666666-6666-4666-8666-666666666666',amount:60000});
+  expect(priceSavedReleaseBasis(b).state).toBe('amount_unknown');
+ });
+ it('requires the original basis version and checked scope for corrections',()=>{
+  const b=releaseBasis('contract',2000000),quote=createReleasePriceQuote({...quoteInput(),basis:b,topics:RELEASE_PURCHASE_TOPICS});
+  expect(quoteCorrectionRefund(quote,releaseBasis('contract',500000))).toMatchObject({state:'calculated',refund_minor:15000});
+  expect(quoteCorrectionRefund(quote,releaseBasis('bonuses',500000))).toMatchObject({state:'amount_unknown',reason:'correction_scope_mismatch'});
+  const oldBasis=basis(2000000),versioned=releasePricingBasisSchema.parse({...oldBasis,schema_version:RELEASE_PRICING_BASIS_VERSION});
+  const oldQuote=createReleasePriceQuote({...quoteInput(),basis:oldBasis,topics:RELEASE_PURCHASE_TOPICS});
+  const newQuote=createReleasePriceQuote({...quoteInput(),basis:versioned,topics:RELEASE_PURCHASE_TOPICS});
+  expect(quoteCorrectionRefund(oldQuote,versioned).state).toBe('amount_unknown');
+  expect(quoteCorrectionRefund(newQuote,oldBasis).state).toBe('amount_unknown');
+ });
+ it('requires the basis marker for new checked topics even when a payload is resealed',()=>{
+  const q=priceQuoteSchema.parse(createReleasePriceQuote({...quoteInput(),basis:releaseBasis('contract'),topics:RELEASE_PURCHASE_TOPICS}));
+  if(q.schema_version!=='tivdoc-price-quote-v2')throw Error('fixture');
+  const {sha256,basis_schema_version,...payload}=q;void sha256;void basis_schema_version;
+  expect(priceQuoteSchema.safeParse({...payload,sha256:canonicalSha256(payload)}).success).toBe(false);
  });
 });

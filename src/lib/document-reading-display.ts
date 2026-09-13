@@ -12,7 +12,7 @@ export type DocumentReadingDisplay=Readonly<{
   * Its source/version/component identity is never inferred from the label. */
  row_context?:Readonly<{group_id:string;label:string;cell:'quantity'|'rate'|'amount'|'percentage'}>;
  /** Missing source information has no existing value that can be confirmed. */
- transcription_context?:Readonly<{kind:'reported_work_hours'|'balance_unit'}>;
+ transcription_context?:Readonly<{kind:'reported_work_hours'|'balance_unit'|'grand_total'}>;
  source_transcription_context?:EvidenceSourceTranscriptionContext;
  evidence_context?:Readonly<{value_kind:'iso_date'|'clock_time'|'duration_hhmm'|'decimal'|'money'|'percentage'|'text';can_confirm:boolean;
   reading_state:'candidate'|'missing'|'unreadable'|'conflict'|'invalid';basis_origin:'system_action_context'}>;
@@ -63,6 +63,11 @@ export function displayDocumentReadingAnswer(value:string|null,display?:Document
   if(answer.schema_version!=='document-field-answer-v2')return value;
   if(answer.action==='confirm')return 'הערך שמופיע בשאלה אושר כקריאה של התא במסמך.';
   if(answer.action==='correct'&&typeof answer.corrected_raw_value==='string'){
+   if(display?.transcription_context?.kind==='grand_total'){
+    try{const value=JSON.parse(answer.corrected_raw_value);if(value.schema_version==='grand-total-source-value-v1'&&typeof value.amount==='string'&&typeof value.label==='string'&&typeof value.locator==='string')
+     return `הועתק מהמקור: ${value.label} — ${value.amount}; מיקום: ${value.locator}. אין בכך אישור של שאר המסמך.`;}catch{}
+    return 'נשמרה תשובה להשלמת סך הניכויים מהמקור.';
+   }
    if(display?.transcription_context?.kind==='balance_unit'){
     const unit=({'days':'ימים','hours':'שעות','ימים':'ימים','שעות':'שעות'} as Record<string,string>)[answer.corrected_raw_value];
     if(unit)return `יחידת היתרה הועתקה מהמסמך: ${unit}. המספר המקורי נשמר ללא שינוי.`;

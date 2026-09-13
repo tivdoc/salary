@@ -92,3 +92,20 @@ it('opens one source conflict instead of confirming either conflicting observati
  s.extraction.fields.push({...first,candidate_id:randomUUID(),raw_value:'120',normalized_value:{amount:'120',unit:'hours_per_month'}});s.rehash();
  await s.run();expect(s.state.opened).toEqual(['hours_conflict']);
 });
+
+it('does not open grand-total numeric requests for either retained mandatory subtotal and preserves checkpoint bytes',async()=>{
+ const s=setup();s.state.allowed=['total_deductions'];
+ const first={...s.extraction.fields[0],field:'total_deductions' as const,candidate_id:randomUUID(),raw_value:'120.00',
+  normalized_value:{currency:'ILS' as const,minor_units:12000},confidence:.94,
+  source:{document_id:s.checkpoint.version_id,page:1,text_fragment:'ניכויי חובה - מסים: 120.00'}};
+ s.extraction.fields.push(first,{...first,candidate_id:randomUUID(),source:{...first.source,text_fragment:'סה״כ ניכויי חובה: 120.00'}});s.rehash();
+ const before=canonicalSha256(s.checkpoint);await s.run();
+ expect(s.state.opened).toEqual([]);expect(canonicalSha256(s.checkpoint)).toBe(before);expect(ports.admit).toHaveBeenCalledOnce();
+});
+it.each(['סך ניכויים','ניכויי חובה ורשות','ניכויי חובה - מסים: 121.00'])('preserves an uncertain total request without exact subtotal/value scope: %s',label=>{
+ const s=setup();s.state.allowed=['total_deductions'];
+ s.extraction.fields.push({...s.extraction.fields[0],field:'total_deductions',candidate_id:randomUUID(),raw_value:'120.00',
+  normalized_value:{currency:'ILS',minor_units:12000},confidence:.94,
+  source:{document_id:s.checkpoint.version_id,page:1,text_fragment:label.endsWith('121.00')?label:`${label}: 120.00`}});s.rehash();
+ return s.run().then(()=>expect(s.state.opened).toEqual(['total_deductions']));
+});

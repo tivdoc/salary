@@ -1,27 +1,26 @@
-import type { Metadata } from "next";
+// Retained pre-notification presentation; frozen prices, no retroactive acceptance claim.
+
 import Link from "next/link";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
-import { formatPrice, productOffer } from "@/lib/product-offer";
-import { PriceTiers } from "@/components/landing/price-tiers";
-import { termsVersionLabel, resolveTermsPresentationVersion, RETAINED_TERMS_VERSION, REPORT_NOTIFICATION_NOTICE, privacyVersionHref, TERMS_VERSION } from "@/lib/legal-terms";
-import RetainedTerms20260907 from "@/components/legal/retained-terms-2026-09-07";
-import { guardStableAppEntrypoint } from "@/server/platform/capabilities/stable-next-entrypoint";
+import { formatPrice } from "@/lib/product-offer";
+import retainedOffer from "./retained-offer-2026-09-07.json";
 
-export const metadata: Metadata = { alternates: { canonical: "/terms" }, title: "תנאי שימוש | Tivdoc" };
+import { termsVersionLabel } from "@/lib/legal-terms";
 
-export default async function TermsPage({searchParams}: {searchParams?:Promise<{version?:string|string[]}>}={}) {
-  await guardStableAppEntrypoint("CEP-009");
-  const version=resolveTermsPresentationVersion((await searchParams)?.version);
-  if(version===RETAINED_TERMS_VERSION)return <RetainedTerms20260907 />;
-  if(version===null)return <><SiteHeader /><main id="main-content" className="legal-page"><div className="legal-shell"><h1>נוסח התנאים המבוקש אינו זמין כאן.</h1><p>לא מוצגים תנאים חדשים במקום הגרסה שנשמרה בהזמנה. אפשר לפנות לתמיכה מתוך התיק לבירור הגרסה.</p></div></main><SiteFooter /></>;
+
+
+
+export default function RetainedTerms20260907() {
+
   return (
     <>
       <SiteHeader />
       <main id="main-content" className="legal-page">
         <div className="legal-shell">
           {/* S4 2.6: the same string the consent record stores. */}
-          <p className="mono legal-page__label">תנאי שימוש · עודכן ביום {termsVersionLabel()}</p>
+          <p className="mono legal-page__label">תנאי שימוש · עודכן ביום {termsVersionLabel("2026-09-07")}</p>
+          <p role="note">עותק של הנוסח שסומן בגרסה זו ונשמר לפני העדכון. אין בכך אימות שזה הנוסח שהוצג בכל רכישה היסטורית.</p>
           <h1>בדיקה ראשונית, לא קביעה משפטית.</h1>
           <p className="legal-page__lead">
             תנאים אלה מסדירים את השימוש ב־Tivdoc. התחלת בדיקה או רכישתה מהווה הסכמה
@@ -45,12 +44,6 @@ export default async function TermsPage({searchParams}: {searchParams?:Promise<{
               המוצר שנרכש והמידע שנמסר, וייתכן שנבקש מסמכים או פרטים נוספים.
               אין התחייבות לבדיקת איש מקצוע בכל דוח. פנייה לתמיכת המפעיל אינה אישור מקצועי לממצאים.
             </p>
-          </section>
-
-          <section>
-            <h2>הודעות על זמינות הדוח</h2>
-            <p>{REPORT_NOTIFICATION_NOTICE}</p>
-            <p>הסכמה לגרסה קודמת של התנאים אינה מתעדכנת בעקבות פרסום סעיף זה.</p>
           </section>
 
           <section>
@@ -78,7 +71,7 @@ export default async function TermsPage({searchParams}: {searchParams?:Promise<{
             <p>
               {/* S4: read from the offer configuration. A price literal in the terms
                   is a sentence that becomes false the day the price changes. */}
-              מחיר הבדיקה הראשונית הוא {formatPrice(productOffer().initial_check.price)}, כולל מע״מ ככל שחל. התשלום מתבצע דרך
+              מחיר הבדיקה הראשונית הוא {formatPrice(retainedOffer.initial_check.price)}, כולל מע״מ ככל שחל. התשלום מתבצע דרך
               Invoice4u. פרטי כרטיס אינם נשמרים ב־Tivdoc, ורק אימות תשלום שהתקבל
               בצד השרת מסמן את התשלום ואת תיק הבדיקה כשולמו. חזרה לעמוד Tivdoc ללא
               אימות כזה אינה הוכחת תשלום.
@@ -88,7 +81,7 @@ export default async function TermsPage({searchParams}: {searchParams?:Promise<{
           <section>
             <h2>הצעת שדרוג לדוח מלא</h2>
             <p>המחיר הכולל נקבע לפי פער כספי מבוסס בחודשים שנבדקו בפועל. אין הכפלה לחודשים שלא נבדקו. הבדיקה הראשונית כוללת חודש אחד ועד שלושה נושאים; התוצאה ששולמה נשארת זמינה גם ללא שדרוג. הרכישה המלאה תיפתח רק כשאפשר למסור את הכיסוי המוצע.</p>
-            <PriceTiers />
+            <RetainedPriceTiers />
             <p>לפני רכישה יוצגו התקופה והנושאים הכלולים, המחיר הכולל, התשלום הראשוני המאומת שקוזז והיתרה לתשלום. הקיזוז ניתן פעם אחת לאותה זהות ולאותו תיק. הצעה תקפה לשבעה ימים; שינוי במידע לפני רכישה מחייב הצעה מעודכנת ואישור שלה. לאחר רכישה המחיר וההיקף שנרכשו נשמרים.</p>
             <p>אם תיקון טעות בממצא מוריד את מדרגת המחיר באותו היקף שנרכש, תיפתח בקשה להחזר ההפרש. אם הפער המתוקן נמוך מסף השדרוג, תיפתח בקשה להחזר מלוא תשלום השדרוג. סכום שאינו ידוע אינו נחשב לאפס. הגדלת הפער בעקבות תיקון אינה יוצרת חיוב נוסף. בקשת החזר או אישורה אינם אישור שהכסף הוחזר; השלמת ההחזר תוצג רק לאחר אימות ספק התשלום.</p>
           </section>
@@ -120,7 +113,7 @@ export default async function TermsPage({searchParams}: {searchParams?:Promise<{
             <h2>פרטיות ומסמכים</h2>
             <p>
               איסוף המידע, השימוש בו, מסירתו לספקים, תקופות השמירה ובקשות עיון,
-              תיקון ומחיקה מפורטים ב־<Link className="text-link" href={privacyVersionHref(TERMS_VERSION)}>מדיניות הפרטיות</Link>.
+              תיקון ומחיקה מפורטים ב־<Link className="text-link" href="/privacy?version=2026-09-07">מדיניות הפרטיות</Link>.
               המסמכים אינם נשלחים למעסיק ללא הוראה מפורשת ממך.
             </p>
           </section>
@@ -150,4 +143,15 @@ export default async function TermsPage({searchParams}: {searchParams?:Promise<{
       <SiteFooter />
     </>
   );
+}
+
+
+function RetainedPriceTiers(){
+ const offer=retainedOffer,tiers=offer.full_report.pricing.tiers;
+ const money=(minor:number)=>formatPrice({amount:(minor/100).toFixed(2),currency:'ILS'});
+ const credit=Number(offer.initial_check.price.amount.replace('.',''));
+ return <div className="price-tiers"><table><caption>מדרגות ההשקה לפי הפער המבוסס בחודשים שנבדקו</caption><thead><tr><th scope="col">פער מבוסס</th><th scope="col">מחיר כולל</th><th scope="col">יתרה לאחר ראשוני</th></tr></thead><tbody>
+ <tr><th scope="row">פחות מ־<bdi>{money(tiers[0].minimum_basis_minor)}</bdi></th><td colSpan={2}>אין שדרוג אוטומטי</td></tr>
+ {tiers.map((tier,i)=><tr key={tier.minimum_basis_minor}><th scope="row"><bdi>{money(tier.minimum_basis_minor)}</bdi>{tiers[i+1]?<> עד פחות מ־<bdi>{money(tiers[i+1].minimum_basis_minor)}</bdi></>:' ומעלה'}</th><td><bdi>{money(tier.total_minor)}</bdi></td><td><bdi>{money(tier.total_minor-credit)}</bdi></td></tr>)}
+ </tbody></table><p>היתרה מניחה תשלום ראשוני מלא ומאומת שטרם קוזז. כשאין סכום שניתן לבסס אין הצעת שדרוג. כל מדרגה כוללת אותו סוג תוצר; התקופה והכיסוי מוצגים בהצעה.</p></div>;
 }

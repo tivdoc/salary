@@ -1,7 +1,8 @@
 import {it,expect} from 'vitest';
 import {createElement} from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
-import {orderPurchaseTopicLabels,SavedQuoteSummary,SavedOfferAvailability,OrderPurchase} from './order-purchase';
+import {orderPurchaseTopicLabels,SavedQuoteSummary,SavedOfferAvailability,OrderPurchase,OrderTermsDisclosure} from './order-purchase';
+import {TERMS_VERSION,RETAINED_TERMS_VERSION} from '@/lib/legal-terms';
 const quote={id:'synthetic-quote',from:'2026-05',to:'2026-07',topics:['rest_day','bonuses','contract'],total_minor:9900,credit_minor:999,balance_minor:8901,currency:'ILS' as const,expires_at:'2026-09-15T00:00:00.000Z'};
 it('labels all three new topics while preserving historical sick leave labels',()=>{
  expect(orderPurchaseTopicLabels(quote.topics)).toBe('יום מנוחה, בונוסים, חוזה');expect(orderPurchaseTopicLabels(['sick_leave'])).toBe('מחלה');
@@ -35,4 +36,11 @@ it('does not invent an available period when no saved offer exists',()=>{
 it('retains the nine release topics and historical sick-leave disclosure',()=>{
  const labels=orderPurchaseTopicLabels(['minimum_wage','working_time','pension','travel','convalescence','vacation','rest_day','bonuses','contract','sick_leave']);
  for(const text of ['שכר מינימום','שעות עבודה','פנסיה','נסיעות','הבראה','חופשה','יום מנוחה','בונוסים','חוזה','מחלה'])expect(labels).toContain(text);
+});
+it('discloses transactional notices only for the actual new saved terms version',()=>{
+ const html=renderToStaticMarkup(createElement(OrderTermsDisclosure,{version:TERMS_VERSION}));
+ expect(html).toContain(TERMS_VERSION);expect(html).toContain('כאשר דוח חדש זמין בתיק');expect(html).toContain('ללא מסמכי השכר');
+ for(const version of [RETAINED_TERMS_VERSION,'2026-08-22','unretained-version']){
+  const old=renderToStaticMarkup(createElement(OrderTermsDisclosure,{version}));expect(old).toContain(version);expect(old).not.toContain('כאשר דוח חדש זמין בתיק');
+ }
 });

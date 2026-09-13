@@ -3,6 +3,7 @@ import {productOffer} from '../../../lib/product-offer';
 import {canonicalSha256} from '../../../engine/rule-runtime/canonical';
 import {priceQuoteSchema,type PriceQuote} from './price-quote';
 import {PROJECTION_TOPICS} from '../reports/case-report-projection';
+import {PURCHASE_TOPICS_VERSION,RELEASE_PURCHASE_TOPICS,releasePurchaseTopicsSchema} from './purchase-topics';
 
 const minor=z.number().int().nonnegative().safe();
 const month=z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/u);
@@ -22,19 +23,34 @@ export const pricingBasisSchema=z.object({
  }).strict()),
 }).strict();
 export type PricingBasis=z.infer<typeof pricingBasisSchema>;
+/** Explicit release-only basis; historical unversioned payloads retain their vocabulary and hash. */
+export const RELEASE_PRICING_BASIS_VERSION='tivdoc-release-pricing-basis-v1' as const;
+export const releasePricingBasisSchema=pricingBasisSchema.extend({
+ schema_version:z.literal(RELEASE_PRICING_BASIS_VERSION),checked_topics:releasePurchaseTopicsSchema,
+ components:z.array(pricingBasisSchema.shape.components.element.extend({topic:z.enum(RELEASE_PURCHASE_TOPICS)}).strict()),
+}).strict();
+export const savedReleasePricingBasisSchema=z.union([pricingBasisSchema,releasePricingBasisSchema]);
+export type SavedReleasePricingBasis=z.infer<typeof savedReleasePricingBasisSchema>;
+export function correctionPricingBasisSchema(quote:PriceQuote){
+ return quote.schema_version==='tivdoc-price-quote-v2'&&quote.basis_schema_version===RELEASE_PRICING_BASIS_VERSION
+  ?releasePricingBasisSchema:pricingBasisSchema;
+}
 export type PricingResult={state:'amount_unknown';reason:string}|{state:'no_upgrade';basis_minor:number;reason:'below_threshold'}|{state:'eligible';basis_minor:number;total_minor:number;pricing_version:string};
 
 /** Pure commercial arithmetic. Incomplete or ambiguous inputs never disclose a tier. */
-export function priceSavedBasis(raw:unknown):PricingResult{return priceUnderPolicy(raw,productOffer().full_report.pricing);}
-function priceUnderPolicy(raw:unknown,policy:PriceQuote['pricing_policy']):PricingResult{
- const parsed=pricingBasisSchema.safeParse(raw);if(!parsed.success)return {state:'amount_unknown',reason:'invalid_saved_basis'};
- const basis=parsed.data;
+export function priceSavedBasis(raw:unknown):PricingResult{
+ const parsed=pricingBasisSchema.safeParse(raw);return parsed.success?priceUnderPolicy(parsed.data,productOffer().full_report.pricing):{state:'amount_unknown',reason:'invalid_saved_basis'};
+}
+export function priceSavedReleaseBasis(raw:unknown):PricingResult{
+ const parsed=savedReleasePricingBasisSchema.safeParse(raw);return parsed.success?priceUnderPolicy(parsed.data,productOffer().full_report.pricing):{state:'amount_unknown',reason:'invalid_saved_basis'};
+}
+function priceUnderPolicy(basis:SavedReleasePricingBasis,policy:PriceQuote['pricing_policy']):PricingResult{
  if(new Set(basis.checked_months).size!==basis.checked_months.length||new Set(basis.checked_topics).size!==basis.checked_topics.length)return {state:'amount_unknown',reason:'ambiguous_coverage'};
  const economic=new Map<string,string>(),findings=new Map<string,string>();let total=0;
  for(const c of basis.components){
   if(!['wage_gap','fund_deposit'].includes(c.kind))continue;
   if(!c.active||!c.basis_complete||c.certainty==='low')return {state:'amount_unknown',reason:'amount_not_publishable'};
-  if(!basis.checked_months.includes(c.month)||!basis.checked_topics.includes(c.topic))return {state:'amount_unknown',reason:'component_outside_checked_scope'};
+  if(!basis.checked_months.includes(c.month)||!(basis.checked_topics as readonly string[]).includes(c.topic))return {state:'amount_unknown',reason:'component_outside_checked_scope'};
   if(c.alternative_group||c.direction==='employee_owes')return {state:'amount_unknown',reason:'unresolved_alternative_or_offset'};
   if(c.range&&c.range.low>c.range.high)return {state:'amount_unknown',reason:'invalid_range'};
   if(c.certainty==='high'&&c.range!==null||c.certainty==='medium'&&c.amount!==null)return {state:'amount_unknown',reason:'ambiguous_amount_representation'};
@@ -54,21 +70,31 @@ function priceUnderPolicy(raw:unknown,policy:PriceQuote['pricing_policy']):Prici
 }
 
 export type InitialCredit={order_id:string;case_id:string;identity_id:string;verified:boolean;paid_minor:number;already_consumed:boolean};
-export function createPriceQuote(input:{basis:PricingBasis;caseId:string;identityId:string;from:string;to:string;topics:readonly string[];credit:InitialCredit;now:Date}){
- const basis=pricingBasisSchema.parse(input.basis);
+type QuoteInput={basis:SavedReleasePricingBasis;caseId:string;identityId:string;from:string;to:string;topics:readonly string[];credit:InitialCredit;now:Date};
+export function createPriceQuote(input:Omit<QuoteInput,'basis'>&{basis:PricingBasis}){
+ return createQuote({...input,basis:pricingBasisSchema.parse(input.basis)},false);
+}
+export function createReleasePriceQuote(input:QuoteInput){
+ return createQuote({...input,basis:savedReleasePricingBasisSchema.parse(input.basis),topics:releasePurchaseTopicsSchema.parse(input.topics)},true);
+}
+function createQuote(input:QuoteInput,release:boolean){
+ const basis=input.basis;
  if(basis.case_id!==input.caseId||basis.identity_id!==input.identityId)throw new Error('PRICING_FORBIDDEN');
  month.parse(input.from);month.parse(input.to);
  const monthCount=(Number(input.to.slice(0,4))-Number(input.from.slice(0,4)))*12+Number(input.to.slice(5))-Number(input.from.slice(5))+1;
  if(monthCount<1||monthCount>600||input.topics.length===0||new Set(input.topics).size!==input.topics.length)throw new Error('PRICING_PURCHASE_SCOPE');
  if(basis.checked_months.some(m=>m<input.from||m>input.to)||basis.checked_topics.some(t=>!input.topics.includes(t)))throw new Error('PRICING_PURCHASE_SCOPE');
- const result=priceSavedBasis(basis);if(result.state!=='eligible')return result;
+ const result=priceUnderPolicy(basis,productOffer().full_report.pricing);if(result.state!=='eligible')return result;
  const credit=input.credit;
  if(!credit.verified||credit.case_id!==input.caseId||credit.identity_id!==input.identityId||!z.uuid().safeParse(credit.order_id).success||!Number.isSafeInteger(credit.paid_minor)||credit.paid_minor<0)throw new Error('PRICING_CREDIT_UNVERIFIED');
  const initialMinor=Number(productOffer().initial_check.price.amount.replace('.',''));
  const credited=credit.already_consumed?0:Math.min(initialMinor,credit.paid_minor,result.total_minor);
  const quote={...result,analysis_version:basis.analysis_version,input_sha256:basis.input_sha256,basis_sha256:canonicalSha256(basis),case_id:input.caseId,identity_id:input.identityId,checked_months:basis.checked_months,checked_topics:basis.checked_topics,purchased_period:{from:input.from,to:input.to},purchased_topics:[...input.topics],credit_order_id:credited?credit.order_id:null,credit_minor:credited,balance_minor:result.total_minor-credited,created_at:input.now.toISOString(),expires_at:new Date(input.now.getTime()+productOffer().full_report.pricing.quote_valid_days*86400000).toISOString()};
  const snapshot={...quote,schema_version:'tivdoc-price-quote-v1' as const,pricing_policy:structuredClone(productOffer().full_report.pricing),initial_credit_cap_minor:initialMinor};
- return priceQuoteSchema.parse({...snapshot,sha256:canonicalSha256(snapshot)});
+ if(!release)return priceQuoteSchema.parse({...snapshot,sha256:canonicalSha256(snapshot)});
+ const released={...snapshot,schema_version:'tivdoc-price-quote-v2' as const,purchase_topics_version:PURCHASE_TOPICS_VERSION,
+  ...('schema_version'in basis?{basis_schema_version:basis.schema_version}:{})};
+ return priceQuoteSchema.parse({...released,sha256:canonicalSha256(released)});
 }
 
 /** Corrections can open a refund request; this never asserts provider settlement. */
@@ -83,8 +109,9 @@ export function pricingRefundDifference(paid:{total_minor:number;upgrade_paid_mi
  * A persisted paid-order adapter must bind this quote and canonical basis first.
  * Historical purchases use their saved policy, never today's price table. */
 export function quoteCorrectionRefund(candidateQuote:unknown,candidateBasis:unknown){
- const parsedQuote=priceQuoteSchema.safeParse(candidateQuote),parsedBasis=pricingBasisSchema.safeParse(candidateBasis);
- if(!parsedQuote.success||!parsedBasis.success)return {state:'amount_unknown' as const,reason:'invalid_correction_basis_or_quote'};
+ const parsedQuote=priceQuoteSchema.safeParse(candidateQuote);
+ const parsedBasis=parsedQuote.success?correctionPricingBasisSchema(parsedQuote.data).safeParse(candidateBasis):null;
+ if(!parsedQuote.success||!parsedBasis?.success)return {state:'amount_unknown' as const,reason:'invalid_correction_basis_or_quote'};
  const quote=parsedQuote.data,basis=parsedBasis.data;
  const same=(a:readonly string[],b:readonly string[])=>JSON.stringify([...a].sort())===JSON.stringify([...b].sort());
  if(basis.case_id!==quote.case_id||basis.identity_id!==quote.identity_id||!same(basis.checked_months,quote.checked_months)||!same(basis.checked_topics,quote.checked_topics))return {state:'amount_unknown' as const,reason:'correction_scope_mismatch'};

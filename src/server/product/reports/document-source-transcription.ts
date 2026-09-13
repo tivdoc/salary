@@ -1,4 +1,5 @@
 import {z} from 'zod';
+import {isExplicitMandatorySubtotalCandidate} from '@/engine/extraction/deduction-source-scope';
 import {normalizedPayslipExtractionSchema} from '@/engine/extraction/payslip';
 import {sourceTranscriptionSubjectSchema,type SourceTranscriptionSubject} from '@/engine/extraction/customer-reading';
 import {hasPayslipReadingAnnotations} from '@/engine/extraction/reading-resolution';
@@ -17,7 +18,7 @@ export const documentSourceTranscriptionTargetSchema=z.object({schema_version:z.
  const {target_sha256,...body}=target;if(canonicalSha256(body)!==target_sha256)ctx.addIssue({code:'custom',message:'Source transcription target hash mismatch'});
 });
 export type DocumentSourceTranscriptionTarget=Readonly<z.infer<typeof documentSourceTranscriptionTargetSchema>>;
-export type DocumentSourceTranscriptionSelector={kind:'reported_work_hours';page:number}|{kind:'balance_unit';candidateId:string};
+export type DocumentSourceTranscriptionSelector={kind:'reported_work_hours';page:number}|{kind:'balance_unit';candidateId:string}|{kind:'grand_total';page:1};
 export function documentSourceTranscriptionTarget(input:{checkpoint:unknown;policyVersion:string;subject:DocumentSourceTranscriptionSelector}):DocumentSourceTranscriptionTarget {
  const checkpoint=checkpointSchema.parse(input.checkpoint),extraction=checkpoint.run.result.final_extraction,first=checkpoint.run.result.first_pass.normalized_extraction;
  if(hasPayslipReadingAnnotations(extraction)||hasPayslipReadingAnnotations(first))throw Error('SAVED_PROVIDER_CONFIRMATION_FORBIDDEN');
@@ -30,6 +31,10 @@ export function documentSourceTranscriptionTarget(input:{checkpoint:unknown;poli
   if(page>extraction.quality_metrics.page_count||page>first.quality_metrics.page_count)throw Error('REQUEST_FIELD_SOURCE_MISMATCH');
   if([...(extraction.source_scope_observations??[]),...(first.source_scope_observations??[])].some(o=>o.scope==='attendance_total'))throw Error('SOURCE_TRANSCRIPTION_PRESENT_FIELD');
   subject={kind:'reported_work_hours',page,meaning:'document_reported_total_hours'};
+ }else if(input.subject.kind==='grand_total'){
+  if(input.subject.page!==1||extraction.quality_metrics.page_count!==1||first.quality_metrics.page_count!==1)throw Error('SOURCE_TRANSCRIPTION_SINGLE_PAGE_REQUIRED');
+  if([...extraction.fields,...first.fields].some(f=>f.field==='total_deductions'&&!isExplicitMandatorySubtotalCandidate(f)))throw Error('SOURCE_TRANSCRIPTION_PRESENT_FIELD');
+  subject={kind:'grand_total',page:1,meaning:'document_total_deductions',first_pass_extraction_sha256:canonicalSha256(first)};
  }else{
   const candidateId=z.uuid().parse(input.subject.candidateId),fields=first.fields.filter(f=>f.candidate_id===candidateId),field=fields[0];
   if(fields.length!==1||!field||!['vacation_balance','sick_balance'].includes(field.field)||field.normalized_value!==null||normalizeDecimal(field.raw_value)===null
@@ -43,7 +48,9 @@ export function documentSourceTranscriptionTarget(input:{checkpoint:unknown;poli
 }
 export function documentSourceTranscriptionQuestion(input:unknown){
  const target=documentSourceTranscriptionTargetSchema.parse(input),subject=target.subject;
- const question=subject.kind==='reported_work_hours'
+ const question=subject.kind==='grand_total'
+  ?`במסמך לחודש ${formatRequestMonth(target.month)}, יש לאתר בעמוד המקור את הסכום הכולל תחת כותרת סך הניכויים ולהעתיק את הסכום, הכותרת והמיקום. אין להעתיק סיכום ניכויי חובה, מסים או קופות גמל ואין לחשב סך חסר. אם הסכום הכולל אינו מודפס, יש לבחור לא יודע.`
+  :subject.kind==='reported_work_hours'
   ?`במסמך לחודש ${formatRequestMonth(target.month)}, בעמוד ${subject.page}, האם מופיע סך שעות מדווחות? יש להעתיק את הסך המודפס בלבד. אין להסיק שעות רגילות או שעות בתשלום. אם לא מופיע נתון כזה, יש לבחור לא יודע.`
   :`במסמך לחודש ${formatRequestMonth(target.month)}, בעמוד ${subject.original_candidate.source.page}, באיזו יחידה מוצגת ${subject.original_candidate.field==='vacation_balance'?'יתרת החופשה':'יתרת המחלה'}: ימים או שעות? אין לשנות את המספר שנקרא; אם היחידה לא מצוינת, יש לבחור לא יודע.`;
  return {code:`document_field:${target.target_sha256}`,question,answer_kind:'choice' as const,options:['הערך שונה במסמך','לא ניתן לקרוא את השדה','לא יודע/ת'],field_crop:`source_transcription.${subject.kind}`,blocking:false};
@@ -52,6 +59,7 @@ export function documentSourceTranscriptionCurrent(input:{target:unknown;current
  const target=documentSourceTranscriptionTargetSchema.parse(input.target);
  z.uuid().parse(input.caseId);z.uuid().parse(input.requestId);z.uuid().parse(input.identityId);z.number().int().positive().parse(input.answerRevision);z.string().datetime({offset:true}).parse(input.answeredAt);
  if(target.case_id!==input.caseId)throw Error('REQUEST_FIELD_CASE_MISMATCH');if(target.month!==input.month||target.policy_version!==input.policyVersion)return false;
- const subject=target.subject.kind==='reported_work_hours'?{kind:'reported_work_hours' as const,page:target.subject.page}:{kind:'balance_unit' as const,candidateId:target.subject.original_candidate.candidate_id};
+ const subject:DocumentSourceTranscriptionSelector=target.subject.kind==='balance_unit'?{kind:'balance_unit',candidateId:target.subject.original_candidate.candidate_id}
+  :target.subject.kind==='grand_total'?{kind:'grand_total',page:1}:{kind:'reported_work_hours',page:target.subject.page};
  try{return documentSourceTranscriptionTarget({checkpoint:input.currentCheckpoint,policyVersion:input.policyVersion,subject}).target_sha256===target.target_sha256;}catch{return false;}
 }

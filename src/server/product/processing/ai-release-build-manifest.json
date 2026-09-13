@@ -137,7 +137,7 @@
     },
     {
       "path": "src/engine/document-review/contracts.ts",
-      "sha256": "f4257af4294fd5cc1057e28a19c8ae345fc65c77efb33902cddc44e6c877a8ef"
+      "sha256": "6ee992371192c3065166302e5143456925e8d94b934553db0184af2406b162fb"
     },
     {
       "path": "src/engine/document-review/coverage.ts",
@@ -153,7 +153,7 @@
     },
     {
       "path": "src/engine/document-review/payslip-adapter.ts",
-      "sha256": "4515d79ae720b2bf3633fd22f4e8eb2b0e820d10abda0c7f773017c66fde5ab6"
+      "sha256": "57b27df45a32c7af5a1f30b7cd02e9e7759d38b19127024f7136bd7d23c1deda"
     },
     {
       "path": "src/engine/document-review/payslip-source-structures.ts",
@@ -165,7 +165,7 @@
     },
     {
       "path": "src/engine/document-review/source-dependencies.ts",
-      "sha256": "f57055a08772bc06a276b684ad998bbc21641938f66fef5d9b512aec32b6c5af"
+      "sha256": "b7b8226121c6a1fa38ad18e5449286a684ff4d5dea846aabde23f1310aab5b69"
     },
     {
       "path": "src/engine/document-review/source-structure-evidence.ts",
@@ -537,7 +537,11 @@
     },
     {
       "path": "src/engine/extraction/customer-reading.ts",
-      "sha256": "027697f0a2c58ee053c6adb19a7ef64bbce00bc015fc11740c5a575b474afac6"
+      "sha256": "21a3a8918aa79c9a313c490c2fd6ac0bb423c9a8415938e66f0bbe4082454d77"
+    },
+    {
+      "path": "src/engine/extraction/deduction-source-scope.ts",
+      "sha256": "f813e377410fdabcf8348263cf01157bf7455d8d5f9d473f26339e69096cac2b"
     },
     {
       "path": "src/engine/extraction/document-evidence/contracts.ts",
@@ -585,7 +589,7 @@
     },
     {
       "path": "src/engine/extraction/reading-resolution.ts",
-      "sha256": "0944b5ae415a3725cd4c301a588a7b9b1618d5fff209b5e3ce2dfde9fef29d12"
+      "sha256": "31c1b357b1656684d1de71dc4aba223c4f8354a1e4612cadcd70d07be18cf3a0"
     },
     {
       "path": "src/engine/extraction/resolver.ts",
@@ -825,7 +829,7 @@
     },
     {
       "path": "src/lib/document-reading-display.ts",
-      "sha256": "344a2a01703d6673e3ee6349e7b11b0a324976eaa08642506f509d4b560e2a51"
+      "sha256": "7168d61b5a043dab02ec27d9523d821938b6aa4078aea46f8762b5809484a928"
     },
     {
       "path": "src/lib/document-upload.ts",
@@ -837,7 +841,7 @@
     },
     {
       "path": "src/lib/legal-terms.ts",
-      "sha256": "b19552f44c53ce0de2223ec998b4c0a5a3b98b59fafac43e5eb08347612504dd"
+      "sha256": "24900936675deb52d85d1bcd1d0850eab2c598d012da1774669d21bbd767dbaa"
     },
     {
       "path": "src/lib/product-offer.ts",
@@ -957,7 +961,7 @@
     },
     {
       "path": "src/server/engine/extraction/providers/openai/v2-source-scope.ts",
-      "sha256": "e1dea15d5d34de399257f2926763ced0014283769955c204438d4a385ea06f49"
+      "sha256": "003cebf69f25aa2af1a93b004daf2834f15e979f2d4dc536e43082239b2afe5c"
     },
     {
       "path": "src/server/engine/extraction/providers/openai/v21-adapter.ts",
@@ -1145,11 +1149,11 @@
     },
     {
       "path": "src/server/product/orders/price-quote.ts",
-      "sha256": "1c11d30699d452b14f2852cb3457dc176847e2358a9fd21d23be6f884da0bc01"
+      "sha256": "593cee1c1cb523e91e4dbb3c42ff4c98e03116729992a579e841c5f21ba2e4c9"
     },
     {
       "path": "src/server/product/orders/pricing.ts",
-      "sha256": "4966807cde63971f3f2fb20d8da7877a3b90e0a897bedb66733c0a1c2f7b6a2f"
+      "sha256": "3d5b74adcab63c7b0e6dae889bc9e8c3e74ba61191f6f061b80e5891c3fab75b"
     },
     {
       "path": "src/server/product/orders/purchase-topics.ts",
@@ -1157,7 +1161,7 @@
     },
     {
       "path": "src/server/product/orders/quote-ledger.ts",
-      "sha256": "3248d90835805fa948f89ab4542be6edfa9929370202b9f626a6e17b399a379c"
+      "sha256": "c6d5d15e54b51b31d2ba5fe446cb4774bc016821bee48f35bac785fcc92494f4"
     },
     {
       "path": "src/server/product/orders/quoted-order.ts",
@@ -1169,7 +1173,7 @@
     },
     {
       "path": "src/server/product/orders/saved-release-pricing-basis.ts",
-      "sha256": "2d0782ca9e791c3bfc1b4db59eec0c55e8a5384317ca6bf2784dfac24215ce45"
+      "sha256": "1e1470e31ed4c6832a9ccf5d45d6a016f741c9f93efb372f3ae8bca117a5a0fa"
     },
     {
       "path": "src/server/product/processing/ai-release-build.ts",
@@ -1333,7 +1337,7 @@
     },
     {
       "path": "src/server/product/processing/saved-field-requests.ts",
-      "sha256": "6837e545bf34424cc80316dd4411a58b7e30fe34a2ae6803470e57d5299f3ebf"
+      "sha256": "f7c91e2a7d04fa892567636b616abf5ac6404f8dccd0f68285acaf4365206576"
     },
     {
       "path": "src/server/product/processing/saved-hours-conflict.ts",
@@ -1417,7 +1421,7 @@
     },
     {
       "path": "src/server/product/processing/saved-reading-dependencies.ts",
-      "sha256": "d74a353c4a67263e6d94b9c543ea0322bdfc131163c170c98ca1ce9baad23391"
+      "sha256": "c38ef515882495dfb4dca5eb2f497d6693de3a3cb01208e8152832a950efac9a"
     },
     {
       "path": "src/server/product/processing/saved-real-ai-service-configuration.ts",
@@ -1493,7 +1497,7 @@
     },
     {
       "path": "src/server/product/reports/case-requests.ts",
-      "sha256": "b6c1391922ab6ca8a27f59427ff3289665c3fefb7a7d2e53f15cc82076854db9"
+      "sha256": "76847d82849e968732327391c08b43dd4480e7c2c58f1a42dc7fb21d80ddcb86"
     },
     {
       "path": "src/server/product/reports/document-evidence-reading.ts",
@@ -1505,7 +1509,7 @@
     },
     {
       "path": "src/server/product/reports/document-field-confirmation.ts",
-      "sha256": "454489280bf51859275d0d3b2494a636701af410936f73eb32de00b595823656"
+      "sha256": "67b35573acb4b4a99519ae4ce6bd5d0726a7838cdd6622776f18920a4e18da65"
     },
     {
       "path": "src/server/product/reports/document-field-transcription.ts",
@@ -1557,7 +1561,7 @@
     },
     {
       "path": "src/server/product/reports/document-source-transcription.ts",
-      "sha256": "9fddd3d5006dffcd149a0daaaaa0a1cb67d20f418222dcf401a79e4b354c32dd"
+      "sha256": "dfa08ebd56710b9dc6881d821abb2ac935abd3dab723a1875ced9fa8b05f1601"
     },
     {
       "path": "src/server/product/reports/document-travel-tariff.ts",
@@ -1585,7 +1589,7 @@
     },
     {
       "path": "src/server/product/reports/reading-verification.ts",
-      "sha256": "6ffd7112c38c9a87d280f2dd6ca1b8ab481af219fdaed540345ca51918cd6f32"
+      "sha256": "858e91516bfd89e1b88b014680848f461b909e40cdcc4d20a6da812a8664fcd8"
     },
     {
       "path": "src/server/product/reports/real-ai-service-admission.ts",
@@ -1629,7 +1633,7 @@
     },
     {
       "path": "src/server/product/reports/review-field-coverage.ts",
-      "sha256": "abb7e95092c1c6ebaf6523661c7215e7da45c612a5752419b9a539d6fe21bfd6"
+      "sha256": "cfa791264626339b2a11bf5f14a04865c33250d39ad01cf1c870ec1e4d261887"
     },
     {
       "path": "src/server/product/reports/review-shared-personal-coverage.ts",
@@ -1652,6 +1656,6 @@
       "sha256": "14050db7e9b2ea12c31249112bf03d177966a516918cc781a585d94409bbc28a"
     }
   ],
-  "source_graph_sha256": "a53f965aa4f7522f0d15f1027fa48ec095a12cfe62270a2c84535d67ed2a6f6a",
-  "sha256": "5fa1171bd98fb8234544d5decd1358419dcb6c364113099b72f1babb4a8674c9"
+  "source_graph_sha256": "d4346b9ca6ff69461e7378b6f834880298229c8fd967328fb363a5005d9d491d",
+  "sha256": "ca3b4de8a5a3986a937c6b6b5521823b7e1585abec0231094c5f680f7b9ef526"
 }

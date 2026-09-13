@@ -190,7 +190,7 @@ export function documentFieldVerificationDisplay(input:unknown){
  }
  if(parsed.schema_version==='document-source-transcription-v1'){
   const subject=parsed.subject,candidate=subject.kind==='balance_unit'?subject.original_candidate:null;
-  const question=documentSourceTranscriptionQuestion(parsed),page=subject.kind==='reported_work_hours'?subject.page:subject.original_candidate.source.page;
+  const question=documentSourceTranscriptionQuestion(parsed),page=subject.kind==='balance_unit'?subject.original_candidate.source.page:subject.page;
   return {question:question.question,field:`source_transcription.${subject.kind}`,raw_value:candidate?.raw_value??null,
    source:{version_id:parsed.version_id,source_sha256:parsed.source_sha256,page,text_fragment:candidate?.source.text_fragment??null,region:candidate?.source.region??null,
     source_scope:candidate?.source.source_scope??null,bounding_box:candidate?.source.bounding_box??null},target_sha256:parsed.target_sha256,

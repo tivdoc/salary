@@ -143,6 +143,7 @@ describe('AI release owner operator',()=>{
  it('bundles the existing verifier and compiled singleton without generating approvals',async()=>{
   const helpers=await loadAiControlHelpers();const compiled=helpers.getCompiledAiReleaseBuild();expect(compiled.trusted_generator_pins).toHaveLength(9);
   expect(()=>helpers.verifyAiReleaseConfiguration({},compiled)).toThrow();expect(()=>helpers.verifyAiReleaseConfiguration({},structuredClone(compiled))).toThrow('AI_RELEASE_UNTRUSTED_BUILD_EXPECTATION');
+  expect(()=>helpers.realServiceNotificationPolicySchema.parse({})).toThrow();expect(typeof helpers.registerRealServiceNotificationPolicy).toBe('function');
  });
  it('resolves symlinks, rejects checkout files, and requires ignored untracked private paths',()=>{
   const temp=mkdtempSync(path.join(tmpdir(),'tivdoc-private-unit-ai-control-'));
@@ -158,5 +159,52 @@ describe('AI release owner operator',()=>{
    const resolved=path.resolve(temp);if(path.dirname(resolved)!==path.resolve(tmpdir())||!path.basename(resolved).startsWith('tivdoc-private-unit-ai-control-'))throw Error('UNSAFE_TEST_CLEANUP');
    rmSync(resolved,{recursive:true,force:true});
   }
+ });
+});
+
+describe('explicit REAL notification policy operator',()=>{
+ const command=(apply=false)=>['notification-policy-register','--policy','private-policy','--credentials','private-credentials',...(apply?['--apply']:[])];
+ function setup(){
+  const f=fixture(),policy={sha256:'a'.repeat(64),plan_sha256:'b'.repeat(64),state:'active',predecessor_policy_sha256:null};
+  f.ports.verifyNotificationPolicy=vi.fn(async()=>policy);
+  f.ports.registerNotificationPolicy=vi.fn(async()=>({policy_sha256:policy.sha256,predecessor_policy_sha256:null}));
+  return {...f,policy};
+ }
+ it('requires explicit policy file and preserves dry-run default',()=>{
+  expect(parseAiControlArgs(command()).apply).toBe(false);
+  for(const bad of [['notification-policy-register','--credentials','x'],['notification-policy-validate','--policy','x','--apply'],
+   [...command(),'--request','caller-consent'],[...command(),'--apply','--apply']])expect(()=>parseAiControlArgs(bad)).toThrow('AI_CONTROL_USAGE');
+ });
+ it('validates policy data offline without operator credentials or case authorization claims',async()=>{
+  const f=setup(),result=await runAiReleaseControl(['notification-policy-validate','--policy','private-policy'],f.ports);
+  expect(result).toMatchObject({applied:false,integrity_valid:true,authorization_evaluated:false,policy_sha256:f.policy.sha256});
+  expect(f.ports.database).not.toHaveBeenCalled();expect(f.ports.registerNotificationPolicy).not.toHaveBeenCalled();
+ });
+ it('dry-run authenticates the fixed operator database but never calls registration or enrollment',async()=>{
+  const f=setup(),result=await runAiReleaseControl(command(),f.ports);
+  expect(result).toMatchObject({applied:false,registration_checked:false,authorization_evaluated:false});
+  expect(f.query.mock.calls.map(([sql])=>sql)).toEqual([AI_CONTROL_SQL.identity]);expect(f.ports.registerNotificationPolicy).not.toHaveBeenCalled();expect(f.ctx.writes).toEqual([]);
+ });
+ it('passes exactly the reviewed policy to explicit registration and never inserts a case grant',async()=>{
+  const f=setup(),result=await runAiReleaseControl(command(true),f.ports);
+  expect(result).toMatchObject({applied:true,registration_checked:true,policy_sha256:f.policy.sha256,authorization_evaluated:false});
+  expect(f.ports.registerNotificationPolicy).toHaveBeenCalledWith(expect.objectContaining({query:f.query}),f.policy);
+  expect(f.query.mock.calls.map(([sql])=>sql)).toEqual([AI_CONTROL_SQL.identity]);expect(f.ctx.writes).toEqual([]);
+ });
+ it('fails before registration for foreign roles/targets or invalid policy JSON',async()=>{
+  for(const patch of [{session_user:'tivdoc_worker_runtime'},{current_user:'postgres'},{database:'postgres'}]){
+   const f=setup();Object.assign(f.ctx.identity,patch);await expect(runAiReleaseControl(command(true),f.ports)).rejects.toThrow('AI_CONTROL_DATABASE_IDENTITY');
+   expect(f.ports.registerNotificationPolicy).not.toHaveBeenCalled();
+  }
+  const f=setup();f.ports.verifyNotificationPolicy.mockRejectedValue(Error('synthetic-invalid-policy'));
+  await expect(runAiReleaseControl(command(true),f.ports)).rejects.toThrow();expect(f.ports.database).not.toHaveBeenCalled();
+ });
+ it('does not claim successful registration after mismatched receipt or revocation denial',async()=>{
+  const f=setup();f.ports.registerNotificationPolicy.mockResolvedValue({policy_sha256:'f'.repeat(64),predecessor_policy_sha256:null});
+  await expect(runAiReleaseControl(command(true),f.ports)).rejects.toThrow('AI_CONTROL_NOTIFICATION_POLICY_ACK');
+  f.ports.registerNotificationPolicy.mockRejectedValue(Error('REAL_NOTIFICATION_POLICY_NO_RESURRECTION'));
+  await expect(runAiReleaseControl(command(true),f.ports)).rejects.toThrow('REAL_NOTIFICATION_POLICY_NO_RESURRECTION');
+  expect(safeAiControlError(Error('REAL_NOTIFICATION_POLICY_NO_RESURRECTION'))).toBe('REAL_NOTIFICATION_POLICY_NO_RESURRECTION');
+  expect(safeAiControlError(Error('REAL_NOTIFICATION_POLICY_DB password=private'))).toBe('AI_CONTROL_FAILED');
  });
 });

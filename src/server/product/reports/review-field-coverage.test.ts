@@ -314,6 +314,24 @@ it('covers only the exact missing reported-hours consumer while preserving its m
   expect(reviewFieldReadingCheckLabels({review,fieldRequests:[f.fieldRequest],nowMs})[0].check_titles).toEqual(same?['השוואה לסך השעות המדווחות']:[]);
  }
 });
+it('covers only the exact grand-total request without reusing a subtotal or a foreign page/source',()=>{
+ const f=reviewSourceTranscriptionFixture('grand_total'),old=documentReviewCalculationInputSchema.parse(f.input.checks[0].calculation);
+ for(const changed of ['none','hash','page','source','meaning'] as const){
+  const locator={schema_version:'document-review-source-locator-v2',transcription_kind:'grand_total',page:1,
+   meaning:changed==='meaning'?'document_reported_total_hours':'document_total_deductions',...(changed==='hash'?{target_sha256:'f'.repeat(64)}:{})};
+  const operand={...old.operands[0],id:'deductions',state:'missing',printed_value:null,source:{...old.operands[0].source,locator:JSON.stringify(locator),
+   ...(changed==='page'?{page:2}:{})}};
+  const operation={...old.operation,kind:'quantity_comparison',left_ref:'deductions',right_ref:'comparison',interpretation:'same_measure'};
+  const input={...f.input,documents:f.input.documents.map(d=>({...d,page_count:2})),answer_bindings:[{fact_key:'source.cell',check_id:'source.check',operand_id:'deductions'}],
+   checks:[{...f.input.checks[0],title:'השוואת סך הניכויים',calculation:{...old,source_manifest:old.source_manifest.map(p=>({...p,page_count:2})),operands:[operand,old.operands[1]],operation}}]};
+  const review=runDocumentReview(input,'missing-grand-total');
+  const {target_sha256:ignored,...body}=f.fieldRequest.target;void ignored;
+  const changedBody={...body,source_sha256:changed==='source'?'f'.repeat(64):body.source_sha256};
+  const target={...changedBody,target_sha256:canonicalSha256(changedBody)},request={...f.fieldRequest,target,code:`document_field:${target.target_sha256}`};
+  const covered=reviewRequestsCoveredByFieldReadings({review,fieldRequests:[request],nowMs});
+  expect(covered).toHaveLength(changed==='none'?1:0);if(changed==='none')expect(covered[0]).toMatchObject({transcription_kind:'grand_total'});
+ }
+});
 it('links a source-scope action only to the exact original observation and current check',()=>{
  const f=reviewSourceScopeCoverageFixture();
  expect(reviewRequestsCoveredByFieldReadings({review:f.review,fieldRequests:[f.fieldRequest],nowMs})).toEqual([{

@@ -64,9 +64,10 @@ describe('same-month initial analysis → saved nine-topic quote and unpaid orde
  it('reuses the exact quote and order on retry without reading a second monetary basis',async()=>{
   const f=setup(),first=await f.run(),second=await f.run();expect(second).toEqual({...first,replayed:true});expect(f.quotes).toHaveLength(1);expect(f.orders).toHaveLength(1);expect(mocks.reader).toHaveBeenCalledOnce();
  });
- it('distinguishes unsupported convalescence software coverage from missing customer data',async()=>{
-  const f=setup();mocks.orders.mockResolvedValue([{...f.order,topics:['minimum_wage','convalescence','pension']}]);
-  expect(await f.run()).toEqual({state:'skipped',reason:'pricing_adapter_unsupported_topics',unsupported_topics:['convalescence']});expect(f.query).not.toHaveBeenCalled();expect(mocks.reader).not.toHaveBeenCalled();
+ it.each(RELEASE_PURCHASE_TOPICS)('routes supported %s to the trusted reader and retains an unavailable comparison as data-dependent',async topic=>{
+  const f=setup();mocks.orders.mockResolvedValue([savedOrderSchema.parse({...f.order,purchase_topics_version:PURCHASE_TOPICS_VERSION,topics:[topic]})]);mocks.reader.mockResolvedValue(null);
+  expect(await f.run()).toEqual({state:'skipped',reason:'supported_comparison_basis_unavailable'});
+  expect(mocks.reader).toHaveBeenCalledOnce();expect(f.quotes).toEqual([]);expect(f.orders).toEqual([]);
  });
  it('permits the unchanged default initial topic scope to reach its trusted pricing reader',async()=>{
   const f=setup();mocks.orders.mockResolvedValue([{...f.order,topics:['minimum_wage','working_time','pension']}]);

@@ -42,9 +42,14 @@ export const customerDocumentScopeReadingSchema=z.object({
 export type CustomerDocumentScopeReading=Readonly<z.infer<typeof customerDocumentScopeReadingSchema>>;
 
 export const unresolvedBalanceCandidateSchema=rawCandidateFieldSchema.safeExtend({field:z.enum(['vacation_balance','sick_balance']),normalized_value:z.null()});
+/** Copied source text, not an inferred total or classification of a subtotal. */
+export const grandTotalTranscriptionValueSchema=z.object({schema_version:z.literal('grand-total-source-value-v1'),
+ amount:z.string().trim().min(1).max(50),label:z.string().trim().min(1).max(100),locator:z.string().trim().min(1).max(160)}).strict();
 export const sourceTranscriptionSubjectSchema=z.discriminatedUnion('kind',[
  z.object({kind:z.literal('reported_work_hours'),page:z.number().int().min(1).max(100),meaning:z.literal('document_reported_total_hours')}).strict(),
  z.object({kind:z.literal('balance_unit'),original_candidate:unresolvedBalanceCandidateSchema,first_pass_extraction_sha256:hash}).strict(),
+ z.object({kind:z.literal('grand_total'),page:z.literal(1),meaning:z.literal('document_total_deductions'),
+  first_pass_extraction_sha256:hash}).strict(),
 ]);
 export type SourceTranscriptionSubject=Readonly<z.infer<typeof sourceTranscriptionSubjectSchema>>;
 /** Identified transcription of a source omission, separate from every provider
