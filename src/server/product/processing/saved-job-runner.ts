@@ -173,6 +173,7 @@ export async function runSavedDraftJob(input:Lease&{
   if(!preliminary.completed&&preliminary.job.processing_profile==='qualified_ai_v1'){
    const raw=await transactions(async context=>(await readJournal(context,preliminary.job)).input);
    if(needsSavedSourceIntake(preliminary.job,raw))await ensureSavedSourcePhysicalPages({...input,transactions,job:preliminary.job});
+   else await ensureSavedSourcePhysicalPages({...input,transactions,job:preliminary.job,purpose:'contract_transcription'});
   }
   healthy();const saved=await transactions(context=>plan(context,input,input.documentEvidence!==undefined));
   if(saved.completed)return {completion:await transactions(context=>completeSavedDraftJob({...input,context})),extractedVersions:0,analyzedMonths:0};

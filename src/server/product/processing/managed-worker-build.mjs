@@ -6,15 +6,18 @@ import {createHash} from 'node:crypto';
 import path from 'node:path';
 
 async function main(){
- if(process.env.VERCEL_ENV==='production')throw Error('MANAGED_DEV_PRODUCTION_REFUSED');
- const directory=path.resolve('output/release-completion/managed-worker');
+ const real=process.argv.includes('--real');
+ if(!real&&process.env.VERCEL_ENV==='production')throw Error('MANAGED_DEV_PRODUCTION_REFUSED');
+ const output=real?'output/release-completion/real-service-worker':'output/release-completion/managed-worker',directory=path.resolve(output);
  const synthetic=process.argv.includes('--synthetic-proof'),basename=synthetic?'synthetic-proof':'worker';
+ if(real&&synthetic)throw Error('REAL_SERVICE_SYNTHETIC_BUILD_REFUSED');
  const gitSha=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8',windowsHide:true}).trim();
  const dirty=execFileSync('git',['status','--porcelain','--untracked-files=normal'],{encoding:'utf8',windowsHide:true}).trim().length>0;
  await mkdir(path.join(directory,'assets/fonts'),{recursive:true});
- const result=await build({entryPoints:[synthetic?'src/server/product/processing/managed-worker.synthetic-proof.entry.mts':'src/server/product/processing/managed-worker.entry.mts'],outfile:path.join(directory,`${basename}.cjs`),bundle:true,
+ const result=await build({entryPoints:[real?'src/server/product/processing/real-service.entry.mts':synthetic?'src/server/product/processing/managed-worker.synthetic-proof.entry.mts':'src/server/product/processing/managed-worker.entry.mts'],outfile:path.join(directory,`${basename}.cjs`),bundle:true,
   platform:'node',format:'cjs',target:'node22',packages:'external',metafile:true,
-  define:{TIVDOC_MANAGED_WORKER_BUILD_SHA:JSON.stringify(gitSha),TIVDOC_MANAGED_WORKER_DIRTY_BUILD:JSON.stringify(dirty)},
+  define:real?{TIVDOC_REAL_SERVICE_BUILD_SHA:JSON.stringify(gitSha),TIVDOC_REAL_SERVICE_DIRTY_BUILD:JSON.stringify(dirty)}
+   :{TIVDOC_MANAGED_WORKER_BUILD_SHA:JSON.stringify(gitSha),TIVDOC_MANAGED_WORKER_DIRTY_BUILD:JSON.stringify(dirty)},
   plugins:[{name:'node-managed-server-only',setup(api){
    api.onResolve({filter:/^server-only$/},()=>({path:'server-only',namespace:'managed-marker'}));
    api.onLoad({filter:/.*/,namespace:'managed-marker'},()=>({contents:'export {};',loader:'js'}));
@@ -34,8 +37,8 @@ async function main(){
  const sourceHashes=Object.fromEntries(await Promise.all(Object.keys(result.metafile.inputs).filter(p=>!p.startsWith('managed-marker:')).sort().map(async p=>[p,hash(await readFile(p))])));
  const receipt={gitSha,dirty,executableForEnabledWork:!dirty,proofOnly:synthetic,bundleSha256:hash(await readFile(path.join(directory,`${basename}.cjs`))),fontSha256:hash(font),
   dependencyLockSha256:hash(await readFile('package-lock.json')),nodeMajor:22,esbuildVersion,dependencies:pinnedDependencies,sourceHashes,
-  environment:'exact-isolated-dev-only',recurrence:'external-managed-scheduler',maxCasesPerTick:2,secretsIncluded:false};
+  environment:real?'configured-real-service-only':'exact-isolated-dev-only',...(real?{workerKind:'real_service',maxEnrollmentsPerTick:2}:{}),recurrence:'external-managed-scheduler',maxCasesPerTick:2,secretsIncluded:false};
  await writeFile(path.join(directory,`${basename==='worker'?'manifest':'synthetic-proof-manifest'}.json`),JSON.stringify(receipt,null,2)+'\n');
- console.log(JSON.stringify({workerBundle:`output/release-completion/managed-worker/${basename}.cjs`,gitSha,dirty,executableForEnabledWork:!dirty,proofOnly:synthetic,bundleSha256:receipt.bundleSha256}));
+ console.log(JSON.stringify({workerBundle:`${output}/${basename}.cjs`,gitSha,dirty,executableForEnabledWork:!dirty,proofOnly:synthetic,bundleSha256:receipt.bundleSha256}));
 }
-main().catch(()=>{console.error('MANAGED_DEV_BUILD_FAILED');process.exitCode=1;});
+main().catch(()=>{console.error(process.argv.includes('--real')?'REAL_SERVICE_BUILD_FAILED':'MANAGED_DEV_BUILD_FAILED');process.exitCode=1;});

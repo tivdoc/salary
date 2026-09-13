@@ -22,6 +22,7 @@
     "src/server/product/processing/real-service-activation.ts",
     "src/server/product/processing/real-service-notification-dispatch.ts",
     "src/server/product/processing/real-service-worker-host.ts",
+    "src/server/product/processing/real-service.entry.mts",
     "src/server/product/processing/saved-ai-release.ts",
     "src/server/product/processing/saved-real-ai-service-configuration.ts",
     "src/server/product/reports/ai-release-report.ts",
@@ -36,11 +37,19 @@
     },
     {
       "path": "scripts/ai-release-build-manifest.mjs",
-      "sha256": "11062889247b265102b358dada30f5213d7b72ffa121b852bea7737df45f4047"
+      "sha256": "63f4918001edc29d3456f80bad87359c41b05631518f0d4662f483c1dd3952fe"
+    },
+    {
+      "path": "scripts/product-workers/managed-dev-supervisor.mjs",
+      "sha256": "140895d2752bfcb855ac3f13b81ecfc273c2156c4cec0a221c31895975769877"
     },
     {
       "path": "src/config/product-offer.json",
       "sha256": "d0e3af1c40b21c70da3080f40b72b3784018a6a102036c9a8112ac15c978f0f2"
+    },
+    {
+      "path": "src/engine/agents/contracts.ts",
+      "sha256": "444f367be0a8f36e505691049ce98f24225d3cb640f426cf37a6b1f4af6d5bc9"
     },
     {
       "path": "src/engine/ai-release-decisions/apply.ts",
@@ -619,12 +628,24 @@
       "sha256": "43059471b6961a118d1fbb0b2fd91524f7d389a587ffe240c161b7a86124a10b"
     },
     {
+      "path": "src/engine/findings/contracts.ts",
+      "sha256": "76802707b44d3b3dfbe96e81ba69f8309ec3ed4c59bcd86f03b754c5cad17c5a"
+    },
+    {
+      "path": "src/engine/findings/source-comparison.ts",
+      "sha256": "bdcf5fd31b5465ca7f6d54bb9429aeb31894ef7714b755603f2f36fcb63da3e1"
+    },
+    {
       "path": "src/engine/interview/contracts.ts",
       "sha256": "31669575a5afeab03432ed0fb5bf3cba470d544c15e9c2373871c6cc33f9b416"
     },
     {
       "path": "src/engine/interview/conversation.ts",
       "sha256": "ef4dd585ad5391a5349d6baa192ec95feb8d98421be8809bd94152ce176f27f9"
+    },
+    {
+      "path": "src/engine/investigation/analysis-run.ts",
+      "sha256": "d0e5a0bd0cc44f38fc165dfb9a7acb2ec5eac8f1b61f2fdf79e2c6acf1c57be8"
     },
     {
       "path": "src/engine/investigation/hypothesis.ts",
@@ -675,6 +696,14 @@
       "sha256": "03d154b583f0c3f64ccde9ceb3a9b9d0ffdd31e09043799b893af51b30d06878"
     },
     {
+      "path": "src/engine/legal-operations/real-catalog.ts",
+      "sha256": "f797bda72243c88768c22b6338dcee1f8316a2500473c6cc0023bbe7e80b805f"
+    },
+    {
+      "path": "src/engine/legal-operations/real-june2026-catalog.ts",
+      "sha256": "0db6261117985e5ac91fd2327adacc5840e823e9d8d8c46bdd79ab0e90925f67"
+    },
+    {
       "path": "src/engine/legal-operations/rulespec.ts",
       "sha256": "d1c7055593fb5a399d9ce2ce7615c66c91a0a6831980a9e7da62fbe23a2f4cf6"
     },
@@ -685,6 +714,10 @@
     {
       "path": "src/engine/legal-operations/units.ts",
       "sha256": "e4e2dae01d628253ede6b3d0421d40360488b5dc0ea2c6129b1e976d012e9ce3"
+    },
+    {
+      "path": "src/engine/minimum-wage-june2026/admission.ts",
+      "sha256": "1fa10b811c63b0c48e0b7b3f956580c49702fd193462b8312c784b64487601db"
     },
     {
       "path": "src/engine/minimum-wage-june2026/admitted-context.ts",
@@ -719,12 +752,20 @@
       "sha256": "f62a1745b751e333f26ea245a7003c102d7652b8d93a379374ed838db3aadb11"
     },
     {
+      "path": "src/engine/minimum-wage-june2026/regular-service/catalog.ts",
+      "sha256": "b6a638644a9896b1199f2293691166bd4235e737bcb1bc83f0b41744f529cc80"
+    },
+    {
       "path": "src/engine/minimum-wage-june2026/regular-service/contracts.ts",
       "sha256": "ef0240f115f578ef7b441b7efb45e8e35f588c49cd2ea35c30161ba1f21031b2"
     },
     {
       "path": "src/engine/minimum-wage-june2026/regular-service/evidence.ts",
       "sha256": "9fbbe60e7520f0999bc44a64dae5500e42306a87aaf2b2116aa51e7496569acc"
+    },
+    {
+      "path": "src/engine/minimum-wage-june2026/regular-service/executor.ts",
+      "sha256": "79fcc49370a5085c4dc227ee3cf4efd7138f28062201bbc4b6105b4c3f939de3"
     },
     {
       "path": "src/engine/minimum-wage-june2026/regular-service/hours-conflict-admission.ts",
@@ -823,6 +864,10 @@
       "sha256": "8d1f52a0cec1e54d0b99bb2fd3f6b392e42d399e014175ce0871ded579ba40d4"
     },
     {
+      "path": "src/server/engine/extraction/preprocessing.ts",
+      "sha256": "8700279e44d6c6e7c0b7f487e6b270a686ee9ff0667e323ce81f68f153217753"
+    },
+    {
       "path": "src/server/engine/extraction/providers/openai/config.ts",
       "sha256": "05cc8e5c2182babf053377fa3134f93a6ffc313c61cf617b7882b641a57aef5f"
     },
@@ -855,8 +900,64 @@
       "sha256": "b916a9417a9689dae7ae100c5db04ad177ec8beebae7d3b7fd70c1ecde71d567"
     },
     {
+      "path": "src/server/engine/extraction/providers/openai/managed-package-recovery.ts",
+      "sha256": "c2d448e726d96da2a572fb4b5776f9ae63036edd29e647d4c912b832f64eb59b"
+    },
+    {
+      "path": "src/server/engine/extraction/providers/openai/mapper.ts",
+      "sha256": "8ee864a7e1ed45654701fe3a0d06e505bc0d517fb5f5d5dd474ed4ae66a06218"
+    },
+    {
+      "path": "src/server/engine/extraction/providers/openai/prompt.ts",
+      "sha256": "c9c2c18fc74f2513ce3d3f20752f41003f8ab8d98dde10ffcd209b7c48f0af53"
+    },
+    {
       "path": "src/server/engine/extraction/providers/openai/provider-receipt.ts",
       "sha256": "0c15180dca32f364b8da9dd3a569f73429d9ee0380a49ba82ec2d3377d1d21e6"
+    },
+    {
+      "path": "src/server/engine/extraction/providers/openai/request.ts",
+      "sha256": "84d0a28296d9dfa17082ba11a5cc854f5aa0f06d9c666566ba0fa0f7c2044537"
+    },
+    {
+      "path": "src/server/engine/extraction/providers/openai/schema.ts",
+      "sha256": "53c96f05e1bd16ac107c83a23bfe22091d7fbaa120f598b05ae9c63fc117d06a"
+    },
+    {
+      "path": "src/server/engine/extraction/providers/openai/v2-adapter.ts",
+      "sha256": "7e086da3ecaf46b1eb191a206d26e1fe58f813f30ac34c93d79dd2b70e5546ef"
+    },
+    {
+      "path": "src/server/engine/extraction/providers/openai/v2-aggregate-totals.ts",
+      "sha256": "66e7dea03c37986e22d216047a019daf98c8610453b012cfab64b57b4a9c7c8f"
+    },
+    {
+      "path": "src/server/engine/extraction/providers/openai/v2-hourly-row-evidence.ts",
+      "sha256": "613cf8956de81066418354640052210723b296062f213aa66e9bc0a7183fae01"
+    },
+    {
+      "path": "src/server/engine/extraction/providers/openai/v2-mapper.ts",
+      "sha256": "ac84a9aa4b45e320b9bd244043abe4a12bc224439d63318a454eac6fe6b9ed5a"
+    },
+    {
+      "path": "src/server/engine/extraction/providers/openai/v2-prompt.ts",
+      "sha256": "3606f5d0fdae322037f1d3514cf57335514dc719861a29f6646d457c3dea6e29"
+    },
+    {
+      "path": "src/server/engine/extraction/providers/openai/v2-request.ts",
+      "sha256": "277d683a0571fef00d6700dc56db8061b6a3ac894063f6910f447ba5a309a044"
+    },
+    {
+      "path": "src/server/engine/extraction/providers/openai/v2-schema.ts",
+      "sha256": "e77f919483d4f06599f91a04a4f0a2ae1f77de135238b90549df3aaa6efd31d0"
+    },
+    {
+      "path": "src/server/engine/extraction/providers/openai/v2-source-scope.ts",
+      "sha256": "e1dea15d5d34de399257f2926763ced0014283769955c204438d4a385ea06f49"
+    },
+    {
+      "path": "src/server/engine/extraction/providers/openai/v21-adapter.ts",
+      "sha256": "55e391b07e1f8f1d5be1ad5ce2031c66e46cd6964eb8ccaa31f60c12a8ca9e7a"
     },
     {
       "path": "src/server/engine/extraction/saved-document-evidence-contract.ts",
@@ -867,8 +968,20 @@
       "sha256": "41f27c7e2c8648625f3f17d66506c48e04d559e57f622d576bd4442b15c5d219"
     },
     {
+      "path": "src/server/engine/extraction/saved-payslip.ts",
+      "sha256": "6345e475e2d0a2066367f8b6e453996c7a45b7747347799310560412fd91a5d9"
+    },
+    {
       "path": "src/server/engine/extraction/verified-upload-source.ts",
       "sha256": "4acfe6c8cce36d970fe5d6ee03b0977e28f5fbf92f9aaee020a9b995bec403b2"
+    },
+    {
+      "path": "src/server/engine/persistence-contracts.ts",
+      "sha256": "cf371b0b27633e8d9bdd36e74984b153adaa2dcee20be20122b905da7006ca1c"
+    },
+    {
+      "path": "src/server/engine/safe-logging.ts",
+      "sha256": "27f2055d6a3154263eb8412002cc6c7ed7e33b5e4528170ddbd762685e4b55c3"
     },
     {
       "path": "src/server/platform/composition/canonical-postgres.ts",
@@ -887,8 +1000,32 @@
       "sha256": "fdf2a643cccc23cb49453a874fcfa350774afed21a57b2d495e80b30536e7fd7"
     },
     {
+      "path": "src/server/platform/persistence/postgres/analysis/case-analysis-repository.ts",
+      "sha256": "585fb93ff3dce6e8d7a6da8ef04ede0cccd0e4c06c2a4e1bb46d1bdf00cd85c2"
+    },
+    {
       "path": "src/server/platform/persistence/postgres/analysis/errors.ts",
       "sha256": "1164bb1021358915a7ddedb6ff7f969d5fb00d1fc0fbcde727ba0dcd039ab946"
+    },
+    {
+      "path": "src/server/platform/persistence/postgres/analysis/index.ts",
+      "sha256": "c9cc984b065f428c4c070993a365840d5ffc96d31424e568addb841ee80d7bd2"
+    },
+    {
+      "path": "src/server/platform/persistence/postgres/analysis/legal-pins.ts",
+      "sha256": "e014ca37e2a7ac0925b3b0853a152ed40d1c1f45cb4f3b652a77926c76bc74c4"
+    },
+    {
+      "path": "src/server/platform/persistence/postgres/analysis/reports.ts",
+      "sha256": "f5feaff8a78875ce9de30a9d8949036106433dc8593e2e4f36630d0d753c5579"
+    },
+    {
+      "path": "src/server/platform/persistence/postgres/analysis/topic-results.ts",
+      "sha256": "489e37e99f7b567f4243f70d393be342a3df98a89d6cdc37ae9a7daa4006edbb"
+    },
+    {
+      "path": "src/server/platform/persistence/postgres/analysis/traces.ts",
+      "sha256": "3b72f265b1672df1cc9ecc3fd8e5c5ac8d1e96e2ae731efe1f24387556b12d1d"
     },
     {
       "path": "src/server/platform/persistence/postgres/analysis/validation.ts",
@@ -983,6 +1120,14 @@
       "sha256": "dc51f049aff8163babc6f2a35b3a204c731cd1d3b0bef9f4c50549bb0f96228b"
     },
     {
+      "path": "src/server/product/documents/physical-pages.ts",
+      "sha256": "55e24a968cb28939aae7922caac643f153a5c2021707912e5afc46f0f99d5999"
+    },
+    {
+      "path": "src/server/product/documents/review-fulfillment-saved.ts",
+      "sha256": "06901915938139a442627604886052b029461e1581da3a5b14e0ad01168e6a89"
+    },
+    {
       "path": "src/server/product/documents/review-fulfillment.ts",
       "sha256": "830e97edb6db98a4c1942e0ff7771289b37d8fdd0fc5c7b209816bd63eec0f4d"
     },
@@ -1047,12 +1192,32 @@
       "sha256": "6bbf43bb70451ee543c18e8c64e2098ec0ba0ac5bc8723c9814e610fd6ace4e8"
     },
     {
+      "path": "src/server/product/processing/extraction-checkpoint.ts",
+      "sha256": "0a36678ff5e0be34000db602f6f4b253e83e5396c911429a0e61c71c711475f6"
+    },
+    {
       "path": "src/server/product/processing/live-extraction-provenance.ts",
       "sha256": "f4074942645d7b22c316b53b7a11e13b25bb5bc26f98a042a9707fbc8f23df0c"
     },
     {
+      "path": "src/server/product/processing/live-extraction-sol-comparison-budget.ts",
+      "sha256": "888bbf8f7f67332a38ee09ff4db6eeb57ea00aa9f29a8f702692273346ead4d1"
+    },
+    {
+      "path": "src/server/product/processing/managed-sol-live-window.ts",
+      "sha256": "1c52cc03db8cafa63c0a0e1a7bc43bdf2a3f8c2f54966a87a08f30b201b1cec1"
+    },
+    {
+      "path": "src/server/product/processing/managed-worker-build.mjs",
+      "sha256": "a7e0f5fe5a8a6b793c5d16de07783fc6588d19f8029dee34e976a3a09f23d156"
+    },
+    {
       "path": "src/server/product/processing/managed-worker-config.ts",
       "sha256": "8c4970cd12c6dd6c1d08474a0cc991a68e0e44d8cb1c390f82ecd6ee02945138"
+    },
+    {
+      "path": "src/server/product/processing/managed-worker-contract.ts",
+      "sha256": "0b1a61b10129ba267573a9731b44ce111894677d847ad247fa2417de79c6366b"
     },
     {
       "path": "src/server/product/processing/real-service-activation-contract.ts",
@@ -1063,12 +1228,48 @@
       "sha256": "ba77788ba700bb64d21269e5517e9b7936dfc19988019f1fbf25ffc9205ca0b0"
     },
     {
+      "path": "src/server/product/processing/real-service-budgeted-extractor.ts",
+      "sha256": "28b8860a3c0eee9137e957447f1e1c81a1cd7ccfc7ba52b5d13dfe62e8e9836a"
+    },
+    {
+      "path": "src/server/product/processing/real-service-controller.ts",
+      "sha256": "66041661051d66edf9cb317a568aeaa4545e287acc7af40ae3d68e8aef7d62d9"
+    },
+    {
+      "path": "src/server/product/processing/real-service-iteration.ts",
+      "sha256": "00c1984a82e5d74b9deeace9534d6f0c2f429279c5839d32f37cc9eef18aa422"
+    },
+    {
+      "path": "src/server/product/processing/real-service-machine-issuer.ts",
+      "sha256": "05e43995d1c1bc1a5a2676dcdf4d8ca674f3c9573c8b9d692bc0fd19cd6e2faa"
+    },
+    {
+      "path": "src/server/product/processing/real-service-machine-maintenance.ts",
+      "sha256": "e933dae64fc720713b1fe3e711971ac95520aae3c3ef8daecc6bfdd7056adc69"
+    },
+    {
+      "path": "src/server/product/processing/real-service-managed-case.ts",
+      "sha256": "a5e25c87e07afdae53c1f34821ad7924e659f23c216b19b33f1c6b09b386cff8"
+    },
+    {
       "path": "src/server/product/processing/real-service-notification-dispatch.ts",
       "sha256": "f9743ede9ec20e389d52ed73ae9193f9212acfdfc2a17912686c13b420f32e01"
     },
     {
+      "path": "src/server/product/processing/real-service-purchase-enrollment.ts",
+      "sha256": "409b1e4f968c2ce7ab85b36bc36263c838d9db0698a23216a55772f1ccd6679e"
+    },
+    {
+      "path": "src/server/product/processing/real-service-runtime.ts",
+      "sha256": "0b1a5f31a54928587f6a6bf924e3231c77d8b91ea452c5b86b2d4a99e21b6522"
+    },
+    {
       "path": "src/server/product/processing/real-service-worker-host.ts",
       "sha256": "67e82f9490f810f21c3a064a1ed488c47dc72c95dd5e364bd052b934918e809f"
+    },
+    {
+      "path": "src/server/product/processing/real-service.entry.mts",
+      "sha256": "17916014fd573a763e766ff565904fdfb3e0b341b86060935345c27cebb2f0df"
     },
     {
       "path": "src/server/product/processing/saved-admission.ts",
@@ -1083,8 +1284,16 @@
       "sha256": "5cb27b668420fa071dbb0f4031a88fc623dc6d2fa6031a30c91f68bfbc8c76bb"
     },
     {
+      "path": "src/server/product/processing/saved-analysis.ts",
+      "sha256": "da7047f5a9de92990fe82e1293081e537c4eb2ebbbc3c41fae5a37670a38e2d1"
+    },
+    {
       "path": "src/server/product/processing/saved-document-evidence-requests.ts",
       "sha256": "86b7382cf0ae84c61d04f3b59ca4c9763677e4cf1929ee4d097b7a78ca1daf0b"
+    },
+    {
+      "path": "src/server/product/processing/saved-document-evidence-worker.ts",
+      "sha256": "6b2c6dfe132643db3231a6d7c4d7232be56e26e53cffae975e1f57887f71e4a4"
     },
     {
       "path": "src/server/product/processing/saved-document-review.ts",
@@ -1107,16 +1316,56 @@
       "sha256": "3b14c512d5ec2857896ee68335e382e443d47584a617b4ad1fb741d7446caf44"
     },
     {
+      "path": "src/server/product/processing/saved-extraction-worker.ts",
+      "sha256": "92d92eccb39431c38063a3c451833f66c9e5e3bb801a10fd7fe76341b4089611"
+    },
+    {
       "path": "src/server/product/processing/saved-field-readings.ts",
       "sha256": "0c4a1dcf9822a463b962b81c91eae3c178381d2ac21baa3be4267e7e39eb5421"
+    },
+    {
+      "path": "src/server/product/processing/saved-field-requests.ts",
+      "sha256": "6837e545bf34424cc80316dd4411a58b7e30fe34a2ae6803470e57d5299f3ebf"
+    },
+    {
+      "path": "src/server/product/processing/saved-hours-conflict.ts",
+      "sha256": "5552f7c0e13c2cc2d64f6b02557d7c7feca43170fe2618010e466d6deda75120"
     },
     {
       "path": "src/server/product/processing/saved-hours-declarations.ts",
       "sha256": "ccbdc72fcbaa54ad339971919718516252de261138632687b23441cd8ab02210"
     },
     {
+      "path": "src/server/product/processing/saved-job-completion.ts",
+      "sha256": "470e2252cf2874e1c8d8591e18ac875ccef844fe768acf3dcc25d0e104055dc0"
+    },
+    {
+      "path": "src/server/product/processing/saved-job-runner.ts",
+      "sha256": "45fd874789581ea638e48e0d247c6a9a1fa6af8e8fe1c22281b03c84fece1ed6"
+    },
+    {
+      "path": "src/server/product/processing/saved-job-runtime.ts",
+      "sha256": "06f439ff78fa9aeca3d08ff21cde5da5adce88a6642db42f5085bdb5b2b67271"
+    },
+    {
+      "path": "src/server/product/processing/saved-june2026-admitted-context.ts",
+      "sha256": "06405c50e771b4a857d66f9adff9b4fac58277c6b218c5503bf7465e1adbe220"
+    },
+    {
+      "path": "src/server/product/processing/saved-june2026-canonical.ts",
+      "sha256": "ab7c268d8895182717f0b9abe0a302707806f601fce6b3e1966f50c66ae8e0d0"
+    },
+    {
+      "path": "src/server/product/processing/saved-june2026-collection.ts",
+      "sha256": "9f496d780d34b57d5658aefb3399a9d705f469aa99a894b5e7638b6ec19a44c9"
+    },
+    {
       "path": "src/server/product/processing/saved-june2026-regular-authority.ts",
       "sha256": "cc684493129b4f30314b2f35fbb5d12e420d9d12ff6cb7d7b9530b09f185d57d"
+    },
+    {
+      "path": "src/server/product/processing/saved-june2026-regular.ts",
+      "sha256": "eac03cdfa2a306ae208d8dff9011228664f92e3ec158bb161c2b03aead85cd8e"
     },
     {
       "path": "src/server/product/processing/saved-june2026-test-authority.ts",
@@ -1125,6 +1374,10 @@
     {
       "path": "src/server/product/processing/saved-legacy-source-intake.ts",
       "sha256": "5aae5d7cadc234ee6b2d33f5b18817fafb502a9d2cfe053d7d6be43bdc4243b9"
+    },
+    {
+      "path": "src/server/product/processing/saved-minimum-wage-review.ts",
+      "sha256": "980157cea0cb38098528d2f71b44f1742a3ae914e3b9e38ef1970a613e7537aa"
     },
     {
       "path": "src/server/product/processing/saved-non-payslip-readings.ts",
@@ -1191,12 +1444,24 @@
       "sha256": "a697d129cc7021c4d47e5c7e877328a876e4b66c4879154684dadcc6b6829665"
     },
     {
+      "path": "src/server/product/processing/saved-source-physical-pages.ts",
+      "sha256": "ec1417545582f90b6d8d8f1960c4b722795eda9d473749543ea0b28f9d2672c2"
+    },
+    {
+      "path": "src/server/product/processing/saved-transcription-requests.ts",
+      "sha256": "b6e153b86c14435f8f61b9b7c46480f7eefe89033cbebb06f5f4b3462898169d"
+    },
+    {
       "path": "src/server/product/processing/saved-travel-tariff-readings.ts",
       "sha256": "6bffe91ae4715089f3e7db39acfa7aa48a97d368a510ab7a353f12c226bdfe99"
     },
     {
       "path": "src/server/product/processing/saved-worker-contracts.ts",
       "sha256": "ec17dee346d971ce9d4023f9bee90310683a100b4cb2a3fd912af54928eb9255"
+    },
+    {
+      "path": "src/server/product/processing/saved-worker.ts",
+      "sha256": "6e6f371d2d260ab0178313528f32d8102c7b274c3c7d53f3a71902716f48a538"
     },
     {
       "path": "src/server/product/processing/source-dispatch.ts",
@@ -1235,8 +1500,16 @@
       "sha256": "454489280bf51859275d0d3b2494a636701af410936f73eb32de00b595823656"
     },
     {
+      "path": "src/server/product/reports/document-field-transcription.ts",
+      "sha256": "5ace313694795d98bd68ee469d65b66f48340dbe685c64eeb9c65c13cb38e1c5"
+    },
+    {
       "path": "src/server/product/reports/document-hours-conflict-answer.ts",
       "sha256": "a7381661679973fde6ec8dd564b5397c3fafea902f233616850295c9cfc0634a"
+    },
+    {
+      "path": "src/server/product/reports/document-hours-conflict.ts",
+      "sha256": "f45bf83ec57d4afc70c4c6fd11ef4d0048c9f0826ed9714833e007092bc37947"
     },
     {
       "path": "src/server/product/reports/document-obligation-payment-link.ts",
@@ -1283,12 +1556,24 @@
       "sha256": "c4988aa70779a60211f55bfbc93b6c921f968e5ad531b298ba9ae2b4bd8b5b2b"
     },
     {
+      "path": "src/server/product/reports/june2026-regular-service.ts",
+      "sha256": "0ad19642fb2b2cc40e87388c90ec3ef917fd71dd02178f1ec51dbd6942623bb1"
+    },
+    {
       "path": "src/server/product/reports/owner-engineering-report.ts",
       "sha256": "8d5814b0f1690a786782b6572d55f7d94ce85b7cffc17c18c00130a85b1b0577"
     },
     {
       "path": "src/server/product/reports/private-document-review.ts",
       "sha256": "b88d21ce6dcef9b812f347313eb8c1c965c3710110ab6a3377fb2129b0d9ef46"
+    },
+    {
+      "path": "src/server/product/reports/publication-gate.ts",
+      "sha256": "008fc8f032a2133674a75b518824ff2a64be5881b8b065542b9f96d26e1ba69d"
+    },
+    {
+      "path": "src/server/product/reports/publish-ai-report.ts",
+      "sha256": "5a63c653f7dca63ef7241198a2c5839eedf5e44fc49113c461ea854287eaee7b"
     },
     {
       "path": "src/server/product/reports/reading-verification.ts",
@@ -1313,6 +1598,10 @@
     {
       "path": "src/server/product/reports/refusal-requests.ts",
       "sha256": "0c8332b57957d2276116c9a51520c89f79c1dbc9755a84b2d5d67891b6ed5554"
+    },
+    {
+      "path": "src/server/product/reports/report-document.ts",
+      "sha256": "5e2eb8987fc46e853ce76bb50d26f26cc6100844bd56e59ceacf87d18f062712"
     },
     {
       "path": "src/server/product/reports/request-answer.ts",
@@ -1355,6 +1644,6 @@
       "sha256": "14050db7e9b2ea12c31249112bf03d177966a516918cc781a585d94409bbc28a"
     }
   ],
-  "source_graph_sha256": "93b5f38934d7e6238d833962f040d1863b6f8fa0151515dabd94239e50ec2c2c",
-  "sha256": "688ccc7047f60a66539c918247096ff15fc58232510ce9382248668168367fff"
+  "source_graph_sha256": "ab57b0dbf5ebb06a5054016f801077feb64e047dacb37b51654f5b2000baba31",
+  "sha256": "2a0eb25ae39489d89ab7506f486026a60180f935b5898d21db108ad180b86d21"
 }

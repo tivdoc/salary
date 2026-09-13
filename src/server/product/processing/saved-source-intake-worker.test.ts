@@ -65,6 +65,25 @@ function setup(storedKind='payslip'){
 }
 async function held(f:ReturnType<typeof setup>){try{await runSavedDraftJob(f.runInput);}catch(error){if(error instanceof SavedSourceIntakeRequired)return error;throw error;}throw Error('Expected source intake hold');}
 describe('ordinary source-intake worker routing',()=>{
+ it('inspects contract pages before a receipt-only qualified run even when its legacy source month is already known',async()=>{
+  const f=setup();
+  const {receipt_sha256:priorHash,...historical}=f.f.scope;expect(priorHash).toHaveLength(64);
+  const body={...historical,period_state:'source_observed' as const,periods:[{
+   period:{from:'2026-06-01',to:'2026-06-30'},evidence_sha256:'a'.repeat(64),
+   source_pins:[{case_id:f.f.caseId,document_id:f.f.document.id,version_id:f.f.document.version_id,source_sha256:f.f.document.sha256}],
+  }]};
+  f.journal.legacy_orders=[{...body,receipt_sha256:canonicalSha256(body)}];
+  f.journal.month='2026-06';f.journal.documents[0].month='2026-06';f.journal.answers=[];
+  f.journal.documents.push({...f.journal.documents[0],id:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',version_id:'cccccccc-cccc-4ccc-8ccc-cccccccccccc',type:'contract',month:null});
+  f.seal();const before=canonicalSha256(f.journal);
+  expect(await runSavedDraftJob(f.runInput)).toMatchObject({extractedVersions:1,analyzedMonths:1});
+  expect(ports.physical).toHaveBeenCalledOnce();
+  expect(ports.physical.mock.calls[0][0]).toMatchObject({purpose:'contract_transcription',providerEnabled:false,receiptOnly:true,job:f.job});
+  expect(ports.physical.mock.invocationCallOrder[0]).toBeLessThan(ports.month.mock.invocationCallOrder[0]);
+  expect(f.calls.some(c=>c.name==='saved_runner_source_intake_context')).toBe(false);
+  expect(canonicalSha256(f.journal)).toBe(before);expect(f.opened).toEqual([]);
+ });
+
  it('opens a monthless source reading before planning without OCR or successful completion',async()=>{
   const f=setup();f.journal.answers=[];f.seal();const result=await held(f);
   expect(result.detail.held).toEqual([{orderId:f.f.scope.id,month:null,code:'source_period_required'}]);expect(result.detail.analyzedMonths).toBe(0);

@@ -1,8 +1,7 @@
 import type { LegalCatalogSelection, LegalRuleCatalogPort, Wave3Topic } from "../wave3/contracts.ts";
 import { evaluateLegalReadiness, type LegalReadinessCandidate, type LegalReadinessCase } from "../legal-knowledge/canonical-readiness/evaluate-legal-readiness.ts";
-import { CORPUS_LIFECYCLE, type CorpusLifecycleEntry } from "../wave23/corpus-trust/lifecycle.ts";
 import { frozen, legalOperationsSha256 } from "./canonical.ts";
-import {REAL_CATALOG_BOUNDARY,REAL_CATALOG_SHA256} from './real-catalog-fingerprint.ts';
+import {RealLegalOperationsCatalog} from './real-catalog.ts';
 export {REAL_CATALOG_BOUNDARY,REAL_CATALOG_SHA256} from './real-catalog-fingerprint.ts';
 import {
   SYNTHETIC_CATALOG_DATE,
@@ -34,38 +33,6 @@ export const SYNTHETIC_CATALOG_SHA256 = legalOperationsSha256({
     golden_cases_sha256: fixture.golden_cases.content_sha256,
   })),
 });
-
-function realCandidate(entry: CorpusLifecycleEntry): LegalReadinessCandidate {
-  return frozen({
-    source_id: entry.source_version_id.split("@")[0],
-    source_version_id: entry.source_version_id,
-    topics: [entry.topic],
-    parse_succeeded: entry.technical_parse_status === "parsed",
-    citation_verified: false,
-    operative_role_eligible: entry.source_role === "binding_role_candidate",
-    human_reviewed: false,
-    effective_interval_verified: false,
-    verified_sectors: [],
-    verified_populations: [],
-    active: false,
-    acquisition_status: entry.acquisition_status,
-    technical_parse_status: entry.technical_parse_status,
-    instrument_boundary_status: entry.instrument_boundary_status === "resolved" ? "resolved" : entry.instrument_boundary_status === "unresolved" ? "unresolved" : "ambiguous",
-    publication_status: entry.publication_status,
-    retrieval_visibility: entry.retrieval_visibility,
-    retrieval_surface: entry.retrieval_surface,
-    source_role: entry.source_role,
-    monetary_support_eligibility: "ineligible",
-    citation: undefined,
-    review_attestation: undefined,
-    valid_time: undefined,
-    knowledge_time: undefined,
-    sector_status: "unverified",
-    population_status: "unverified",
-    activation_status: "inactive",
-    bound_source_version_id: entry.source_version_id,
-  });
-}
 
 function syntheticReadyCandidate(fixture: SyntheticLegalFixture): LegalReadinessCandidate {
   return frozen({
@@ -117,7 +84,7 @@ export class LegalOperationsCatalog implements LegalRuleCatalogPort {
   async resolve(input: Readonly<{ topic: Wave3Topic; target_date: string; as_of: string; sector: string; population: string; mode: "real" | "synthetic_test" }>): Promise<LegalCatalogSelection> {
     if (input.mode !== "real" && input.mode !== "synthetic_test") throw new Error("LEGAL_CATALOG_MODE_FORBIDDEN");
     if (input.mode === "synthetic_test") return this.#synthetic({ ...input, mode: "synthetic_test" });
-    return this.#real({ ...input, mode: "real" });
+    return new RealLegalOperationsCatalog().resolve({ ...input, mode: "real" });
   }
 
   #synthetic(input: Readonly<{ topic: Wave3Topic; target_date: string; as_of: string; sector: string; population: string; mode: "synthetic_test" }>): LegalCatalogSelection {
@@ -139,24 +106,6 @@ export class LegalOperationsCatalog implements LegalRuleCatalogPort {
     });
   }
 
-  #real(input: Readonly<{ topic: Wave3Topic; target_date: string; as_of: string; sector: string; population: string; mode: "real" }>): LegalCatalogSelection {
-    const topicSources = CORPUS_LIFECYCLE.filter((entry) => entry.topic === input.topic);
-    const candidates = topicSources.map(realCandidate);
-    const readiness = evaluateLegalReadiness({ readinessCase: readinessCase(input), candidates });
-    if (readiness.status === "READY") throw new Error("REAL_CATALOG_UNEXPECTED_READY");
-    return frozen({
-      catalog_id: REAL_CATALOG_BOUNDARY.catalog_id,
-      catalog_version: REAL_CATALOG_BOUNDARY.catalog_version,
-      catalog_sha256: REAL_CATALOG_SHA256,
-      mode: "real",
-      topic: input.topic,
-      source_version_ids: topicSources.map((entry) => entry.source_version_id),
-      parameter_version_ids: [],
-      rule_spec_id: null,
-      rule_spec_version: null,
-      readiness,
-    });
-  }
 }
 
 export async function syntheticSevenTopicCatalogMatrix() {

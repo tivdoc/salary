@@ -19,14 +19,22 @@ function setup(bytes:Uint8Array,mime:Mime='application/pdf'){
  const job:SourceJob={schema_version:'saved-case-work-v1',case_id:randomUUID(),revision:9,input_sha256:'a'.repeat(64),mode:'draft',processing_profile:'qualified_ai_v1',authority_dependency_sha256:'b'.repeat(64)};
  const versionId=randomUUID(),row={document_id:randomUUID(),version_id:versionId,source_sha256:createHash('sha256').update(bytes).digest('hex'),byte_size:bytes.length,mime_type:mime,
   storage_path:`cases/${job.case_id}/versions/${versionId}.${mime==='application/pdf'?'pdf':mime==='image/png'?'png':'jpg'}`};
- const state={lease:true,current:true,pending:[row],afterRead:()=>{},beforeAdmit:()=>{}};
+ const state={lease:true,actor:true,current:true,pending:[row],afterRead:()=>{},beforeAdmit:()=>{}};
  const events:string[]=[],queries:PostgresStatement[]=[];let depth=0;
  const context:PostgresTransactionContext={transaction_id:'synthetic-physical-pages',client:{async query(query){
   expect(depth).toBe(1);queries.push(query);events.push(query.name);
-  if(query.name==='source_physical_lease'){
+  if(query.name==='source_physical_lease'||query.name==='source_contract_physical_lease'){
+   if(query.name==='source_contract_physical_lease'){
+    expect(query.text).toContain('private.runtime_verified_actor()::text=$4');
+    if(!state.actor)return {rows:[],row_count:0};
+   }
    expect(query.values).toEqual(['synthetic-job',job.case_id,JSON.stringify(job),'synthetic-worker',7]);
    for(const fence of ["state='running'",'lease_owner=$4','fencing_token=$5','lease_expires_at>clock_timestamp()','not cancellation_requested','payload=$3::jsonb'])expect(query.text).toContain(fence);
    return {rows:state.lease?[{job_id:'synthetic-job'}]:[],row_count:state.lease?1:0};
+  }
+  if(query.name==='source_contract_physical_pending'){
+   expect(query.values).toEqual([job.case_id,job.revision,job.input_sha256,'synthetic-job','synthetic-worker',7]);
+   return {rows:[{value:state.pending}],row_count:1};
   }
   if(query.name==='source_physical_pending'){
    expect(query.values).toEqual([job.case_id,job.revision,job.input_sha256]);return {rows:[{value:state.pending}],row_count:1};
@@ -91,5 +99,33 @@ describe('saved source physical metadata with ordinary source and lease fences',
  });
  it('rejects stale source after malformed bytes rather than returning a successful unreadable result',async()=>{
   const f=setup(brokenPdf());f.state.afterRead=()=>{f.state.current=false;};await expect(f.run()).rejects.toThrow('ANALYSIS_INPUT_SUPERSEDED');expect(f.records()).toEqual([]);
+ });
+});
+
+// A known purchased month does not prove a PDF page count. This path remains
+// available in receipt-only operation and shares the same byte/fence parser.
+describe('contract transcription physical metadata independent of source-period intake',()=>{
+ it('records actual multi-page source bytes using the independently scoped contract discovery',async()=>{
+  const f=setup(await pdfBytes(7));
+  expect(await ensureSavedSourcePhysicalPages({...f.input,purpose:'contract_transcription'})).toEqual({recorded:1,unreadableVersions:[]});
+  expect(f.queries.some(q=>q.name==='source_physical_pending')).toBe(false);
+  expect(f.records()[0].values.at(-1)).toBe(7);
+ });
+ it('does no storage work when the current paid scope has no eligible contract or its receipt exists',async()=>{
+  const f=setup(await pdfBytes());f.state.pending=[];
+  expect(await ensureSavedSourcePhysicalPages({...f.input,purpose:'contract_transcription'})).toEqual({recorded:0,unreadableVersions:[]});
+  expect(f.download).not.toHaveBeenCalled();expect(f.records()).toEqual([]);
+ });
+ it.each(['source','lease','actor','hash','mime','unreadable'] as const)('preserves the %s guard for transcription-only physical inspection',async reason=>{
+  const f=setup(reason==='unreadable'?brokenPdf():await pdfBytes());
+  if(reason==='source')f.state.afterRead=()=>{f.state.current=false;};
+  if(reason==='lease')f.state.afterRead=()=>{f.state.lease=false;};
+  if(reason==='actor')f.state.afterRead=()=>{f.state.actor=false;};
+  if(reason==='hash')f.row.source_sha256='f'.repeat(64);
+  if(reason==='mime'){f.row.mime_type='image/png';f.row.storage_path=f.row.storage_path.replace('.pdf','.png');}
+  const result=ensureSavedSourcePhysicalPages({...f.input,purpose:'contract_transcription'});
+  if(reason==='unreadable'||reason==='mime')expect(await result).toEqual({recorded:0,unreadableVersions:[f.row.version_id]});
+  else await expect(result).rejects.toThrow(reason==='source'?'ANALYSIS_INPUT_SUPERSEDED':reason==='lease'||reason==='actor'?'SAVED_JOB_FENCE':'SOURCE_INTAKE_PHYSICAL_CHANGED');
+  expect(f.records()).toEqual([]);
  });
 });

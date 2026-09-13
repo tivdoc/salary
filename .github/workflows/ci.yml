@@ -81,7 +81,7 @@ jobs:
               git('merge-base','--is-ancestor',pin,checked);
             }
           }
-          writeFileSync('ci-checkout.json',JSON.stringify({event:process.env.GITHUB_EVENT_NAME,checkout:checked,head:process.env.PR_HEAD_SHA||null,base:process.env.PR_BASE_SHA||null}));
+          writeFileSync('ci-checkout.json',JSON.stringify({event:process.env.GITHUB_EVENT_NAME,checkout:checked,head:process.env.PR_HEAD_SHA||null,base:process.env.PR_BASE_SHA||null,repository:process.env.GITHUB_REPOSITORY,run_id:process.env.GITHUB_RUN_ID,run_attempt:process.env.GITHUB_RUN_ATTEMPT,workflow:process.env.GITHUB_WORKFLOW,workspace:process.cwd(),node:process.version}));
           NODE
 
       - name: Install from the lockfile
@@ -99,7 +99,7 @@ jobs:
       # Keep CPU-heavy source replay and PDF checks sequential on shared runners.
       # Retain every assertion and existing per-test timeout.
       - name: Unit and guard suites (no credentials)
-        run: npm test -- --maxWorkers=1
+        run: npm test -- --maxWorkers=1 --reporter=default --reporter=github-actions --reporter=json --outputFile.json=ci-vitest-results.json
 
       - name: Build
         run: npm run build
@@ -117,4 +117,19 @@ jobs:
             output/next/closure/production-closure-receipt.json
             output/next/closure/build.log
             output/next/closure/server.log
+          if-no-files-found: ignore
+
+      # Preserve the existing execution for exact-checkout QA evidence reuse.
+      # Uploading results is not a passing-test or release-approval claim.
+      - name: Keep measured unit and guard results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vitest-results-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ci-checkout.json
+            ci-vitest-results.json
+            package-lock.json
+            vitest.config.mts
+            src/server/product/processing/ai-release-build-manifest.json
           if-no-files-found: ignore

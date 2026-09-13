@@ -87,7 +87,13 @@ const MIGRATION_ROOT = path.resolve(process.cwd(), "supabase", "migrations");
 //boundaries;202:1 worker notice preparation;203:0 literal definers, exact wrappers retain ACLs.
 //DEV rollback checks preserve public source ACLs and deny all seven runtime roles on backups.
 //204:5 explicit activation/controller/dependency definitions;77 DEV ACL checks.
-const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 444;
+//205–206:2 literal definitions, derived wrappers retain existing scoped bodies;
+//112 DEV ACL checks permit only the identity issuer and two worker successor RPCs.
+//207–208: six controller/claim/maintenance/provider RPCs; private helpers remain
+//invoker-only. DEV rollback verified70 function ACLs and28 table/RLS boundaries.
+//209/211 add two narrow worker discovery RPCs.210 changes only capability regex
+//in four existing definitions while asserting unchanged ACLs; no new definer.
+const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 454;
 
 // Case-insensitive on purpose. pg_get_functiondef emits CREATE OR REPLACE
 // FUNCTION and SET search_path TO '' in upper case, and a migration written

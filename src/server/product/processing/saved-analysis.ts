@@ -20,7 +20,7 @@ import {SavedJune2026CanonicalRuntime,JUNE2026_CANONICAL_TEST_TEMPLATE} from "./
 import {createHash} from 'node:crypto';
 import {z} from 'zod';
 import {CaseAnalysisService} from '@/engine/case-analysis/service';
-import {June2026ReviewCatalog} from '@/engine/legal-operations/june2026-catalog';
+import {RealJune2026ReviewCatalog} from '@/engine/legal-operations/real-june2026-catalog';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import type {CaseAnalysisCommand} from '@/engine/wave3/contracts';
 import type {PostgresAnalysisRepositories} from '@/server/platform/persistence/postgres/analysis';
@@ -105,7 +105,7 @@ export async function runSavedMonthAnalysis(input:{context:PostgresTransactionCo
   prepareOwnerEngineering:ownerProfile?savedOwnerEngineeringPreparation(input.context,job,ownerProfile):undefined,
   prepareAiRelease:realProfile?savedRealAiServicePreparation(input.context,job,realProfile):aiProfile?savedAiReleasePreparation(input.context,job,aiProfile):undefined,
   hashes:{hashCanonical:canonicalSha256,hashBytes:b=>createHash('sha256').update(b).digest('hex')},
-  snapshots,repository:input.analysis.caseAnalysis,legalCatalog:testAuthority?new June2026IsolatedTestCatalog(testAuthority.assessment):regularAuthority?new June2026RegularCatalog(regularAuthority.authority):new June2026ReviewCatalog(),
+  snapshots,repository:input.analysis.caseAnalysis,legalCatalog:testAuthority?new June2026IsolatedTestCatalog(testAuthority.assessment):regularAuthority?new June2026RegularCatalog(regularAuthority.authority):new RealJune2026ReviewCatalog(),
   executor:runtime??{async execute(){throw new Error('REGULAR_AUTHORITY_REQUIRED');}},
   reportBuilder:runtime??new SavedAnalysisDraftBuilder(),reportRegistration:input.analysis.reports,
   authorizeIsolatedTest:testAuthority?async(command,selection)=>{

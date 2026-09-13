@@ -9,12 +9,14 @@ import type {SourceJob} from './source-dispatch';
 import type {SavedWorkerTransactions} from './saved-extraction-worker';
 const rowSchema=z.object({document_id:z.uuid(),version_id:z.uuid(),source_sha256:z.string().regex(/^[a-f0-9]{64}$/),
  byte_size:z.coerce.number().int().min(1).max(10*1024*1024),mime_type:z.enum(['application/pdf','image/jpeg','image/png']),storage_path:z.string()}).strict();
-type Input={job:SourceJob;jobId:string;workerId:string;fencingToken:number;transactions:SavedWorkerTransactions;storage:UploadExtractionStorage};
+type Input={job:SourceJob;jobId:string;workerId:string;fencingToken:number;transactions:SavedWorkerTransactions;storage:UploadExtractionStorage;
+ purpose?:'legacy_source_intake'|'contract_transcription'};
 async function admitted(context:PostgresTransactionContext,input:Input){
  await admitSavedSource(context,input.job);
- const r=await context.client.query(statement('source_physical_lease',
+ const contract=input.purpose==='contract_transcription';
+ const r=await context.client.query(statement(contract?'source_contract_physical_lease':'source_physical_lease',
   `select job_id from public.engine_durable_jobs where job_id=$1 and canonical_case_id=$2 and payload=$3::jsonb
-   and state='running' and lease_owner=$4 and fencing_token=$5 and lease_expires_at>clock_timestamp() and not cancellation_requested`,
+   and state='running' and lease_owner=$4 and fencing_token=$5 and lease_expires_at>clock_timestamp() and not cancellation_requested${contract?' and private.runtime_verified_actor()::text=$4':''}`,
   [input.jobId,input.job.case_id,JSON.stringify(input.job),input.workerId,input.fencingToken]));
  if(r.rows.length!==1)throw Error('SAVED_JOB_FENCE');
 }
@@ -23,8 +25,12 @@ async function admitted(context:PostgresTransactionContext,input:Input){
 export async function ensureSavedSourcePhysicalPages(input:Input){
  const rows=await input.transactions(async context=>{
   await admitted(context,input);
-  const r=await context.client.query(statement('source_physical_pending','select private.source_physical_pages_pending($1::uuid,$2,$3) value',
-   [input.job.case_id,input.job.revision,input.job.input_sha256]));
+  const r=await context.client.query(input.purpose==='contract_transcription'
+   ?statement('source_contract_physical_pending','select private.contract_transcription_physical_pages_pending($1::uuid,$2,$3,$4,$5,$6) value',
+    [input.job.case_id,input.job.revision,input.job.input_sha256,input.jobId,input.workerId,input.fencingToken])
+   :statement('source_physical_pending','select private.source_physical_pages_pending($1::uuid,$2,$3) value',
+    [input.job.case_id,input.job.revision,input.job.input_sha256]));
+  if(r.row_count!==1)throw Error('SOURCE_INTAKE_PHYSICAL_CONTEXT');
   return z.array(rowSchema).max(24).parse(r.rows[0]?.value);
  });
  let recorded=0;const unreadableVersions:string[]=[];

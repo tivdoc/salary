@@ -17,6 +17,7 @@ const ENTRIES=[
  'src/server/product/processing/automatic-real-service.ts',
  'src/server/product/processing/real-service-activation.ts',
  'src/server/product/processing/real-service-worker-host.ts',
+ 'src/server/product/processing/real-service.entry.mts',
  'src/server/product/processing/real-service-notification-dispatch.ts',
  'src/server/product/processing/automatic-dev-notifications.ts',
  'src/server/product/reports/ai-release-report.ts',
@@ -28,7 +29,8 @@ const ENTRIES=[
  'src/server/product/processing/ai-release-build.ts',
  'src/server/product/processing/ai-release-configuration.ts',
 ];
-const BUILD_INPUTS=['package-lock.json','tsconfig.json','scripts/ai-release-build-manifest.mjs'];
+const BUILD_INPUTS=['package-lock.json','tsconfig.json','scripts/ai-release-build-manifest.mjs',
+ 'src/server/product/processing/managed-worker-build.mjs','scripts/product-workers/managed-dev-supervisor.mjs'];
 const excluded=p=>p===OUTPUT||/(?:^|\/)(?:__tests__|fixtures?|benchmarks?)(?:\/|$)|(?:\.|-)(?:test|spec|fixture)s?\.[^.]+$/u.test(p);
 const order=(a,b)=>a<b?-1:a>b?1:0;
 const hash=text=>createHash('sha256').update(text,'utf8').digest('hex');
