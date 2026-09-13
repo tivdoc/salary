@@ -4,7 +4,7 @@ import {documentReviewCalculationInputSchema,type DocumentReviewOperand} from '.
 import type {DocumentReviewInput} from '../../document-review/contracts.ts';
 import {sourceStructureBasisSchema} from '../../extraction/source-structure.ts';
 import type {ExplicitObligation,ObligationsEntitlementInput} from './contracts.ts';
-import {identifiedClauseTranscriptionSourceCurrent} from './identified-clause-transcriptions.ts';
+import {identifiedClauseTranscriptionSourceCurrent} from './identified-clause-source.ts';
 
 const sha=z.string().regex(/^[a-f0-9]{64}$/u),period=z.object({from:z.iso.date(),to:z.iso.date()}).strict();
 const operand=documentReviewCalculationInputSchema.shape.operands.element,source=operand.shape.source;

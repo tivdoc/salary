@@ -7,7 +7,7 @@ import {nonPayslipEffectiveReadingSha} from '../../document-review/non-payslip.t
 import {obligationsEntitlementInputSchema,type ObligationsEntitlementInput} from './contracts.ts';
 import {parseObligationLiteralPromise} from './literal-promise.ts';
 import {OBLIGATIONS_SOURCE_REVIEW_SHA256} from './source-policy.ts';
-import {identifiedClauseTranscriptionSourceCurrent,parseIdentifiedClausePromise} from './identified-clause-transcriptions.ts';
+import {identifiedClauseTranscriptionSourceCurrent,parseIdentifiedClausePromise} from './identified-clause-source.ts';
 
 type Observation=NormalizedDocumentEvidence['observations'][number];
 type Entry={kind:'literal_promise'|'payment_period'|'agreement_acceptance'|'complete_conditions';sources:DocumentReviewSource[];value:unknown;witness_sha256:string};

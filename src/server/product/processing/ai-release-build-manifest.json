@@ -288,8 +288,12 @@
       "sha256": "1a741688fc57b622bd3fd7349fa1d5e94f990577aaff76e17141f866cd57a8ce"
     },
     {
+      "path": "src/engine/entitlement-review/obligations/identified-clause-source.ts",
+      "sha256": "dd9a690e0e23855d0dbf13e8303afa7c09d9806a0b02b4f1f282bbd32b3c2f4a"
+    },
+    {
       "path": "src/engine/entitlement-review/obligations/identified-clause-transcriptions.ts",
-      "sha256": "5653c9de2061925c602d26b5c68688334804fec8df5733019b3839acdfbae469"
+      "sha256": "eba5d806a87f69619b1269811a06d6612573e0aa3595af5b8f3853a81e84f580"
     },
     {
       "path": "src/engine/entitlement-review/obligations/index.ts",
@@ -301,7 +305,7 @@
     },
     {
       "path": "src/engine/entitlement-review/obligations/payment-link.ts",
-      "sha256": "44d9e38a47b8ba0062c2390d21af63b9520c2c85c59926e3b7e3d8469d09a43d"
+      "sha256": "5c61fc03d6e87a1c4fe7bc028630b364f7763abf1468b28e04d02c219dfa5f57"
     },
     {
       "path": "src/engine/entitlement-review/obligations/policy.ts",
@@ -317,7 +321,7 @@
     },
     {
       "path": "src/engine/entitlement-review/obligations/product-source-evidence.ts",
-      "sha256": "99cc3a5df48d3e9cd6cc712e55cf00461447c4348f318e6ec756b6e2e8b82e8a"
+      "sha256": "dd4c517a748e1a9e83a7d677991b13edf8dd2b806262d8a031df1e2032f236cc"
     },
     {
       "path": "src/engine/entitlement-review/obligations/source-policy.ts",
@@ -1648,6 +1652,6 @@
       "sha256": "14050db7e9b2ea12c31249112bf03d177966a516918cc781a585d94409bbc28a"
     }
   ],
-  "source_graph_sha256": "a5be4f02b985d2821804078944cb358d16b6a41abc344b24c5f51a7eaa15924f",
-  "sha256": "b8c11b18daabc3ca959ed5e9d302c438311ff79245b7ad6f579abb308414837f"
+  "source_graph_sha256": "fb3dee8e4ac23b88bea6a5433474bfe3e9a6a3c460330bae1bceadba971961d0",
+  "sha256": "4ce611c3a80378a15bed0dafa15ccddf100f33f5af32ad69d525bd4ffd7ca3c9"
 }

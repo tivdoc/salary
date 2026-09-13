@@ -12,3 +12,4 @@ docs/release-evidence/sol-canonical-20260910/** -text
 /supabase/migrations/20260914013000_real_service_candidates_claims.sql -text
 /supabase/migrations/20260914014000_real_service_provider_requests.sql -text
 /supabase/migrations/20260914018000_real_service_canonical_case_planner.sql -text
+/supabase/migrations/20260914020000_real_service_candidate_null_guards.sql -text
