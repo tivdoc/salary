@@ -1493,7 +1493,7 @@
     },
     {
       "path": "src/server/product/reports/case-requests.ts",
-      "sha256": "f6f2b90febf0300ff408de22614f2728951010a21bdb3564e0bb47a92f63c04f"
+      "sha256": "b6c1391922ab6ca8a27f59427ff3289665c3fefb7a7d2e53f15cc82076854db9"
     },
     {
       "path": "src/server/product/reports/document-evidence-reading.ts",
@@ -1593,11 +1593,11 @@
     },
     {
       "path": "src/server/product/reports/real-ai-service-customer.ts",
-      "sha256": "4174866d4f5700b6556905dbd96a126802aec46526a38e02a82be5499460362a"
+      "sha256": "1e5e14108877b1c063b6dba2aaee9af29ee67503e40121a2f0ed8e0334dd9371"
     },
     {
       "path": "src/server/product/reports/real-ai-service-delivery.ts",
-      "sha256": "939e07a8abea622be8a8c8ffd9b0d2dc004afcf3c607b4acd0f95449201b8f55"
+      "sha256": "f8dbc6ce50aeb3844d31253851437a6fba8d871ca36bd6fc70d20abceb4bc901"
     },
     {
       "path": "src/server/product/reports/real-ai-service-notification.ts",
@@ -1652,6 +1652,6 @@
       "sha256": "14050db7e9b2ea12c31249112bf03d177966a516918cc781a585d94409bbc28a"
     }
   ],
-  "source_graph_sha256": "727cdd73fdfe504df90038491a1ef1b2d02abdb76782b3a4ff351977eb47da28",
-  "sha256": "9866b2c84443527fb458527ed390e6d96f934c841fa657b3c5ec8e9b43f1b7f6"
+  "source_graph_sha256": "f10e375f67c8c1a7ec783fc4fc6155630cfe98b5ea382dba5a8ca9d80e81da96",
+  "sha256": "8e4b93a7fbc6095847d35e128db564a815d9f04f7b73f4d3ff2705d4b8343ebb"
 }
