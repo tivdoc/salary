@@ -18,7 +18,7 @@ function fixture(){
  const artifact={source_commit:'b'.repeat(40),bundle_sha256:'c'.repeat(64),files:[
   '.vercel/output/config.json','.vercel/output/functions/api/resend.func/.vc-config.json','.vercel/output/functions/api/resend.func/index.js',
  ].map(file=>({file,data:'synthetic artifact bytes',encoding:'utf-8'}))};
- const ctx={state:null,project,main,ingress:null,override:false,protectedGetStatus:405,sharedNext:null,shareSequence:0,clock:NOW,vercelSso:false,propagationUntil:0,forwardShareValid:true};
+ const ctx={state:null,project,main,ingress:null,override:false,runtimeGetStatus:405,sharedNext:null,shareSequence:0,clock:NOW,vercelSso:false,propagationUntil:0,forwardShareValid:true,activeShare:null};
  const api=vi.fn(async(endpoint,method='GET',body)=>{
   const url=new URL(endpoint,'https://api.vercel.com');expect(url.searchParams.get('teamId')).toBe(INGRESS_TEAM);
   if(method==='GET'){
@@ -33,7 +33,9 @@ function fixture(){
    if(body.override){ctx.override=body.override.action==='create';return {};}
    if(body.revoke)return {};
    ctx.shareSequence++;
-   return {protectionBypass:{[`synthetic-share-value-${ctx.shareSequence}`]:{scope:'shareable-link',createdAt:ctx.clock,expires:Math.floor(ctx.clock/1000)+body.ttl}}};
+   // Account-wide single-link model: every creation invalidates the prior one.
+   ctx.activeShare=`synthetic-share-value-${ctx.shareSequence}`;
+   return {protectionBypass:{[ctx.activeShare]:{scope:'shareable-link',createdAt:ctx.clock,expires:Math.floor(ctx.clock/1000)+body.ttl}}};
   }
   if(method==='POST'&&url.pathname==='/v13/deployments'){
    expect(url.searchParams.get('prebuilt')).toBe('1');
@@ -45,7 +47,7 @@ function fixture(){
  const transport=vi.fn(async(input,options={})=>{
   const url=new URL(input);
   if(url.host===main.url){
-   if(url.searchParams.has('_vercel_share'))return ctx.forwardShareValid
+   if(url.searchParams.has('_vercel_share'))return ctx.forwardShareValid&&url.searchParams.get('_vercel_share')===ctx.activeShare
     ?new Response(null,{status:307,headers:{location:`https://${main.url}/api/health`,'set-cookie':'_vercel_jwt=synthetic-main-only; Secure; HttpOnly'}})
     :vercelSsoResponse(url);
    if(url.pathname==='/api/notifications/resend'&&new Headers(options.headers).has('cookie'))return new Response(null,{status:405});
@@ -53,10 +55,10 @@ function fixture(){
   }
   expect(url.host).toBe(ctx.ingress.url);
   if(url.searchParams.has('_vercel_share'))return new Response(null,{status:307,headers:{location:`https://${url.host}/api/resend`,'set-cookie':'_vercel_jwt=synthetic-only; Secure; HttpOnly'}});
-  if(new Headers(options.headers).has('cookie'))return new Response(null,{status:ctx.protectedGetStatus});
+  if(new Headers(options.headers).has('cookie'))return new Response(null,{status:ctx.runtimeGetStatus});
   if(!ctx.override||ctx.clock<ctx.propagationUntil)return ctx.vercelSso?vercelSsoResponse(url):new Response(null,{status:401});
   if(url.pathname!=='/api/resend')return new Response(null,{status:404});
-  return new Response(null,{status:options.method==='POST'?401:405});
+  return new Response(null,{status:options.method==='POST'?401:ctx.runtimeGetStatus});
  });
  const deps={config,artifact,api,transport,now:()=>ctx.clock,pause:vi.fn(async ms=>{ctx.clock+=ms;}),newId:()=> 'synthetic-operation-only',
   loadState:()=>structuredClone(ctx.state),saveState:state=>{ctx.state=structuredClone(state);}};
@@ -112,20 +114,53 @@ describe('DEV ingress operator, synthetic API/transport only; no real deployment
   expect(f.deps.api.mock.calls.filter(([,method])=>method==='POST')).toHaveLength(1);
   const status=await f.run('status');expect(status.project_unchanged).toBe(true);expect(status.ready_state).toBe('READY');
  });
- it('opens only the pinned ingress after a protected credential-scope probe, then revokes its temporary probe share',async()=>{
+ it('opens only the pinned ingress using one account share and verifies forwarding again after enable',async()=>{
   const f=fixture();await f.run('deploy');const result=await f.run('enable');
   expect(result).toMatchObject({phase:'enabled',ingress_get_status:405,ingress_unknown_path_status:404,unsigned_post_status:401,main_unauthenticated_status:401});
   const overrides=f.deps.api.mock.calls.filter(([,method,body])=>method==='PATCH'&&body.override);
   expect(overrides).toHaveLength(1);expect(overrides[0][0]).toContain('/aliases/dpl_ingressSynthetic/protection-bypass');
   expect(overrides[0][2]).toEqual({override:{scope:'alias-protection-override',action:'create'}});
-  expect(f.ctx.state.probe_share.revoked_at).toBeDefined();expect(f.ctx.state.forward_share.revoked_at).toBeUndefined();
+  expect(f.ctx.state.probe_share).toBeUndefined();expect(f.ctx.state.forward_share.revoked_at).toBeUndefined();
+  expect(f.ctx.shareSequence).toBe(1);
+  const exchanges=f.deps.transport.mock.calls.filter(([input])=>new URL(input).searchParams.has('_vercel_share'));
+  expect(exchanges).toHaveLength(2);expect(exchanges.every(([input])=>new URL(input).host===f.ctx.main.url)).toBe(true);
+  expect(result.forwarding_probe).toMatchObject({available:true,exchange_status:307,target_method_status:405});
   expect(f.deps.api.mock.calls.some(([endpoint])=>endpoint.includes('/v1/projects/')&&endpoint.includes('protection-bypass'))).toBe(false);
  });
- it('refuses inherited runtime credentials without adding an exception, retaining a bounded forward share',async()=>{
-  const f=fixture();await f.run('deploy');f.ctx.protectedGetStatus=503;
-  await expect(f.run('enable')).rejects.toThrow('INGRESS_RUNTIME_SCOPE_PROBE_FAILED');
-  expect(f.deps.api.mock.calls.filter(([,method,body])=>method==='PATCH'&&body.override?.action==='create')).toHaveLength(0);
-  expect(f.ctx.state.probe_share.revoked_at).toBeDefined();expect(f.ctx.override).toBe(false);
+ it('rolls back the narrow exception when the runtime refuses inherited credentials',async()=>{
+  const f=fixture();await f.run('deploy');f.ctx.runtimeGetStatus=503;
+  await expect(f.run('enable')).rejects.toThrow('INGRESS_PUBLIC_BOUNDARY_PROBE_FAILED');
+  expect(f.deps.api.mock.calls.filter(([,method,body])=>method==='PATCH'&&body.override).map(([, ,body])=>body.override.action)).toEqual(['create','revoke']);
+  expect(f.ctx.state.probe_share).toBeUndefined();expect(f.ctx.override).toBe(false);
+  expect(f.ctx.state.last_boundary_probe.ingress_get_status).toBe(503);
+ });
+ it('reproduces a second account share invalidating the first and refuses it before enabling',async()=>{
+  const f=fixture();await f.run('deploy');
+  await f.deps.api(`/aliases/${f.ctx.ingress.id}/protection-bypass?teamId=${INGRESS_TEAM}`,'PATCH',{ttl:300});
+  expect(f.ctx.shareSequence).toBe(2);
+  await expect(f.run('enable')).rejects.toThrow('INGRESS_FORWARD_SHARE_EXCHANGE_FAILED');
+  expect(f.ctx.state.forwarding_probe).toMatchObject({available:false,exchange_status:302});
+  expect(f.ctx.override).toBe(false);
+ });
+ it('rolls back if forwarding becomes unavailable during enable even when all public boundary checks pass',async()=>{
+  const f=fixture();await f.run('deploy');const normal=f.deps.api;
+  f.deps.api=vi.fn(async(endpoint,method,body)=>{
+   const result=await normal(endpoint,method,body);
+   if(body?.override?.action==='create')f.ctx.forwardShareValid=false;
+   return result;
+  });
+  await expect(f.run('enable')).rejects.toThrow('INGRESS_FORWARD_SHARE_EXCHANGE_FAILED');
+  expect(f.ctx.state.last_boundary_probe).toMatchObject({ingress_get_status:405,ingress_unknown_path_status:404,unsigned_post_status:401,main_protected:true});
+  expect(f.ctx.state.forwarding_probe).toMatchObject({available:false,exchange_status:302});
+  expect(f.ctx.override).toBe(false);expect(f.ctx.state.phase).not.toBe('enabled');
+ });
+ it('still revokes a recorded legacy probe share on disable without creating any replacement',async()=>{
+  const f=fixture();await f.run('deploy');
+  f.ctx.state.probe_share={deployment_id:f.ctx.ingress.id,secret:'synthetic-legacy-share',expires_at:f.deps.config.expires_at};
+  await f.run('disable');
+  expect(f.ctx.state.probe_share.revoked_at).toBeDefined();expect(f.ctx.state.forward_share.revoked_at).toBeDefined();
+  expect(f.ctx.shareSequence).toBe(1);
+  expect(f.deps.api.mock.calls.filter(([,method,body])=>method==='PATCH'&&body.revoke)).toHaveLength(2);
  });
  it('refuses a recorded but no-longer-working main share before opening ingress, and reports the safe failed exchange',async()=>{
   const f=fixture();await f.run('deploy');const priorMutations=f.deps.api.mock.calls.filter(([,method])=>method!=='GET').length;
@@ -151,6 +186,20 @@ describe('DEV ingress operator, synthetic API/transport only; no real deployment
   expect(overrides.every(([endpoint])=>endpoint.includes('/aliases/dpl_ingressSynthetic/'))).toBe(true);expect(f.ctx.override).toBe(false);
   expect(f.ctx.state.last_boundary_probe.ingress_unknown_path_status).toBe(200);
   expect(f.ctx.state.boundary_probe_history).toHaveLength(1);expect(f.deps.pause).not.toHaveBeenCalled();
+ });
+ it('does not open the ingress when the main application is unprotected',async()=>{
+  const f=fixture();await f.run('deploy');const normal=f.deps.transport;
+  f.deps.transport=async(input,options)=>new URL(input).href===`${f.ctx.state.main_preview.origin}/`
+   ?new Response(null,{status:200}):normal(input,options);
+  await expect(f.run('enable')).rejects.toThrow('INGRESS_MAIN_NOT_PROTECTED');
+  expect(f.deps.api.mock.calls.filter(([,method,body])=>method==='PATCH'&&body.override)).toHaveLength(0);
+ });
+ it('rolls back if an unsigned webhook is accepted after the override',async()=>{
+  const f=fixture();await f.run('deploy');const normal=f.deps.transport;
+  f.deps.transport=async(input,options)=>options?.method==='POST'
+   ?new Response(null,{status:200}):normal(input,options);
+  await expect(f.run('enable')).rejects.toThrow('INGRESS_PUBLIC_BOUNDARY_PROBE_FAILED');
+  expect(f.ctx.state.last_boundary_probe.unsigned_post_status).toBe(200);expect(f.ctx.override).toBe(false);
  });
  it('waits only for recognized protection propagation after one override, preserving every failed probe',async()=>{
   const f=fixture();f.ctx.vercelSso=true;f.ctx.propagationUntil=NOW+4000;await f.run('deploy');

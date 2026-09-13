@@ -266,15 +266,9 @@ export async function runIngressOperator(command,{config,artifact,api,transport=
  requireThat(state.forwarding_probe.available,'INGRESS_FORWARD_SHARE_EXCHANGE_FAILED');
  if(state.phase==='enabled')return redactedIngressStatus(state,await publicChecks());
  try{
-  await createShare(state.deployment.id,'probe_share',Math.min(300,deadline()-60));
-  const access=new URL('/api/resend',state.deployment.origin);access.searchParams.set('_vercel_share',state.probe_share.secret);
-  const exchange=await probe(access),location=exchange.headers.get('location');
-  const redirect=location?new URL(location,state.deployment.origin):null;
-  requireThat(exchange.status===307&&redirect?.origin===state.deployment.origin&&redirect.pathname==='/api/resend'&&!redirect.search,'INGRESS_PROTECTED_PROBE_EXCHANGE');
-  const cookie=exchange.headers.getSetCookie().map(v=>v.split(';',1)[0]).find(v=>v.startsWith('_vercel_jwt='));
-  requireThat(cookie&&cookie.length<=16384,'INGRESS_PROTECTED_PROBE_COOKIE');
-  const get=await probe(`${state.deployment.origin}/api/resend`,{headers:{cookie}});
-  requireThat(get.status===405,'INGRESS_RUNTIME_SCOPE_PROBE_FAILED');
+  // Hobby permits one share link per account. Creating a separate ingress
+  // probe share can invalidate the forwarding share embedded in its bundle.
+  // Probe the narrow public boundary after the override, with rollback below.
   // Check the main application before opening anything and again afterward.
   requireThat(isProtectedPreviewResponse(await probe(state.main_preview.origin),state.main_preview.origin),'INGRESS_MAIN_NOT_PROTECTED');
   state.override_intent=true;save();
@@ -295,6 +289,8 @@ export async function runIngressOperator(command,{config,artifact,api,transport=
   }
   requireThat(publicBoundaryReady(checks),'INGRESS_PUBLIC_BOUNDARY_PROBE_FAILED');
   await unchanged();await revokeShare('probe_share');
+  state.forwarding_probe=await forwardingProbe();save();
+  requireThat(state.forwarding_probe.available,'INGRESS_FORWARD_SHARE_EXCHANGE_FAILED');
   state.phase='enabled';state.enabled_at=new Date(now()).toISOString();state.boundary_checks=checks;save();
   return redactedIngressStatus(state,checks);
  }catch(error){

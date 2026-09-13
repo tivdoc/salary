@@ -1,5 +1,11 @@
 # DEV Resend Preview ingress: operator and verification boundary
 
+## 2026-09-13: one share per Hobby account
+
+The actual team reports the Hobby plan. [Vercel documents one sharable link per Hobby account](https://vercel.com/docs/deployment-protection/methods-to-bypass-deployment-protection/sharable-links). The old operator successfully probed its forwarding share, then created a second ingress probe share. The forwarding exchange subsequently returned302 locally and in the deployed handler, before the application received the webhook. The second share invalidated the first; this was an operator defect, not evidence that cloud forwarding requires a different receiver.
+
+Enable now retains the single forwarding share, checks the protected main application, opens only the scoped ingress override, verifies405/404/401 with bounded propagation, and probes forwarding again before recording success. A failed boundary or forwarding probe rolls back the override. Legacy probe-share cleanup and exact404 reconciliation remain available.32 focused tests passed, including a transport that invalidates the first share on a second creation. This is local regression evidence; successful live provider reception still requires its own receipt. Creating another share in this account can interrupt forwarding and must be coordinated.
+
 Package base: `e52d320`. This document describes the bounded implementation and local evidence. The final handoff must add the commit actually built, deployment receipt and real provider evidence; these are not implied by the tests below.
 
 The ingress artifact exposes only `POST /api/resend`. It checks the original Svix signature and size, exchanges its own expiring share for a cookie scoped to one immutable application Preview, and forwards the unchanged signed payload to `/api/notifications/resend`. The application independently verifies the signature and saves the provider event through its existing RPC. No receiving event authorizes sending a message. No tunnel is involved.
