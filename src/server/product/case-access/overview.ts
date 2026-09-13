@@ -21,7 +21,7 @@ export function overviewFrom(requests:PromiseSettledResult<readonly StoredReques
 export async function loadCaseOverview(item:{case_id:string;public_id:string},identityId:string,sessionToken?:string|null){
  const realEnabled=realAiServiceCustomerEnabled();
  const [requests,reports,realReports]=await Promise.allSettled([
-  listCaseRequests(item.case_id,undefined,identityId),customerReports(item.case_id,identityId,item.public_id),
+  listCaseRequests(item.case_id,undefined,identityId,sessionToken),customerReports(item.case_id,identityId,item.public_id),
   realEnabled?(async()=>{
    if(!sessionToken)throw Error('REAL_SERVICE_SESSION_REQUIRED');
    return realAiServiceCustomerReports({caseId:item.case_id,identityId,sessionToken});

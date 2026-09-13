@@ -39,6 +39,7 @@ describe('authenticated REAL report overview',()=>{
  it('uses the same authenticated case and cookie for current REAL metadata and exposes only its availability',async()=>{
   const result=await loadCaseOverview(item,identityId,sessionToken);
   expect(ports.realReports).toHaveBeenCalledExactlyOnceWith({caseId:item.case_id,identityId,sessionToken});
+  expect(ports.requests).toHaveBeenCalledExactlyOnceWith(item.case_id,undefined,identityId,sessionToken);
   expect(result).toMatchObject({reportsAvailable:true,publishedReports:1,period:'2026-06'});
   const serialized=JSON.stringify(result);
   for(const privateValue of [sessionToken,report.report_id,report.analysis_run_id,item.case_id,identityId])expect(serialized).not.toContain(privateValue);

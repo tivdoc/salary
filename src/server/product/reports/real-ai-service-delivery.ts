@@ -56,6 +56,7 @@ function resolveDelivery(value:unknown,selector:RealAiServiceSelector){
  assert(bundle.ai_release&&!bundle.owner_engineering,'REAL_SERVICE_REAL_ENVELOPE_REQUIRED');
  const envelope=bundle.ai_release,input=envelope.input.assessment_input;
  assertCaseAnalysisAiReleaseScope(envelope,bundle);
+ assert(bundle.document_review,'REAL_SERVICE_REVIEW_REQUIRED');
  for(const key of ['policy','registry','source_receipts','interpretation_receipts','test_receipts'] as const)
   assert(same(input[key],config[key]),'REAL_SERVICE_CONFIGURATION_EVIDENCE_CHANGED');
  assert(config.population===current.assessment.scope.population,'REAL_SERVICE_POPULATION_CHANGED');
@@ -84,7 +85,7 @@ function resolveDelivery(value:unknown,selector:RealAiServiceSelector){
   const {published_at,...published}=row.publication;
   assert(same(published,{...binding,delivery_binding_sha256})&&Date.parse(published_at)<=at,'REAL_SERVICE_PUBLICATION_CHANGED');
  }
- const result=Object.freeze({selector:Object.freeze(selector),admission,report,binding:Object.freeze({...binding,delivery_binding_sha256}),
+ const result=Object.freeze({selector:Object.freeze(selector),admission,report,review:bundle.document_review,binding:Object.freeze({...binding,delivery_binding_sha256}),
   context_sha256:row.context_sha256,publication:row.publication,evaluated_at:current.assessment.evaluated_at,
   expires_at:new Date(Math.min(Date.parse(admission.expires_at),Date.parse(row.enrollment_expires_at))).toISOString()});
  loaded.add(result);return result;
@@ -136,4 +137,17 @@ export async function readRealAiServiceReport(db:CaseAccessDb,candidate:RealAiSe
   content_type:format==='pdf'?'application/pdf' as const:'text/html; charset=utf-8' as const,
   bytes:new Uint8Array(delivery.report[format]),sha256:format==='pdf'?delivery.report.pdf_sha256:delivery.report.html_sha256,
   cache_control:'private, no-store' as const};
+}
+
+/** Server-only request presentation evidence from the same published artifact
+ * admission used for HTML/PDF. This does not expose the bundle or authority to
+ * the browser, and cannot admit an unpublished source-orchestration draft. */
+export async function readRealAiServiceRequestReview(db:CaseAccessDb,candidate:RealAiServiceSelector){
+ enabled();const selector=realAiServiceSelectorSchema.parse(candidate);
+ const rows=await db.rpc<{value:unknown}>('case_report_real_ai_context',{
+  target_case:selector.case_id,target_identity:selector.identity_id,target_report:selector.report_id});
+ assert(rows.length===1,'REAL_SERVICE_CONTEXT_ACK');
+ const delivery=resolveDelivery(rows[0].value,selector);
+ assert(delivery.publication,'REAL_SERVICE_REPORT_UNPUBLISHED');
+ return delivery.review;
 }

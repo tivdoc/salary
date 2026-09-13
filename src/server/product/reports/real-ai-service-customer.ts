@@ -2,7 +2,7 @@ import 'server-only';
 import {z} from 'zod';
 import {hashSession} from '../case-access/crypto';
 import {withCaseAccessPostgresTransaction,type CaseAccessDb} from '../case-access/db';
-import {readRealAiServiceReport} from './real-ai-service-delivery';
+import {readRealAiServiceReport,readRealAiServiceRequestReview} from './real-ai-service-delivery';
 
 const scope=z.object({caseId:z.uuid(),identityId:z.uuid(),sessionToken:z.string().min(20).max(512)}).strict();
 const entry=z.object({report_id:z.uuid(),analysis_run_id:z.string().min(1),published_at:z.iso.datetime({offset:true}),
@@ -27,6 +27,24 @@ export async function realAiServiceCustomerReports(input:z.infer<typeof scope>){
 export async function realAiServiceCustomerArtifact(input:z.infer<typeof scope>,reportId:string,format:'html'|'pdf'){
  z.uuid().parse(reportId);
  return authenticated(input,db=>readRealAiServiceReport(db,{case_id:input.caseId,identity_id:input.identityId,report_id:reportId},format));
+}
+/** Optional presentation projection. Ambiguous current periods/orders preserve
+ * every question; the list's current flag alone never authorizes suppression.
+ * Session installation, discovery and full artifact revalidation share one
+ * transaction. The returned review stays within the server request adapter. */
+export async function realAiServiceCustomerRequestReview(input:z.infer<typeof scope>){
+ if(!realAiServiceCustomerEnabled())return null;
+ return authenticated(input,async db=>{
+  const rows=await db.rpc<{value:unknown}>('case_report_real_ai_list',{target_case:input.caseId,target_identity:input.identityId});
+  if(rows.length!==1)throw Error('REAL_SERVICE_LIST_ACK');
+  const current=z.array(entry).max(20).parse(rows[0].value).filter(report=>report.current);
+  if(current.length!==1)return null;
+  const selected=current[0],review=await readRealAiServiceRequestReview(db,{
+   case_id:input.caseId,identity_id:input.identityId,report_id:selected.report_id});
+  if(review.case_id!==input.caseId||review.analysis_run_id!==selected.analysis_run_id
+   ||review.period.from!==selected.from||review.period.to!==selected.to)throw Error('REAL_SERVICE_REQUEST_REVIEW_BINDING');
+  return review;
+ });
 }
 /** Foreign and nonexistent reports deliberately share one response. Only
  * explicit source/authority expiry is a stale result, never an outage. */

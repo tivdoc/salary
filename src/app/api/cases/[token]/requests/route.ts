@@ -67,7 +67,8 @@ export async function POST(request: Request, context: { params: Promise<{ token:
     return NextResponse.json({ error: "לא הצלחנו לקרוא את התשובה", code: "request_answer_invalid" }, { status: 400 });
   }
 
-  const session = await resolveIdentitySession(await readCaseSessionCookie());
+  const sessionToken = await readCaseSessionCookie();
+  const session = await resolveIdentitySession(sessionToken);
   if (!session) {
     return NextResponse.json({ error: "צריך להיכנס לתיק כדי לענות", code: "session_required" }, { status: 401 });
   }
@@ -92,7 +93,7 @@ export async function POST(request: Request, context: { params: Promise<{ token:
       // answer is written once, so the second attempt is refused rather than merged.
       return NextResponse.json({ error: "השאלה כבר נענתה או שאינה שייכת לתיק הזה", code: "request_not_open" }, { status: 409 });
     }
-    const remaining = await listCaseRequests(found.case_id,undefined,session.identity_id);
+    const remaining = await listCaseRequests(found.case_id,undefined,session.identity_id,sessionToken);
     return NextResponse.json(
       { ok: true, open: remaining.filter((row) => row.answered_at === null && row.source_current !== false && !row.not_required_for_current_review && requestReadingCoverageIds(row).length===0 && !(row.document_upload_state?.state==='satisfied'&&row.document_upload_state.information_satisfied) && Date.parse(row.expires_at)>Date.now()).length },
       { headers: { "Cache-Control": "no-store" } },

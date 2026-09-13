@@ -32,6 +32,7 @@ it('rejects foreign Origin and foreign case before accepting a reading',async()=
 });
 it('uses session identity and scoped case, ignoring forged body identity fields',async()=>{
  expect((await POST(post(),context())).status).toBe(200);expect(state.answer).toHaveBeenCalledExactlyOnceWith({caseId:'case-a',identityId:'owner',requestId,answer:'כן, בדקתי במסמך והערך נכון'});
+ expect(state.list).toHaveBeenCalledExactlyOnceWith('case-a',undefined,'owner','session');
 });
 it('returns the same actionable count for plural reading coverage without treating any reading as answered',async()=>{
  const field={id:requestId,answered_at:null,source_current:true,expires_at:'2099-01-01T00:00:00Z'};

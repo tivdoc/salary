@@ -28,13 +28,14 @@ export default async function CaseThreadPage({ params }: { params: Promise<{ tok
   await guardStableAppEntrypoint("CEP-102");
   const { token } = await params;
   if (!/^TV-[A-Z0-9]{8}$/u.test(token)) notFound();
-  const session = await resolveIdentitySession(await readCaseSessionCookie());
+  const sessionToken = await readCaseSessionCookie();
+  const session = await resolveIdentitySession(sessionToken);
   if (!session) redirect("/login");
   const cases = await listIdentityCases(session.identity_id);
   const item = cases.find((candidate) => candidate.public_id === token);
   if (!item) notFound();
 
-  const [requests,support] = await Promise.all([listCaseRequests(item.case_id,undefined,session.identity_id),customerSupport(item.case_id,session.identity_id)]);
+  const [requests,support] = await Promise.all([listCaseRequests(item.case_id,undefined,session.identity_id,sessionToken),customerSupport(item.case_id,session.identity_id)]);
   // This authenticated server snapshot is serialized once for client hydration.
   // eslint-disable-next-line react-hooks/purity -- request-time server clock, after awaited data access
   const renderedAt = Date.now();

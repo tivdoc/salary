@@ -2,7 +2,7 @@ import {beforeAll,beforeEach,afterEach,it,expect,vi} from 'vitest';
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import type {PostgresTransactionContext} from '@/server/platform/persistence/postgres/contracts';
 import type {CaseAccessDb} from '../case-access/db';
-import {loadRealAiServiceDelivery,publishRealAiServiceReport,readRealAiServiceReport,assertLoadedRealAiServiceDelivery} from './real-ai-service-delivery';
+import {loadRealAiServiceDelivery,publishRealAiServiceReport,readRealAiServiceReport,readRealAiServiceRequestReview,assertLoadedRealAiServiceDelivery} from './real-ai-service-delivery';
 import {realAiServiceFixture,syntheticServiceId} from './real-ai-service.fixture';
 
 vi.mock('server-only',()=>({}));
@@ -27,6 +27,15 @@ it('loads authenticated REAL source/config/evidence and verifies actual rendered
 it('defaults disabled before any database read',async()=>{
  vi.stubEnv('TIVDOC_REAL_AI_SERVICE_ENABLED','0');const context=worker(base.row);
  await expect(loadRealAiServiceDelivery(context,base.selector)).rejects.toThrow('REAL_SERVICE_DISABLED');expect(context.client.query).not.toHaveBeenCalled();
+});
+it('returns the exact replay-bound review for server request projection without its authority envelope',async()=>{
+ const review=await readRealAiServiceRequestReview(web(base.row),base.selector);
+ expect(review).toEqual(base.bundle.document_review);
+ expect(review).not.toHaveProperty('configuration');expect(review).not.toHaveProperty('service_decision');expect(review).not.toHaveProperty('ai_release');
+});
+it.each(['unpublished','superseded','revoked','expired','forbidden'] as const)('never supplies request suppression from %s delivery',async reason=>{
+ const row=reason==='unpublished'?{...base.row,publication:null}:{state:'unavailable',reason};
+ await expect(readRealAiServiceRequestReview(web(row),base.selector)).rejects.toThrow(reason==='unpublished'?'REAL_SERVICE_REPORT_UNPUBLISHED':`REAL_SERVICE_UNAVAILABLE_${reason.toUpperCase()}`);
 });
 it.each(['forbidden','revoked','expired','not_enrolled'] as const)('does not fall back after DB reports %s',reason=>{
  return expect(loadRealAiServiceDelivery(worker({state:'unavailable',reason}),base.selector)).rejects.toThrow(`REAL_SERVICE_UNAVAILABLE_${reason.toUpperCase()}`);
