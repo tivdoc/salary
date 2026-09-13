@@ -10,6 +10,7 @@ import {acceptSavedPriceQuote} from '../orders/quoted-order';
 import {readSavedOrders,purchasedMonths,savedOrderReceiptSha256} from './saved-order-scope';
 import {sourceJobSchema,type SourceJob} from './source-dispatch';
 import {savedAnalysisId} from './saved-draft-report';
+import {createReleaseQuotePreparationStatus} from '../orders/release-quote-status';
 
 const selectionSchema=z.object({job:sourceJobSchema,orderId:z.uuid(),identityId:z.uuid(),
  month:z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/u),analysisRunId:z.string().min(1)}).strict();
@@ -74,4 +75,26 @@ export async function prepareSavedReleaseQuoteStage(candidate:SavedReleaseQuoteS
   if(refusal&&expectedRefusals.has(refusal))return {state:'skipped',reason:refusal};
   throw error;
  }
+}
+
+/** Append an optional commercial outcome to the existing initial-order event
+ * history. The RPC independently verifies current REAL publication/source and
+ * paid order scope. It never changes the published analysis or quote terms. */
+export async function recordSavedReleaseQuoteStatus(candidate:SavedReleaseQuoteStageInput,result:SavedReleaseQuoteStageResult){
+ const {context,...raw}=candidate,input=selectionSchema.parse(raw);
+ if(result.state==='skipped'&&result.reason==='not_initial_order')return null;
+ const orders=await readSavedOrders(context,input.job,input.orderId);
+ if(orders.length!==1||orders[0].id!==input.orderId)throw Error('RELEASE_QUOTE_INITIAL_ORDER_SCOPE');
+ // Historical all-nine receipts have no modern order-event parent and do not
+ // need a new nine-topic purchase. Their original payment stays untouched.
+ if(orders[0].kind!=='initial')return null;
+ if(result.state==='offer_saved'&&(result.period.from!==input.month||result.period.to!==input.month))throw Error('RELEASE_QUOTE_STATUS_PERIOD');
+ const status=createReleaseQuotePreparationStatus({case_id:input.job.case_id,identity_id:input.identityId,initial_order_id:input.orderId,
+  initial_order_receipt_sha256:savedOrderReceiptSha256(orders[0]),source_revision:input.job.revision,source_sha256:input.job.input_sha256,
+  analysis_run_id:input.analysisRunId,period:{from:input.month,to:input.month},reason:result.state==='offer_saved'?'offer_saved':result.reason,
+  quote_id:result.state==='offer_saved'?result.quote_id:null,order_id:result.state==='offer_saved'?result.order_id:null});
+ const saved=await context.client.query(statement('release_quote_status_record','select private.release_quote_preparation_record($1::jsonb) value',[JSON.stringify(status)]));
+ if(saved.row_count!==1)throw Error('RELEASE_QUOTE_STATUS_ACK');
+ const ack=z.object({sha256:z.literal(status.sha256),replayed:z.boolean()}).strict().parse(saved.rows[0]?.value);
+ return {...ack,availability:status.availability};
 }

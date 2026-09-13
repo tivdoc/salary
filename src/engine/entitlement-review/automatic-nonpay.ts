@@ -28,8 +28,7 @@ const rowKey=(o:Observation)=>canonicalSha256({page:o.original.page,block:o.orig
 
 /** A normalized candidate is never accepted by its confidence. The caller's
  * saved snapshot must contain exactly the same authenticated reading journal. */
-export function attachAutomaticNonPayslipEvidence(candidate:DocumentReviewInput,snapshot:StoredCaseInputSnapshot):AutomaticNonPayslipResult{
- candidate=attachIdentifiedClauseTranscriptions(candidate,snapshot);
+function attachProviderNonPayslipEvidence(candidate:DocumentReviewInput,snapshot:StoredCaseInputSnapshot):AutomaticNonPayslipResult{
  const unchanged={input:candidate,reading_dependencies:[]};
  const time=(candidate.purchased_scope.topics.includes('working_time')||candidate.purchased_scope.topics.includes('rest_day'))&&candidate.entitlement_evidence?.working_time===undefined;
  const contracts=candidate.purchased_scope.topics.filter((t):t is 'contract'|'bonuses'=>t==='contract'||t==='bonuses');
@@ -206,6 +205,14 @@ export function attachAutomaticNonPayslipEvidence(candidate:DocumentReviewInput,
  const packet=input.entitlement_evidence??{schema_version:'entitlement-source-evidence-v1' as const,case_id:input.case_id,order_id:input.purchased_scope.order_id,receipt_sha256:input.purchased_scope.receipt_sha256,period:input.period};
  const rawObligationPacket=obligations.length?enableObligationProductFacts(obligationsEntitlementInputSchema.parse({schema_version:'obligations-entitlement-input-v1',catalog_id:'il.review.explicit_obligations.2026',catalog_version:'1.0.0',case_id:input.case_id,run_id:'automatic.source.selection',check_prefix:'entitlement.literal',period:input.period,
   evaluated_at:new Date([...timestamps].sort().at(-1)!).toISOString(),purchased_topics:contracts,source_manifest:obligationManifest,obligations})):null;
- const obligationPacket=rawObligationPacket?attachObligationPaymentLinks(rawObligationPacket,input,(input as DocumentReviewInput&{obligation_payment_link_readings?:ObligationPaymentLinkReading[]}).obligation_payment_link_readings??[]):null;
+ const obligationPacket=rawObligationPacket;
  return {input:documentReviewInputSchema.parse({...input,coverage_gaps:gaps,...(payloads.length||obligationPacket?{entitlement_evidence:{...packet,...(payloads.length?{working_time:payloads}:{}),...(obligationPacket?{obligations:obligationPacket}:{})}}:{})}),reading_dependencies:dependencies};
+}
+
+export function attachAutomaticNonPayslipEvidence(candidate:DocumentReviewInput,snapshot:StoredCaseInputSnapshot):AutomaticNonPayslipResult{
+ const provider=attachProviderNonPayslipEvidence(candidate,snapshot),input=attachIdentifiedClauseTranscriptions(provider.input,snapshot);
+ if(input.entitlement_composition||!input.entitlement_evidence?.obligations)return {...provider,input};
+ const obligations=attachObligationPaymentLinks(obligationsEntitlementInputSchema.parse(input.entitlement_evidence.obligations),input,
+  (input as DocumentReviewInput&{obligation_payment_link_readings?:ObligationPaymentLinkReading[]}).obligation_payment_link_readings??[]);
+ return {...provider,input:documentReviewInputSchema.parse({...input,entitlement_evidence:{...input.entitlement_evidence,obligations}})};
 }

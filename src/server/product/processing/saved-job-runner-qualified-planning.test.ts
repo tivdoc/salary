@@ -34,6 +34,15 @@ function fixture(qualified=true){
   if(statement.name==='saved_runner_read'||statement.name==='saved_runner_lock')return {rows:[row],row_count:1};
   if(statement.name==='saved_runner_journal')return {rows:[{input:source,actual_sha256:job.input_sha256}],row_count:1};
   if(statement.name==='saved_runner_heartbeat')return {rows:[{job_id:'test-job'}],row_count:1};
+  if(statement.name==='source_contract_physical_lease'){
+   expect(statement.text).toContain('private.runtime_verified_actor()::text=$4');
+   expect(statement.values).toEqual(['test-job',caseId,JSON.stringify(job),'worker',1]);
+   return {rows:[{job_id:'test-job'}],row_count:1};
+  }
+  if(statement.name==='source_contract_physical_pending'){
+   expect(statement.values).toEqual([caseId,job.revision,job.input_sha256,'test-job','worker',1]);
+   return {rows:[{value:[]}],row_count:1};
+  }
   throw Error(`UNEXPECTED_SQL:${statement.name}`);
  }}};
  const transactions:SavedWorkerTransactions=operation=>operation(context);

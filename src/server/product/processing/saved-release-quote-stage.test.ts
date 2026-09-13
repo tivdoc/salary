@@ -8,7 +8,7 @@ import {mapPostgresFailure} from '@/server/platform/persistence/postgres/runtime
 import {canonicalSha256} from '@/engine/rule-runtime/canonical';
 import {RELEASE_PURCHASE_TOPICS,PURCHASE_TOPICS_VERSION} from '../orders/purchase-topics';
 import type {PricingBasis} from '../orders/pricing';
-import {prepareSavedReleaseQuoteStage,type SavedReleaseQuoteStageInput} from './saved-release-quote-stage';
+import {prepareSavedReleaseQuoteStage,recordSavedReleaseQuoteStatus,type SavedReleaseQuoteStageInput} from './saved-release-quote-stage';
 import {savedOrderSchema} from './saved-order-scope';
 
 const id=(n:number)=>`00000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
@@ -26,6 +26,7 @@ function setup(){
   if(aborted)throw Error('TRANSACTION_ABORTED');
   if(s.name==='release_quote_stage_savepoint'){saved=structuredClone({quotes,orders});return {rows:[],row_count:0};}
   if(s.name==='release_quote_stage_release'){saved=null;return {rows:[],row_count:0};}
+  if(s.name==='release_quote_status_record'){const detail=JSON.parse(String(s.values[0]));return {rows:[{value:{sha256:detail.sha256,replayed:false}}],row_count:1};}
   if(s.name==='price_quote_context')return {rows:[{value:current}],row_count:1};
   if(s.name==='price_quote_previous'){const rows=quotes.filter(q=>q.id===s.values[0]);return {rows,row_count:rows.length};}
   if(s.name==='price_quote_insert'){quotes.push({id:s.values[0],request_sha256:s.values[3],snapshot:JSON.parse(String(s.values[4])),quote_sha256:s.values[5],terms_version:s.values[6]});return {rows:[],row_count:1};}
@@ -98,5 +99,22 @@ describe('same-month initial analysis → saved nine-topic quote and unpaid orde
  it('refuses a different actual saved analysis and retains integrity failures',async()=>{
   const f=setup();f.basis.analysis_version='different-analysis';await expect(f.run()).rejects.toThrow('RELEASE_QUOTE_ANALYSIS_SCOPE');expect(f.quotes).toEqual([]);
   f.basis.analysis_version=f.input.analysisRunId;f.failAccept('PRICE_QUOTE_SOURCE_CHANGED');await expect(f.run()).rejects.toThrow('PRICE_QUOTE_SOURCE_CHANGED');expect(f.orders).toEqual([]);
+ });
+});
+
+
+describe('saved pricing outcome attached to current initial-order history',()=>{
+ it('records a precise safe category with exact source, analysis and initial receipt after a commercial refusal',async()=>{
+  const f=setup(),before=JSON.stringify(f.order);
+  const result=await recordSavedReleaseQuoteStatus(f.input,{state:'skipped',reason:'pricing_adapter_unsupported_topics',unsupported_topics:['vacation']});
+  expect(result?.availability).toEqual({state:'coverage_unavailable',period:{from:'2026-06',to:'2026-06'}});
+  const q=f.query.mock.calls.find(([s])=>s.name==='release_quote_status_record')?.[0];expect(q).toBeDefined();
+  expect(JSON.parse(String(q!.values[0]))).toMatchObject({case_id:f.input.job.case_id,identity_id:f.input.identityId,initial_order_id:f.order.id,
+   initial_order_receipt_sha256:f.order.offer_sha256,source_revision:4,source_sha256:f.input.job.input_sha256,analysis_run_id:f.input.analysisRunId});
+  expect(JSON.stringify(f.order)).toBe(before);expect(f.quotes).toEqual([]);expect(f.orders).toEqual([]);
+ });
+ it('does not create a modern order event for a full order or relabel a foreign result period',async()=>{
+  const f=setup();expect(await recordSavedReleaseQuoteStatus(f.input,{state:'skipped',reason:'not_initial_order'})).toBeNull();expect(f.query).not.toHaveBeenCalled();
+  await expect(recordSavedReleaseQuoteStatus(f.input,{state:'offer_saved',quote_id:id(7),order_id:id(8),replayed:false,period:{from:'2026-07',to:'2026-07'},topics:RELEASE_PURCHASE_TOPICS})).rejects.toThrow('RELEASE_QUOTE_STATUS_PERIOD');
  });
 });

@@ -189,7 +189,7 @@
     },
     {
       "path": "src/engine/entitlement-review/automatic-nonpay.ts",
-      "sha256": "726c901c9c80144779b931ede1202f425b4c89c83b1cb1c2963b2cabd45cfcf2"
+      "sha256": "d98eeaa52870acd92b6c5e104369997483fdb75c9c7b4436d37a0403efe7d0d2"
     },
     {
       "path": "src/engine/entitlement-review/automatic-payroll.ts",
@@ -289,7 +289,7 @@
     },
     {
       "path": "src/engine/entitlement-review/obligations/identified-clause-transcriptions.ts",
-      "sha256": "92b2376dc1e1c5cdcc038ebef9b94b2eee0f00aa88e5416ac2fd9d875d3f89f1"
+      "sha256": "5653c9de2061925c602d26b5c68688334804fec8df5733019b3839acdfbae469"
     },
     {
       "path": "src/engine/entitlement-review/obligations/index.ts",
@@ -301,7 +301,7 @@
     },
     {
       "path": "src/engine/entitlement-review/obligations/payment-link.ts",
-      "sha256": "cdb63e5ae8d7c2fc36864fa0e1aa8f2ce7ba82d1d9a4805894a09345cab346c8"
+      "sha256": "44d9e38a47b8ba0062c2390d21af63b9520c2c85c59926e3b7e3d8469d09a43d"
     },
     {
       "path": "src/engine/entitlement-review/obligations/policy.ts",
@@ -317,7 +317,7 @@
     },
     {
       "path": "src/engine/entitlement-review/obligations/product-source-evidence.ts",
-      "sha256": "ab7d386be32a779973599d70b2b8164a3be669abe762b5794d6bbd8090e89e30"
+      "sha256": "99cc3a5df48d3e9cd6cc712e55cf00461447c4348f318e6ec756b6e2e8b82e8a"
     },
     {
       "path": "src/engine/entitlement-review/obligations/source-policy.ts",
@@ -1160,6 +1160,10 @@
       "sha256": "69ab7cf46231365b01bc7071c1fb59589c05e4481afad4ab634576925b7a807e"
     },
     {
+      "path": "src/server/product/orders/release-quote-status.ts",
+      "sha256": "7d3afae12448f54383631377a380dcdc5d4bf78e2ea077894d4a2af03e42f362"
+    },
+    {
       "path": "src/server/product/orders/saved-release-pricing-basis.ts",
       "sha256": "2d0782ca9e791c3bfc1b4db59eec0c55e8a5384317ca6bf2784dfac24215ce45"
     },
@@ -1185,7 +1189,7 @@
     },
     {
       "path": "src/server/product/processing/automatic-real-service.ts",
-      "sha256": "6446b207436f3997bd56584773e173e0f1ad12e62a4796aa72c759536cfaa87d"
+      "sha256": "685a1b6d0a690d9bd36f293751ab67fc735f7c951beee2c6afe628977d1ac474"
     },
     {
       "path": "src/server/product/processing/document-review-key.ts",
@@ -1421,7 +1425,7 @@
     },
     {
       "path": "src/server/product/processing/saved-release-quote-stage.ts",
-      "sha256": "f2cd6140406270ed140a6591b72a769c8c1a6a97a3bab462e4437d16a72a5f63"
+      "sha256": "6ec19f4ce9ab750091dfb1a1816ac4bac0860edb7eb97d7fa0b7169a2fd1bf1c"
     },
     {
       "path": "src/server/product/processing/saved-request-facts.ts",
@@ -1644,6 +1648,6 @@
       "sha256": "14050db7e9b2ea12c31249112bf03d177966a516918cc781a585d94409bbc28a"
     }
   ],
-  "source_graph_sha256": "ab57b0dbf5ebb06a5054016f801077feb64e047dacb37b51654f5b2000baba31",
-  "sha256": "2a0eb25ae39489d89ab7506f486026a60180f935b5898d21db108ad180b86d21"
+  "source_graph_sha256": "a5be4f02b985d2821804078944cb358d16b6a41abc344b24c5f51a7eaa15924f",
+  "sha256": "b8c11b18daabc3ca959ed5e9d302c438311ff79245b7ad6f579abb308414837f"
 }

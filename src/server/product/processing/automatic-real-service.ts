@@ -8,7 +8,7 @@ import {loadSavedRealAiServiceConfiguration,assertSavedRealAiServiceCurrent} fro
 import {readSavedOrders,purchasedMonths,savedOrderLegalTopics} from './saved-order-scope';
 import {resolveSavedDocumentReviewKey,savedAiReleaseBaseKey} from './document-review-key';
 import {savedAnalysisId} from './saved-draft-report';
-import {prepareSavedReleaseQuoteStage} from './saved-release-quote-stage';
+import {prepareSavedReleaseQuoteStage,recordSavedReleaseQuoteStatus} from './saved-release-quote-stage';
 import type {SavedMonthCompletion} from './saved-worker-contracts';
 
 /** Completes the ordinary saved analysis inside its source/lease transaction.
@@ -39,7 +39,9 @@ export const completeRealAiServiceMonth:SavedMonthCompletion=async input=>{
  const selector={case_id:job.case_id,identity_id:profile.identity_id,report_id:expected.report_id};
  const published=await publishRealAiServiceReport(context,selector);
  if(published.analysis_run_id!==parent.analysis_run_id||published.report_id!==expected.report_id)throw Error('REAL_SERVICE_MANAGED_PUBLICATION_ACK');
- await prepareSavedReleaseQuoteStage({context,job,orderId,month,analysisRunId:parent.analysis_run_id,identityId:profile.identity_id});
+ const quoteInput={context,job,orderId,month,analysisRunId:parent.analysis_run_id,identityId:profile.identity_id};
+ const quoteResult=await prepareSavedReleaseQuoteStage(quoteInput);
+ await recordSavedReleaseQuoteStatus(quoteInput,quoteResult);
  if(process.env.TIVDOC_REAL_AI_NOTIFICATIONS_ENABLED==='1'){
   const origin=process.env.TIVDOC_REAL_AI_SERVICE_ORIGIN,secret=process.env.TIVDOC_NOTIFICATION_ENCRYPTION_KEY;
   if(!origin||!secret)throw Error('REAL_SERVICE_NOTIFICATION_CONFIGURATION_REQUIRED');

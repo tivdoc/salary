@@ -10,12 +10,12 @@ import {savedAnalysisId} from './saved-draft-report';
 import {completeRealAiServiceMonth} from './automatic-real-service';
 import {runAutomaticDevMonth} from './automatic-dev-flow';
 import {loadSavedRealAiServiceIfEnrolled} from './saved-real-ai-service-configuration';
-const ports=vi.hoisted(()=>({current:vi.fn(),publish:vi.fn(),enqueue:vi.fn(),quote:vi.fn()}));
+const ports=vi.hoisted(()=>({current:vi.fn(),publish:vi.fn(),enqueue:vi.fn(),quote:vi.fn(),status:vi.fn()}));
 vi.mock('server-only',()=>({}));
 vi.mock('./document-review-key',async original=>({...await original<typeof import('./document-review-key')>(),resolveSavedDocumentReviewKey:ports.current}));
 vi.mock('../reports/real-ai-service-delivery',async original=>({...await original<typeof import('../reports/real-ai-service-delivery')>(),publishRealAiServiceReport:ports.publish}));
 vi.mock('../reports/real-ai-service-notification',async original=>({...await original<typeof import('../reports/real-ai-service-notification')>(),prepareAndEnqueueRealAiReportNotification:ports.enqueue}));
-vi.mock('./saved-release-quote-stage',()=>({prepareSavedReleaseQuoteStage:ports.quote}));
+vi.mock('./saved-release-quote-stage',()=>({prepareSavedReleaseQuoteStage:ports.quote,recordSavedReleaseQuoteStatus:ports.status}));
 type Input=Parameters<typeof completeRealAiServiceMonth>[0];
 beforeEach(()=>{vi.clearAllMocks();vi.stubEnv('TIVDOC_REAL_AI_SERVICE_ENABLED','1');vi.stubEnv('TIVDOC_REAL_AI_NOTIFICATIONS_ENABLED','0');});
 afterEach(()=>vi.unstubAllEnvs());
@@ -44,6 +44,8 @@ function setup(){
  });
  ports.current.mockResolvedValue({key,reviewSha256:canonicalSha256(source)});
  ports.publish.mockResolvedValue({analysis_run_id:runId,report_id:report.report_id,replayed:false});
+ ports.quote.mockResolvedValue({state:'skipped',reason:'pricing_comparison_incomplete'});
+ ports.status.mockResolvedValue({sha256:'a'.repeat(64),replayed:false,availability:{state:'needs_information',period:{from:'2026-06',to:'2026-06'}}});
  const payload={report_sha256:report.report_sha256};
  const input:Input={context:{transaction_id:'synthetic-routing-only',client:{query}},job:{schema_version:'saved-case-work-v1',case_id:scope.case_id,revision:scope.input_revision,input_sha256:scope.input_sha256,
   mode:'draft',processing_profile:'qualified_ai_v1',authority_dependency_sha256:scope.authority_dependency_sha256},orderId:order.id,month:source.period.from.slice(0,7),
@@ -59,6 +61,8 @@ it('routes a real envelope through the current ordinary monthly callback and ide
  expect(ports.quote).toHaveBeenCalledWith({context:f.input.context,job:f.input.job,orderId:f.input.orderId,month:f.input.month,
   analysisRunId:f.input.parent.analysis_run_id,identityId:f.configured.identity_id});
  expect(ports.publish.mock.invocationCallOrder[0]).toBeLessThan(ports.quote.mock.invocationCallOrder[0]);
+ expect(ports.status).toHaveBeenCalledWith(expect.objectContaining({analysisRunId:f.input.parent.analysis_run_id}),{state:'skipped',reason:'pricing_comparison_incomplete'});
+ expect(ports.quote.mock.invocationCallOrder[0]).toBeLessThan(ports.status.mock.invocationCallOrder[0]);
 });
 it('prepares the independently authorized report notice after publication, without manufacturing consent',async()=>{
  const f=setup();vi.stubEnv('TIVDOC_REAL_AI_NOTIFICATIONS_ENABLED','1');vi.stubEnv('TIVDOC_REAL_AI_SERVICE_ORIGIN','https://synthetic.example');

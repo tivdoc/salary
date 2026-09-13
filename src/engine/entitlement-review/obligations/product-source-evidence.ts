@@ -7,6 +7,7 @@ import {nonPayslipEffectiveReadingSha} from '../../document-review/non-payslip.t
 import {obligationsEntitlementInputSchema,type ObligationsEntitlementInput} from './contracts.ts';
 import {parseObligationLiteralPromise} from './literal-promise.ts';
 import {OBLIGATIONS_SOURCE_REVIEW_SHA256} from './source-policy.ts';
+import {identifiedClauseTranscriptionSourceCurrent,parseIdentifiedClausePromise} from './identified-clause-transcriptions.ts';
 
 type Observation=NormalizedDocumentEvidence['observations'][number];
 type Entry={kind:'literal_promise'|'payment_period'|'agreement_acceptance'|'complete_conditions';sources:DocumentReviewSource[];value:unknown;witness_sha256:string};
@@ -39,6 +40,23 @@ export function produceObligationSourceEvidence(candidate:ObligationsEntitlement
    source_sha256:canonicalSha256({documents:review.documents,record}),entries,unresolved:[...new Set(unresolved)]};
   return deepFreeze({entries,unresolved:body.unresolved,reading_dependencies:dependencies,receipt:{...body,receipt_sha256:canonicalSha256(body)}});
  };
+ if(identifiedClauseTranscriptionSourceCurrent(review,obligation.clause.source,obligation.clause.text_sha256)){
+  const parsed=parseIdentifiedClausePromise(obligation.clause.text),money=obligation.promise.kind==='fixed'?obligation.promise.amount:obligation.promise.rate;
+  if(!parsed||parsed.literal.kind!==obligation.promise.kind||parsed.literal.bonus!==(obligation.topic==='bonuses')
+   ||canonicalSha256(parsed.effective_period)!==canonicalSha256(obligation.clause.effective_period)||!money||money.state!=='observed'
+   ||money.printed_value!==(parsed.literal.minor/100).toFixed(2)||canonicalSha256(money.source)!==canonicalSha256(obligation.clause.source))throw Error('OBLIGATION_PRODUCER_TRANSCRIPTION_REPLAY');
+  const emit=(kind:Entry['kind'],value:unknown)=>entries.push({kind,sources:[obligation.clause.source],value,
+   witness_sha256:canonicalSha256({policy:parsed.policy_version,reading_sha256:obligation.clause.source.reading_receipt_sha256,clause:obligation.clause,kind,value})});
+  emit('literal_promise',{kind:parsed.literal.kind,topic:obligation.topic,minor:parsed.literal.minor,unit:parsed.literal.unit});
+  const fullMonth=input.period.from.endsWith('-01')&&input.period.from.slice(0,7)===input.period.to.slice(0,7)
+   &&new Date(Date.parse(input.period.to+'T00:00:00Z')+86400000).toISOString().slice(0,10).endsWith('-01');
+  if(obligation.promise.kind==='linear')unresolved.push('exact_same_period_performed_quantity_required');
+  else if(fullMonth&&parsed.effective_period.from<=input.period.from&&parsed.effective_period.to>=input.period.to
+   &&canonicalSha256(input.period)===canonicalSha256(obligation.payment_period))emit('payment_period',{period:input.period,recurrence:'whole_month_explicit'});
+  else unresolved.push('whole_month_payment_period_required');
+  unresolved.push('positive_exact_agreement_statement_required','positive_complete_condition_inventory_required');
+  return finish();
+ }
  if(!record||!e){unresolved.push('ordinary_contract_source_reading_required');return finish();}
  const doc=review.documents.filter(d=>d.document_id===record.document.document_id&&d.version_id===record.document.document_id),readingSha=nonPayslipEffectiveReadingSha(record);
  if(record.document.case_id!==input.case_id||record.document.document_type!=='contract'||e.detected_document_type!=='contract'||doc.length!==1

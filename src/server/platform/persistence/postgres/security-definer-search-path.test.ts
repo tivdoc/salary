@@ -93,7 +93,7 @@ const MIGRATION_ROOT = path.resolve(process.cwd(), "supabase", "migrations");
 //invoker-only. DEV rollback verified70 function ACLs and28 table/RLS boundaries.
 //209/211 add two narrow worker discovery RPCs.210 changes only capability regex
 //in four existing definitions while asserting unchanged ACLs; no new definer.
-const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 454;
+const EXPECTED_SECURITY_DEFINER_DEFINITIONS = 456;
 
 // Case-insensitive on purpose. pg_get_functiondef emits CREATE OR REPLACE
 // FUNCTION and SET search_path TO '' in upper case, and a migration written

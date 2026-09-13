@@ -42,6 +42,12 @@ function setup(){
   expect(state.depth).toBe(1);calls.push(s.name);
   if(s.name==='saved_runner_read'||s.name==='saved_runner_lock')return {rows:[row],row_count:1};
   if(s.name==='saved_runner_journal')return {rows:[{input:source,actual_sha256:state.journalHash}],row_count:1};
+  if(s.name==='source_contract_physical_lease'){
+   expect(s.text).toContain('private.runtime_verified_actor()::text=$4');
+   expect(s.values).toEqual(['job',row.canonical_case_id,JSON.stringify(row.payload),'worker',2]);
+   return {rows:[{job_id:'job'}],row_count:1};
+  }
+  if(s.name==='source_contract_physical_pending')return {rows:[{value:[]}],row_count:1};
   if(s.name==='saved_runner_heartbeat'){
    state.heartbeats++;expect(s.text).toContain('clock_timestamp()');expect(s.text).toContain('not cancellation_requested');
    return {rows:state.heartbeatFails?[]:[{job_id:'job'}],row_count:state.heartbeatFails?0:1};

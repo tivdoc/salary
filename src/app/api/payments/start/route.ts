@@ -1,6 +1,6 @@
 import {z} from 'zod';
 import {readCaseIdFromCookie} from '@/lib/case-cookie';
-import {createReleaseInitialOrder,customerReleaseQuote,orderCheckout} from '@/server/product/orders/service';
+import {createReleaseInitialOrder,customerReleaseQuote,customerSavedReleaseQuote,orderCheckout} from '@/server/product/orders/service';
 import {cancelCustomerUnstartedOrder} from '@/server/product/orders/customer-cancellation';
 import {orderRequestSchema} from '@/server/product/orders/contracts';
 import {resolveCaseAccessDb} from '@/server/product/case-access/db';
@@ -11,6 +11,7 @@ import {PRODUCT_HTTP_HEADERS,strictJsonObject,refusedEntrypoint} from '@/server/
 import {guardStableHttpEntrypoint} from '@/server/platform/capabilities/stable-http-entrypoint';
 export const runtime='nodejs';
 const bodySchema=z.discriminatedUnion('action',[
+ z.object({action:z.literal('saved_quote'),publicId:z.string().min(1)}).strict(),
  z.object({action:z.literal('quote'),publicId:z.string().optional(),request:orderRequestSchema.optional()}).strict(),
  z.object({action:z.literal('checkout'),publicId:z.string().optional(),orderId:z.uuid(),termsAccepted:z.literal(true)}).strict(),
  z.object({action:z.literal('refund'),publicId:z.string(),orderId:z.uuid(),id:z.uuid(),reason:z.string().trim().min(4).max(2000)}).strict(),
@@ -21,10 +22,14 @@ export async function POST(request:Request){
  if(!sameOriginSessionRequest(request))return new Response(null,{status:403});
  const body=bodySchema.safeParse(await strictJsonObject(request,12000).catch(()=>null));if(!body.success)return Response.json({error:'פרטי הבקשה אינם תקינים'},{status:400});
  try{
-  let caseId:string|null=null,identityId:string|null=null;
-  if(body.data.publicId){const session=await resolveIdentitySession(await readCaseSessionCookie());if(session){const item=(await listIdentityCases(session.identity_id)).find(c=>c.public_id===body.data.publicId);if(item){caseId=item.case_id;identityId=session.identity_id;}}}
+  let caseId:string|null=null,identityId:string|null=null,sessionToken:string|null=null;
+  if(body.data.publicId){sessionToken=await readCaseSessionCookie();const session=await resolveIdentitySession(sessionToken);if(session){const item=(await listIdentityCases(session.identity_id)).find(c=>c.public_id===body.data.publicId);if(item){caseId=item.case_id;identityId=session.identity_id;}}}
   else caseId=await readCaseIdFromCookie();
   if(!caseId)return new Response(null,{status:404});
+  if(body.data.action==='saved_quote'){
+   if(!identityId||!sessionToken)return new Response(null,{status:404,headers:PRODUCT_HTTP_HEADERS});
+   return Response.json(await customerSavedReleaseQuote({caseId,identityId,sessionToken}),{headers:PRODUCT_HTTP_HEADERS});
+  }
   if(body.data.action==='cancel_unstarted'){
    if(!identityId)return new Response(null,{status:404});
    try{return Response.json({cancellation:await cancelCustomerUnstartedOrder({caseId,identityId,orderId:body.data.orderId})},{headers:PRODUCT_HTTP_HEADERS});}
@@ -52,8 +57,8 @@ export async function POST(request:Request){
   if(!desired)return Response.json({error:'צריך לבחור תקופת בדיקה'},{status:400});
   if(desired.kind==='full'){
    if(!identityId)return new Response(null,{status:404,headers:PRODUCT_HTTP_HEADERS});
-   return Response.json(await customerReleaseQuote({caseId,identityId,request:desired}),{headers:PRODUCT_HTTP_HEADERS});
+   return Response.json(await customerReleaseQuote({caseId,identityId,request:desired,...(sessionToken?{sessionToken}:{})}),{headers:PRODUCT_HTTP_HEADERS});
   }
   return Response.json({order:await createReleaseInitialOrder({caseId,identityId,request:desired})},{headers:PRODUCT_HTTP_HEADERS});
- }catch(error){const code=error instanceof Error?error.message:'';if(code==='ORDER_PRICING_BASIS_UNAVAILABLE')return Response.json({error:'עדיין אין בתיק בסיס כספי וכיסוי מאומתים להצעת שדרוג. התוצאה הראשונית ששולמה נשארת זמינה.',code:'pricing_basis_unavailable'},{status:409,headers:PRODUCT_HTTP_HEADERS});const uncertain=code.includes('UNCERTAIN')||code.includes('LEGACY_PAYMENT');return Response.json({error:uncertain?'מצב התשלום דורש בירור. לא נפתח חיוב נוסף.':'לא ניתן לפתוח את ההזמנה כרגע. הסטטוס הקיים נשמר.',code:uncertain?'checkout_requires_reconciliation':'order_unavailable'},{status:409,headers:PRODUCT_HTTP_HEADERS});}
+ }catch(error){const code=error instanceof Error?error.message:'';if(code==='ORDER_QUOTE_PERIOD_UNAVAILABLE')return Response.json({error:'אין הצעה שמורה לתקופה שביקשתם. אפשר להציג את ההצעה הקיימת בתיק ולבדוק את התקופה הכלולה בה. לא נפתחה הזמנה חדשה.',code:'period_unavailable'},{status:409,headers:PRODUCT_HTTP_HEADERS});if(code==='ORDER_PRICING_BASIS_UNAVAILABLE')return Response.json({error:'עדיין אין בתיק בסיס כספי וכיסוי מאומתים להצעת שדרוג. התוצאה הראשונית ששולמה נשארת זמינה.',code:'pricing_basis_unavailable'},{status:409,headers:PRODUCT_HTTP_HEADERS});const uncertain=code.includes('UNCERTAIN')||code.includes('LEGACY_PAYMENT');return Response.json({error:uncertain?'מצב התשלום דורש בירור. לא נפתח חיוב נוסף.':'לא ניתן לפתוח את ההזמנה כרגע. הסטטוס הקיים נשמר.',code:uncertain?'checkout_requires_reconciliation':'order_unavailable'},{status:409,headers:PRODUCT_HTTP_HEADERS});}
 }

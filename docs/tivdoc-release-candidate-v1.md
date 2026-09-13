@@ -96,3 +96,30 @@ Production נשאר ללא שינוי עד שמועמדת ומעבר מוכני�
 - **קבלה ומעבר:** נדרשת עדיין הוכחה רציפה באותה גרסת API/worker/סכמה: רכישה, מקור ותשובה, ניתוח חדש, HTML/PDF, מסירה מורשית, retry ותפוגה; וכן CI ומעבר/חזרה. חמש תצורות owner632 הורכבו אחרי אימות checkout נקי, תוך שמירת 676 בדיקות ו־36 אורקלים שנמדדו קודם, בלי הרצתם מחדש. זו ראיית הנדסה בלבד; חלון 02:13:54–06:13:54 UTC אינו מאריך את סקירת המקור ואינו מקבל את מועמדת השחרור.
 
 ההיקף הקפוא ומגבלות המקור אינם משתנים בעדכון זה. לא נערך בו מחקר משפטי חדש ולא נוצרו הרשאת REAL, תשלום או סמכות פרסום.
+
+## בדיקת פתיחה חוזרת מול DEV
+
+לפני קבלה ארוכה בוחרים את הבדיקה הקיימת של החיבור שהשתנה, באותו checkout שמיועד לרוץ. אין להריץ את כל הטבלה אוטומטית. הבדיקות משתמשות בתפקידי LOGIN ובשאילתות המוצר; בדיקה שסומנה skipped אינה ראיה. הן יוצרות תיקים סינתטיים מבודדים ושומרות קבלות, ואינן היתר לשינוי תיק לקוח או Production.
+
+| חיבור שהשתנה | משתנה הפעלה מפורש, בערך `1` | קובץ בדיקה קיים |
+|---|---|---|
+| קליטת סוג מקור, תקופה ותכנון עבודה | `TIVDOC_SOURCE_KIND_DB_PROOF` | `src/server/product/processing/saved-source-intake-worker.postgres.test.ts` |
+| פתיחת קריאת סעיף, תשובה מזוהה והיסטוריה | `TIVDOC_SOURCE_TRANSCRIPTION_DB_PROOF` | `src/server/product/processing/saved-document-source-transcription.postgres.test.ts` |
+| בקשת מסמך, העלאה, finalizer והערכת ההשלמה | `TIVDOC_SAVED_REVIEW_UPLOAD_DB_PROOF` | `src/server/product/processing/saved-review-upload.postgres.test.ts` |
+| סירוב תקציב/הרשאת ספק בתפקידי השירות | `TIVDOC_REAL_PROVIDER_DB_REFUSAL_PROOF` | `src/server/product/processing/real-service-budgeted-extractor.postgres.test.ts` |
+
+לדוגמה, במעטפת DEV המקומית שהוגדרה מראש:
+
+```powershell
+$env:TIVDOC_SOURCE_TRANSCRIPTION_DB_PROOF = '1'
+try {
+  node node_modules/vitest/vitest.mjs run src/server/product/processing/saved-document-source-transcription.postgres.test.ts --maxWorkers=1
+  if ($LASTEXITCODE -ne 0) { throw 'Source transcription preflight failed' }
+} finally {
+  Remove-Item Env:TIVDOC_SOURCE_TRANSCRIPTION_DB_PROOF -ErrorAction SilentlyContinue
+}
+```
+
+לפני ההרצה רושמים HEAD, dirty state, גרסת API/worker וסכמה שהוחלה לפי קבלות המיגרציות; אין להסיק סכמה מספירת קבצים בלבד. קובץ ההרשאות הפרטי הקיים נטען בידי שומר DEV, ללא העתקת סודות לפקודה. כשל נשמר עם השאילתה הראשונה שנכשלה וסוגו: מוצר, fixture, הרשאה או סביבה. אחרי שני כישלונות של אותה השערה עוברים לשחזור קטן לפני ניסיון נוסף. אין לשחזר העלאה או ספק רק מפני ששונה תיעוד.
+
+מיגרציה212 מצמידה הגדרות פונקציה קודמות. שלושת קובצי207/208/212 מסומנים `-text` בנפרד כדי לשמר את בתי Git גם ב־Windows; יתר המאגר אינו עובר נרמול. קבלת ההחלה על DEV נשמרת בנפרד מבדיקת שרשרת מקומית.

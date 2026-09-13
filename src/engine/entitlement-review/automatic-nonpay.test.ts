@@ -15,6 +15,7 @@ import {calculateDocumentReview} from '../document-review/calculations.ts';
 import {composeEntitlementReview} from './compose.ts';
 import {runDocumentReview,applyDocumentReviewAnswer,replayDocumentReview} from '../document-review/service.ts';
 import {entitlementSourceReadingDependencies} from './product-source-dependencies.ts';
+import {documentEvidenceSourceTranscriptionTarget,resolveDocumentEvidenceSourceReading} from '../extraction/document-evidence/source-transcription.ts';
 
 const uuid=(n:number)=>`00000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
 const period={from:'2026-06-01',to:'2026-06-30'};
@@ -54,6 +55,21 @@ function fixture(kind:'attendance'|'contract'='attendance',observations=kind==='
 const weeks=(input:DocumentReviewInput)=>(input.entitlement_evidence?.working_time as unknown[]??[]).map(v=>workingTimeEntitlementInputSchema.parse(v));
 const obligations=(input:DocumentReviewInput)=>obligationsEntitlementInputSchema.parse(input.entitlement_evidence!.obligations);
 describe('automatic ordinary non-payslip source evidence',()=>{
+ it.each([['500',false],['501',true]] as const)('retains provider evidence without double credit when transcription amount is %s', (amount,conflict)=>{
+  const f=fixture('contract');f.identify();const original=canonicalSha256(f.record),review=f.input();
+  review.purchased_scope.order_id=uuid(20);
+  const source={case_id:review.case_id,product_document_id:f.record.product_document_id,version_id:f.document.document_id,source_sha256:f.document.content_sha256,
+   document_kind:'contract' as const,document_month:null,page_count:1,reading_dependencies:[]};
+  const target=documentEvidenceSourceTranscriptionTarget({source,purchase:review.purchased_scope,month:'2026-06',page:null});
+  const read=resolveDocumentEvidenceSourceReading({target,currentSource:source,currentPurchase:review.purchased_scope,caseId:review.case_id,month:'2026-06',requestId:uuid(40),answerRevision:1,identityId:uuid(50),answeredAt:'2026-07-03T00:00:00Z',
+   answer:{schema_version:'document-evidence-source-answer-v2',action:'correct',value:{page:1,raw_value:`המעסיק ישלם לעובד ${amount} ש״ח בכל חודש מיום 2026-01-01 ועד יום 2026-12-31.`,locator:'Synthetic clause 1'}}});
+  if(read.state!=='current')throw Error('SYNTHETIC_TRANSCRIPTION_CURRENT');
+  const result=attachAutomaticNonPayslipEvidence({...review,document_source_transcriptions:[read.reading]}, {...f.snapshot(),document_source_transcriptions:[read.reading]}).input;
+  const packet=obligations(result);expect(packet.obligations).toHaveLength(1);expect(packet.obligations[0].promise).toMatchObject({kind:'fixed',amount:{printed_value:'500.00'}});
+  expect(result.non_payslip_evidence).toEqual([f.record]);expect(canonicalSha256(f.record)).toBe(original);
+  expect(result.coverage_gaps.some(g=>g.check_id.startsWith('entitlement.transcribed.clause.'))).toBe(conflict);
+  if(conflict)expect(packet.obligations[0].assessments).toContainEqual(expect.objectContaining({decision_id:'obligation.clause_interpretation',state:'conflict'}));
+ });
  it('merges exact source cells across checks and refuses stale or foreign checkpoint dependencies',()=>{
   const f=fixture(),r=f.run(),first=r.reading_dependencies[0];
   expect(first).toBeDefined();

@@ -4,6 +4,7 @@ import {documentReviewCalculationInputSchema,type DocumentReviewOperand} from '.
 import type {DocumentReviewInput} from '../../document-review/contracts.ts';
 import {sourceStructureBasisSchema} from '../../extraction/source-structure.ts';
 import type {ExplicitObligation,ObligationsEntitlementInput} from './contracts.ts';
+import {identifiedClauseTranscriptionSourceCurrent} from './identified-clause-transcriptions.ts';
 
 const sha=z.string().regex(/^[a-f0-9]{64}$/u),period=z.object({from:z.iso.date(),to:z.iso.date()}).strict();
 const operand=documentReviewCalculationInputSchema.shape.operands.element,source=operand.shape.source;
@@ -55,7 +56,8 @@ export function obligationPaymentOperands(review:DocumentReviewInput):DocumentRe
 export function createObligationPaymentLinkTarget(input:{review:DocumentReviewInput;obligation:ExplicitObligation;observationId:string;productDocumentId:string;checkpointSha256:string;policyVersion:string;versionId?:string}){
  const {review,obligation:o}=input,c=o.clause.source;
  const clauses=review.documents.filter(d=>d.case_id===review.case_id&&d.document_id===c.document_id&&d.version_id===c.version_id&&d.kind==='contract');
- if(clauses.length!==1||clauses[0].file_sha256!==c.file_sha256||clauses[0].reading_sha256!==c.reading_receipt_sha256||c.reading!=='identified_document_reading'
+ if(clauses.length!==1||clauses[0].file_sha256!==c.file_sha256
+  ||clauses[0].reading_sha256!==c.reading_receipt_sha256&&!identifiedClauseTranscriptionSourceCurrent(review,c,o.clause.text_sha256)||c.reading!=='identified_document_reading'
   ||canonicalSha256(review.period)!==canonicalSha256(o.payment_period)||!review.purchased_scope.topics.includes(o.topic))throw Error('OBLIGATION_PAYMENT_CLAUSE_SCOPE');
  const matches=obligationPaymentOperands(review).filter(a=>a.observation_id===input.observationId&&(input.versionId===undefined||a.source.version_id===input.versionId));
  if(matches.length!==1)throw Error('OBLIGATION_PAYMENT_OPERAND_REQUIRED');

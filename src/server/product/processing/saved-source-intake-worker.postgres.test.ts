@@ -24,7 +24,7 @@ vi.mock('server-only',()=>({}));
 it.skipIf(process.env.TIVDOC_SOURCE_KIND_DB_PROOF!=='1')('routes authenticated corrected payslip kinds with real worker/web roles',async()=>{
  if(process.env.VERCEL||process.env.VERCEL_ENV||process.env.NODE_ENV!=='test')throw Error('SOURCE_KIND_DB_PROOF_BOUNDARY');
  const {readDevEnvFile}=await import('../../../../scripts/supabase-dev-guard/dev-credential.mts');
- const env=readDevEnvFile(),sha=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
+ const env=readDevEnvFile(),sha=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8',windowsHide:true}).trim();
  const client=(key:string)=>{
   const url=new URL(env.get(key)!);
   if(url.pathname!=='/tivdoc_release_replay_20260907'||url.hostname!=='aws-0-eu-central-1.pooler.supabase.com'||!url.username.endsWith('.cpzrbidxftzqcfeqqusu'))throw Error('SOURCE_KIND_EXACT_DEV_REQUIRED');

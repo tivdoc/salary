@@ -10,6 +10,8 @@ import {calculateDocumentReview,documentReviewCalculationInputSchema} from '../.
 import {resolveExplicitObligations,OBLIGATION_ASSESSMENTS} from './index.ts';
 import {obligationsProductReview} from '../obligations-product.ts';
 import {attachObligationPaymentLinks,createObligationPaymentLinkTarget,obligationPaymentOperands,obligationPaymentLinkTargets,parseObligationPaymentLinkReading,resolveObligationPaymentLinkReading} from './payment-link.ts';
+import {documentEvidenceSourceTranscriptionTarget,resolveDocumentEvidenceSourceReading} from '../../extraction/document-evidence/source-transcription.ts';
+import {obligationTextSha256} from './contracts.ts';
 
 /** Source amount is read through the ordinary payroll adapter; no review
  * operand, finding or comparison is manufactured by this fixture. */
@@ -41,6 +43,23 @@ function setup(raw='450.00',identified=true,changeMachine?:(machine:ReturnType<t
 }
 const calculations=(input:Parameters<typeof resolveExplicitObligations>[0])=>resolveExplicitObligations(input).checks.map(c=>calculateDocumentReview(c.calculation));
 describe('ordinary obligation payment links',()=>{
+ it('accepts only the exact current transcribed clause receipt, independently of the retained provider receipt',()=>{
+  const f=setup(),o=f.input.obligations[0],review={...f.review,purchased_scope:{...f.review.purchased_scope,order_id:uuid(800)}};
+  const d=review.documents.find(d=>d.kind==='contract')!,source={case_id:review.case_id,product_document_id:uuid(30),version_id:d.version_id,source_sha256:d.file_sha256,
+   document_kind:'contract' as const,document_month:null,page_count:d.page_count!,reading_dependencies:[]};
+  const target=documentEvidenceSourceTranscriptionTarget({source,purchase:review.purchased_scope,month:'2026-06',page:null});
+  const text='המעסיק ישלם לעובד 500 ש״ח בכל חודש מיום 2026-01-01 ועד יום 2026-12-31.';
+  const resolved=resolveDocumentEvidenceSourceReading({target,currentSource:source,currentPurchase:review.purchased_scope,caseId:review.case_id,month:'2026-06',requestId:uuid(801),answerRevision:1,identityId:uuid(802),answeredAt:'2026-07-03T00:00:00Z',
+   answer:{schema_version:'document-evidence-source-answer-v2',action:'correct',value:{page:1,raw_value:text,locator:'Synthetic full clause'}}});
+  if(resolved.state!=='current')throw Error('SYNTHETIC_CURRENT_TRANSCRIPTION');
+  const current={...review,document_source_transcriptions:[resolved.reading]},obligation={...o,clause:{...o.clause,text,text_sha256:obligationTextSha256(text),source:{...o.clause.source,reading_receipt_sha256:resolved.reading.verification_sha256}}};
+  const pairs=(r:typeof current= current)=>obligationPaymentLinkTargets({review:r,obligation,payrollSources:[{version_id:uuid(600),product_document_id:uuid(604),checkpoint_sha256:'d'.repeat(64),policy_version:'synthetic-payment-v1'}]});
+  expect(pairs()).toHaveLength(1);expect(d.reading_sha256).not.toBe(resolved.reading.verification_sha256);
+  expect(()=>pairs({...current,document_source_transcriptions:[]})).toThrow('OBLIGATION_PAYMENT_CLAUSE_SCOPE');
+  expect(()=>pairs({...current,documents:current.documents.map(x=>x.kind==='contract'?{...x,accepted_reading_sha256:[resolved.reading.verification_sha256]}:x),document_source_transcriptions:[]})).toThrow('OBLIGATION_PAYMENT_CLAUSE_SCOPE');
+  expect(()=>pairs({...current,purchased_scope:{...current.purchased_scope,receipt_sha256:'9'.repeat(64)}})).toThrow('OBLIGATION_PAYMENT_CLAUSE_SCOPE');
+  const oldText=obligation.clause.text_sha256;obligation.clause.text_sha256='8'.repeat(64);expect(()=>pairs()).toThrow('OBLIGATION_PAYMENT_CLAUSE_SCOPE');obligation.clause.text_sha256=oldText;
+ });
  it('selects an identified ordinary payroll amount and does not authorize allocation from its link',()=>{
   const f=setup(),before=canonicalSha256(f.input),linked=attachObligationPaymentLinks(f.input,f.review,[f.reading()]);
   expect(f.targets()).toHaveLength(1);expect(linked.obligations[0].recorded).toMatchObject({amount:{printed_value:'450.00'},scope_assessment:{state:'missing'}});
